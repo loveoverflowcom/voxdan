@@ -23,5 +23,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Validate bootstrap documents and fixtures
+      - name: Validate documents, fixtures and agent skills
         run: python3 scripts/check_repository.py
+      - name: Test repository checks
+        run: python3 -m unittest discover -s scripts -p 'test_*.py'

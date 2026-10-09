@@ -52,10 +52,11 @@ Attach the relevant reference and before/after evidence to design work. Cover ke
 
 ## Verification
 
-Run the repository consistency check from the repository root:
+Run the repository consistency checks and their tests from the repository root:
 
 ```bash
 python3 scripts/check_repository.py
+python3 -m unittest discover -s scripts -p 'test_*.py'
 ```
 
 For runtime changes, run the relevant stack-specific checks once the corresponding implementation and tooling exist. Include meaningful integration evidence for job retry/resume, partial regeneration, publishing, streaming, and native background playback when those behaviors change. Record any environment limitations instead of claiming an unrun check passed.

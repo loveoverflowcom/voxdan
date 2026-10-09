@@ -14,6 +14,7 @@ List the checks actually run and their results. Include screenshots for UI chang
 
 ```text
 python3 scripts/check_repository.py
+python3 -m unittest discover -s scripts -p 'test_*.py'
 ```
 
 Add applicable build, test, contract, or device checks once those implementations exist. Explain checks that could not be run.

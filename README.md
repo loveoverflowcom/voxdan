@@ -28,7 +28,7 @@ Start with one modular backend. Worker execution can run separately for resource
 - [UI system](docs/design/ui-system.md) and [native mobile requirements](docs/architecture/mobile.md).
 - [Ordered MVP work plan](docs/work-plan/README.md): the next implementation step and its review boundary.
 - [GitHub planning guide](docs/work-plan/project-planning.md), [Kanban](https://github.com/users/loveoverflowcom/projects/6/views/1) and [Planning table](https://github.com/users/loveoverflowcom/projects/6/views/2): 17 implementation issues across five milestones.
-- [Contributor workflow](CONTRIBUTING.md), [agent instructions](AGENTS.md) and [reusable templates](templates/README.md).
+- [Contributor workflow](CONTRIBUTING.md), [agent instructions](AGENTS.md), [agent skills](.agents/skills/README.md) and [reusable templates](templates/README.md).
 
 ## Directory map
 
@@ -40,13 +40,16 @@ Start with one modular backend. Worker execution can run separately for resource
 | `contracts/` | Versioning guidance and an illustrative Script IR fixture |
 | `docs/` | Product, architecture, design, decisions and the work queue |
 | `templates/` | Reusable feature, decision, production and publication records |
+| `.agents/skills/` | Canonical agent skills shared by Codex, Claude Code and other agents |
+| `.claude/skills/` | Per-skill symlinks so Claude Code discovers `.agents/skills/` |
 | `.github/` | Issue forms, PR template and repository checks |
-| `scripts/` | Dependency-free checks for this documentation bootstrap |
+| `scripts/` | Dependency-free checks (and their tests) for this documentation bootstrap |
 
 ## Validate the bootstrap
 
 ```sh
 python3 scripts/check_repository.py
+python3 -m unittest discover -s scripts -p 'test_*.py'
 git diff --check
 ```
 

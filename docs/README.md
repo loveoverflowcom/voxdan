@@ -11,5 +11,6 @@
 | [UI system](design/ui-system.md) | Shared semantic design requirements and validation |
 | [Decision 0001](decisions/0001-modular-monolith.md) | Initial stack and modular-backend decision |
 | [Work plan](work-plan/README.md) | Recommended sequence, dependencies and review boundaries |
+| [GitHub planning](work-plan/project-planning.md) | Issue/dependency map, Kanban workflow and links to source documents |
 
 These documents specify intended behavior, unless a section explicitly provides implementation evidence. Update the owning document instead of copying the same rule into multiple competing specifications. Use [templates](../templates/README.md) for subsequent decisions and production records.

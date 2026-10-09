@@ -48,3 +48,7 @@ DOCX extraction may lose meaningful structure; compare the imported result again
 ## Follow-ups
 
 Defer extra import formats, direct Narrative Forge integration, and collaborative editing. Promote any loss of source content or version identity as a correctness fix before casting work.
+
+## GitHub execution
+
+[#1](https://github.com/loveoverflowcom/voxdan/issues/1), [#2](https://github.com/loveoverflowcom/voxdan/issues/2), [#3](https://github.com/loveoverflowcom/voxdan/issues/3), [#4](https://github.com/loveoverflowcom/voxdan/issues/4). See the [issue/dependency map](project-planning.md) and [Kanban](https://github.com/users/loveoverflowcom/projects/6/views/1) for the recommended sequence and live execution state.

@@ -27,6 +27,7 @@ Start with one modular backend. Worker execution can run separately for resource
 - [Architecture](docs/architecture/overview.md), [Script IR](docs/architecture/script-ir.md) and [production pipeline](docs/product/production-pipeline.md).
 - [UI system](docs/design/ui-system.md) and [native mobile requirements](docs/architecture/mobile.md).
 - [Ordered MVP work plan](docs/work-plan/README.md): the next implementation step and its review boundary.
+- [GitHub planning guide](docs/work-plan/project-planning.md), [Kanban](https://github.com/users/loveoverflowcom/projects/6/views/1) and [Planning table](https://github.com/users/loveoverflowcom/projects/6/views/2): 17 implementation issues across five milestones.
 - [Contributor workflow](CONTRIBUTING.md), [agent instructions](AGENTS.md) and [reusable templates](templates/README.md).
 
 ## Directory map

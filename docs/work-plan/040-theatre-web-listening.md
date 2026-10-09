@@ -47,3 +47,7 @@ Browser autoplay and background behavior vary. Playback progress is not a strict
 ## Follow-ups
 
 Defer personalized recommendations, subscriptions, and social features. Share stable listening contracts with CMP without forcing Rust implementation details into Kotlin.
+
+## GitHub execution
+
+[#12](https://github.com/loveoverflowcom/voxdan/issues/12), [#13](https://github.com/loveoverflowcom/voxdan/issues/13). See the [issue/dependency map](project-planning.md) and [Kanban](https://github.com/users/loveoverflowcom/projects/6/views/1) for the recommended sequence and live execution state.

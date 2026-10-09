@@ -49,3 +49,7 @@ Provider idempotency, billing, language support, and voice stability differ. Loc
 ## Follow-ups
 
 Defer provider auto-routing, expanded catalogs, batching for throughput, and local model tuning. A provider mismatch or duplicate-result association is a correctness issue required before mixing.
+
+## GitHub execution
+
+[#5](https://github.com/loveoverflowcom/voxdan/issues/5), [#6](https://github.com/loveoverflowcom/voxdan/issues/6), [#7](https://github.com/loveoverflowcom/voxdan/issues/7), [#8](https://github.com/loveoverflowcom/voxdan/issues/8). See the [issue/dependency map](project-planning.md) and [Kanban](https://github.com/users/loveoverflowcom/projects/6/views/1) for the recommended sequence and live execution state.

@@ -6,7 +6,7 @@
 
 ## Context
 
-VoxDan must deliver an entire creator-to-listener flow while keeping AI costs, revisions, approvals and generated assets consistent. The initial team should not need to coordinate distributed service releases to import, produce and publish one episode.
+Cantos must deliver an entire creator-to-listener flow while keeping AI costs, revisions, approvals and generated assets consistent. The initial team should not need to coordinate distributed service releases to import, produce and publish one episode.
 
 ## Decision
 

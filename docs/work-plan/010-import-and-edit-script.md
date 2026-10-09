@@ -51,4 +51,4 @@ Defer extra import formats, direct Narrative Forge integration, and collaborativ
 
 ## GitHub execution
 
-[#1](https://github.com/loveoverflowcom/voxdan/issues/1), [#2](https://github.com/loveoverflowcom/voxdan/issues/2), [#3](https://github.com/loveoverflowcom/voxdan/issues/3), [#4](https://github.com/loveoverflowcom/voxdan/issues/4). See the [issue/dependency map](project-planning.md) and [Kanban](https://github.com/users/loveoverflowcom/projects/6/views/1) for the recommended sequence and live execution state.
+[#1](https://github.com/loveoverflowcom/cantos/issues/1), [#2](https://github.com/loveoverflowcom/cantos/issues/2), [#3](https://github.com/loveoverflowcom/cantos/issues/3), [#4](https://github.com/loveoverflowcom/cantos/issues/4). See the [issue/dependency map](project-planning.md) and [Kanban](https://github.com/users/loveoverflowcom/projects/6/views/1) for the recommended sequence and live execution state.

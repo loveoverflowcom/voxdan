@@ -52,4 +52,4 @@ Defer mobile Studio, car/wearable integrations, and advanced download scheduling
 
 ## GitHub execution
 
-[#14](https://github.com/loveoverflowcom/voxdan/issues/14), [#15](https://github.com/loveoverflowcom/voxdan/issues/15), [#16](https://github.com/loveoverflowcom/voxdan/issues/16), [#17](https://github.com/loveoverflowcom/voxdan/issues/17). See the [issue/dependency map](project-planning.md) and [Kanban](https://github.com/users/loveoverflowcom/projects/6/views/1) for the recommended sequence and live execution state.
+[#14](https://github.com/loveoverflowcom/cantos/issues/14), [#15](https://github.com/loveoverflowcom/cantos/issues/15), [#16](https://github.com/loveoverflowcom/cantos/issues/16), [#17](https://github.com/loveoverflowcom/cantos/issues/17). See the [issue/dependency map](project-planning.md) and [Kanban](https://github.com/users/loveoverflowcom/projects/6/views/1) for the recommended sequence and live execution state.

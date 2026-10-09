@@ -50,4 +50,4 @@ Defer personalized recommendations, subscriptions, and social features. Share st
 
 ## GitHub execution
 
-[#12](https://github.com/loveoverflowcom/voxdan/issues/12), [#13](https://github.com/loveoverflowcom/voxdan/issues/13). See the [issue/dependency map](project-planning.md) and [Kanban](https://github.com/users/loveoverflowcom/projects/6/views/1) for the recommended sequence and live execution state.
+[#12](https://github.com/loveoverflowcom/cantos/issues/12), [#13](https://github.com/loveoverflowcom/cantos/issues/13). See the [issue/dependency map](project-planning.md) and [Kanban](https://github.com/users/loveoverflowcom/projects/6/views/1) for the recommended sequence and live execution state.

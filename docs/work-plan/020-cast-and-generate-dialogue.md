@@ -52,4 +52,4 @@ Defer provider auto-routing, expanded catalogs, batching for throughput, and loc
 
 ## GitHub execution
 
-[#5](https://github.com/loveoverflowcom/voxdan/issues/5), [#6](https://github.com/loveoverflowcom/voxdan/issues/6), [#7](https://github.com/loveoverflowcom/voxdan/issues/7), [#8](https://github.com/loveoverflowcom/voxdan/issues/8). See the [issue/dependency map](project-planning.md) and [Kanban](https://github.com/users/loveoverflowcom/projects/6/views/1) for the recommended sequence and live execution state.
+[#5](https://github.com/loveoverflowcom/cantos/issues/5), [#6](https://github.com/loveoverflowcom/cantos/issues/6), [#7](https://github.com/loveoverflowcom/cantos/issues/7), [#8](https://github.com/loveoverflowcom/cantos/issues/8). See the [issue/dependency map](project-planning.md) and [Kanban](https://github.com/users/loveoverflowcom/projects/6/views/1) for the recommended sequence and live execution state.

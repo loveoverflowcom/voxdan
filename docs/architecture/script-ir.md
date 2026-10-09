@@ -4,7 +4,7 @@ Status: proposed interchange design. The [example](../../contracts/examples/epis
 
 ## Purpose
 
-Preserve the hierarchy **Work → Adaptation → Episode → Act → Scene → Dialogue → Audio** without tying VoxDan to Narrative Forge storage or code. Script IR describes performance content and source provenance. Production manifests separately associate stable dialogue/scene identities and their exact revisions with audio assets.
+Preserve the hierarchy **Work → Adaptation → Episode → Act → Scene → Dialogue → Audio** without tying Cantos to Narrative Forge storage or code. Script IR describes performance content and source provenance. Production manifests separately associate stable dialogue/scene identities and their exact revisions with audio assets.
 
 | Concept | Required meaning |
 | --- | --- |
@@ -34,4 +34,4 @@ Scene mix fingerprints additionally include ordered speech assets, timing, cue a
 
 ## Narrative Forge integration
 
-Reuse concepts, not internal types by assumption. Introduce an import/export adapter only after inspecting the actual versioned Narrative Forge contract. Keep its mapping and round-trip fixtures at the boundary; log lossy conversions for review. VoxDan remains runnable without that repository, database or service.
+Reuse concepts, not internal types by assumption. Introduce an import/export adapter only after inspecting the actual versioned Narrative Forge contract. Keep its mapping and round-trip fixtures at the boundary; log lossy conversions for review. Cantos remains runnable without that repository, database or service.

@@ -1,10 +1,10 @@
-# VoxDan UI System
+# Cantos UI System
 
 Status: design requirements and implementation handoff; no screens or interactions have been implemented or validated.
 
 ## Direction and reference
 
-VoxDan uses Material 3 Expressive principles with a soft lavender/purple identity, rounded controls, clear hierarchy, and purposeful motion. Studio prioritizes reading and editing scripts; Theatre prioritizes choosing and listening to episodes. The brand is shared, while density and navigation follow each task.
+Cantos uses Material 3 Expressive principles with a soft lavender/purple identity, rounded controls, clear hierarchy, and purposeful motion. Studio prioritizes reading and editing scripts; Theatre prioritizes choosing and listening to episodes. The brand is shared, while density and navigation follow each task.
 
 The brief mentions an attached reference image, but the image was not available during repository initialization. Capture the supplied image and its viewport in the design issue before visual implementation. Do not claim visual fidelity until that comparison exists. Logo, font, exact color values, and artwork treatment remain open design decisions; the lavender/purple direction is confirmed by the brief.
 
@@ -25,7 +25,7 @@ Keep a versioned token source with platform mappings. Leptos consumes CSS variab
 | Elevation | `elevation.base`, `elevation.overlay` | Prefer surface tone and spacing; use elevation where it communicates overlap. |
 | Motion | `motion.feedback`, `motion.navigation`, `motion.emphasis`, `motion.reduced` | Specify intent; choose supported framework mechanisms during implementation and verify each target. |
 
-Dynamic system colors must not silently replace VoxDan's identity. Exact palette, type scale, shape sizes, and animation curves belong in the first reviewed design implementation, with recorded contrast measurements.
+Dynamic system colors must not silently replace Cantos's identity. Exact palette, type scale, shape sizes, and animation curves belong in the first reviewed design implementation, with recorded contrast measurements.
 
 ## Studio: text-first production
 

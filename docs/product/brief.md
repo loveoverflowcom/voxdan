@@ -1,15 +1,15 @@
-# VoxDan — Product Brief
+# Cantos — Product Brief
 
 > Status: design and repository bootstrap. This document describes intended behavior; no capability is implemented by this scaffold.
 
 ## Identity and purpose
 
-- **Brand:** VoxDan — Vọng Đài, “Theatre of Voices”.
-- **Repository:** `voxdan`.
-- **VoxDan Studio:** a workspace for creators to turn drafts into reviewed, published audio drama.
-- **VoxDan Theatre:** a discovery and listening experience for audiences.
+- **Brand:** Cantos — Vọng Đài, “Theatre of Voices”.
+- **Repository:** `cantos`.
+- **Cantos Studio:** a workspace for creators to turn drafts into reviewed, published audio drama.
+- **Cantos Theatre:** a discovery and listening experience for audiences.
 
-VoxDan produces performed drama: distinct characters, expressive dialogue, narration, ambience, music and effects. A manuscript is an input to adaptation, not an instruction to read every paragraph aloud unchanged.
+Cantos produces performed drama: distinct characters, expressive dialogue, narration, ambience, music and effects. A manuscript is an input to adaptation, not an instruction to read every paragraph aloud unchanged.
 
 ## Product structure
 
@@ -40,7 +40,7 @@ Changes create new revisions. Creators can correct individual lines, regenerate 
 | Audio storage | S3-compatible object storage and CDN delivery |
 | Production | Background workers, pluggable TTS providers and audio processing |
 
-Start with a modular monolith and separately runnable background worker where useful. Avoid introducing independent microservices until operational evidence justifies them. Narrative Forge concepts may inform a versioned Script IR; VoxDan must not require its database, deployment or internal packages to operate. Shared schemas should define Rust/Kotlin contracts where practical rather than assume the runtimes can share executable business code.
+Start with a modular monolith and separately runnable background worker where useful. Avoid introducing independent microservices until operational evidence justifies them. Narrative Forge concepts may inform a versioned Script IR; Cantos must not require its database, deployment or internal packages to operate. Shared schemas should define Rust/Kotlin contracts where practical rather than assume the runtimes can share executable business code.
 
 ## Design direction
 

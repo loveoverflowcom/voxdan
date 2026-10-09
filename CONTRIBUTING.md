@@ -1,6 +1,6 @@
-# Contributing to VoxDan
+# Contributing to Cantos
 
-VoxDan combines an audio-drama production Studio with a Theatre listening experience. Read the [project overview](README.md) before proposing a change. The repository starts with planning documents and templates; implementation status and supported commands must be documented as the runtime is added.
+Cantos combines an audio-drama production Studio with a Theatre listening experience. Read the [project overview](README.md) before proposing a change. The repository starts with planning documents and templates; implementation status and supported commands must be documented as the runtime is added.
 
 ## Branch and pull request workflow
 

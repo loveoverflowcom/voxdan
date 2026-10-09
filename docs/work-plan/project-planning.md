@@ -1,6 +1,6 @@
 # GitHub planning and execution
 
-[VoxDan Project](https://github.com/users/loveoverflowcom/projects/6) · [Kanban](https://github.com/users/loveoverflowcom/projects/6/views/1) · [Planning table](https://github.com/users/loveoverflowcom/projects/6/views/2) · [Repository issues](https://github.com/loveoverflowcom/voxdan/issues) · [Milestones](https://github.com/loveoverflowcom/voxdan/milestones)
+[Cantos Project](https://github.com/users/loveoverflowcom/projects/6) · [Kanban](https://github.com/users/loveoverflowcom/projects/6/views/1) · [Planning table](https://github.com/users/loveoverflowcom/projects/6/views/2) · [Repository issues](https://github.com/loveoverflowcom/cantos/issues) · [Milestones](https://github.com/loveoverflowcom/cantos/milestones)
 
 The repository currently contains specifications and templates. These issues plan implementation; creating the board does not establish application, audio or mobile runtime behavior. The Project is private and requires the owner or an authorized collaborator to sign in. Repository documents and issues remain available under their own repository access policy.
 
@@ -32,7 +32,7 @@ Keep specifications in Git, linked to executable issues rather than copied into 
 | In review | Focused PR and relevant verification evidence are available |
 | Done | Acceptance criteria and applicable capability review gate passed |
 
-At planning setup, only [#1](https://github.com/loveoverflowcom/voxdan/issues/1) is Ready; later work waits in Backlog. The live Project owns current Status, issues own acceptance checklists/evidence and native `blocked by` links, and Markdown owns intended scope, rationale and recommended order. This document is not a second live status board.
+At planning setup, only [#1](https://github.com/loveoverflowcom/cantos/issues/1) is Ready; later work waits in Backlog. The live Project owns current Status, issues own acceptance checklists/evidence and native `blocked by` links, and Markdown owns intended scope, rationale and recommended order. This document is not a second live status board.
 
 If an active task becomes blocked, record the reason and native blocking relationship on the issue. Move it back to Backlog when it cannot proceed, preserving its progress and explaining the next action. Move a dependent task to Ready only after its prerequisites are accepted. No deadline, estimate or assignee is implied by this ordering.
 
@@ -40,31 +40,31 @@ If an active task becomes blocked, record the reason and native blocking relatio
 
 | Order | Phase / specification | Issue and outcome | Immediate blockers |
 | --- | --- | --- | --- |
-| 01 | [010](010-import-and-edit-script.md) | [010.1 — Establish authenticated script persistence and contracts](https://github.com/loveoverflowcom/voxdan/issues/1) | None; start here |
-| 02 | [010](010-import-and-edit-script.md) | [010.2 — Import manuscripts with preserved source and rights](https://github.com/loveoverflowcom/voxdan/issues/2) | [#1](https://github.com/loveoverflowcom/voxdan/issues/1) |
-| 03 | [010](010-import-and-edit-script.md) | [010.3 — Generate reviewable AI script adaptations](https://github.com/loveoverflowcom/voxdan/issues/3) | [#2](https://github.com/loveoverflowcom/voxdan/issues/2) |
-| 04 | [010](010-import-and-edit-script.md) | [010.4 — Deliver the accessible Studio script editor](https://github.com/loveoverflowcom/voxdan/issues/4) | [#3](https://github.com/loveoverflowcom/voxdan/issues/3) |
-| 05 | [020](020-cast-and-generate-dialogue.md) | [020.1 — Freeze casting and authorize production inputs](https://github.com/loveoverflowcom/voxdan/issues/5) | [#4](https://github.com/loveoverflowcom/voxdan/issues/4) |
-| 06 | [020](020-cast-and-generate-dialogue.md) | [020.2 — Integrate verified local and commercial TTS](https://github.com/loveoverflowcom/voxdan/issues/6) | [#5](https://github.com/loveoverflowcom/voxdan/issues/5) |
-| 07 | [020](020-cast-and-generate-dialogue.md) | [020.3 — Recover durable TTS jobs and reuse valid clips](https://github.com/loveoverflowcom/voxdan/issues/7) | [#6](https://github.com/loveoverflowcom/voxdan/issues/6) |
-| 08 | [020](020-cast-and-generate-dialogue.md) | [020.4 — Expose casting, production progress and partial regeneration](https://github.com/loveoverflowcom/voxdan/issues/8) | [#7](https://github.com/loveoverflowcom/voxdan/issues/7) |
-| 09 | [030](030-mix-review-and-publish.md) | [030.1 — Mix episodes and review versioned QC findings](https://github.com/loveoverflowcom/voxdan/issues/9) | [#7](https://github.com/loveoverflowcom/voxdan/issues/7) |
-| 10 | [030](030-mix-review-and-publish.md) | [030.2 — Stage private assets and verify media delivery](https://github.com/loveoverflowcom/voxdan/issues/10) | [#7](https://github.com/loveoverflowcom/voxdan/issues/7) |
-| 11 | [030](030-mix-review-and-publish.md) | [030.3 — Publish approved immutable releases atomically](https://github.com/loveoverflowcom/voxdan/issues/11) | [#8](https://github.com/loveoverflowcom/voxdan/issues/8), [#9](https://github.com/loveoverflowcom/voxdan/issues/9), [#10](https://github.com/loveoverflowcom/voxdan/issues/10) |
-| 12 | [040](040-theatre-web-listening.md) | [040.1 — Implement listener APIs and conflict-safe progress](https://github.com/loveoverflowcom/voxdan/issues/12) | [#11](https://github.com/loveoverflowcom/voxdan/issues/11) |
-| 13 | [040](040-theatre-web-listening.md) | [040.2 — Deliver Theatre Web discovery, streaming and resume](https://github.com/loveoverflowcom/voxdan/issues/13) | [#12](https://github.com/loveoverflowcom/voxdan/issues/12) |
-| 14 | [050](050-cmp-native-listening.md) | [050.1 — Bootstrap CMP Theatre and native foreground streaming](https://github.com/loveoverflowcom/voxdan/issues/14) | [#12](https://github.com/loveoverflowcom/voxdan/issues/12) |
-| 15 | [050](050-cmp-native-listening.md) | [050.2 — Add background playback, OS controls and interruption recovery](https://github.com/loveoverflowcom/voxdan/issues/15) | [#14](https://github.com/loveoverflowcom/voxdan/issues/14) |
-| 16 | [050](050-cmp-native-listening.md) | [050.3 — Deliver verified and resumable offline downloads](https://github.com/loveoverflowcom/voxdan/issues/16) | [#14](https://github.com/loveoverflowcom/voxdan/issues/14) |
-| 17 | [050](050-cmp-native-listening.md) | [050.4 — Synchronize mobile progress and verify the complete MVP journey](https://github.com/loveoverflowcom/voxdan/issues/17) | [#13](https://github.com/loveoverflowcom/voxdan/issues/13), [#15](https://github.com/loveoverflowcom/voxdan/issues/15), [#16](https://github.com/loveoverflowcom/voxdan/issues/16) |
+| 01 | [010](010-import-and-edit-script.md) | [010.1 — Establish authenticated script persistence and contracts](https://github.com/loveoverflowcom/cantos/issues/1) | None; start here |
+| 02 | [010](010-import-and-edit-script.md) | [010.2 — Import manuscripts with preserved source and rights](https://github.com/loveoverflowcom/cantos/issues/2) | [#1](https://github.com/loveoverflowcom/cantos/issues/1) |
+| 03 | [010](010-import-and-edit-script.md) | [010.3 — Generate reviewable AI script adaptations](https://github.com/loveoverflowcom/cantos/issues/3) | [#2](https://github.com/loveoverflowcom/cantos/issues/2) |
+| 04 | [010](010-import-and-edit-script.md) | [010.4 — Deliver the accessible Studio script editor](https://github.com/loveoverflowcom/cantos/issues/4) | [#3](https://github.com/loveoverflowcom/cantos/issues/3) |
+| 05 | [020](020-cast-and-generate-dialogue.md) | [020.1 — Freeze casting and authorize production inputs](https://github.com/loveoverflowcom/cantos/issues/5) | [#4](https://github.com/loveoverflowcom/cantos/issues/4) |
+| 06 | [020](020-cast-and-generate-dialogue.md) | [020.2 — Integrate verified local and commercial TTS](https://github.com/loveoverflowcom/cantos/issues/6) | [#5](https://github.com/loveoverflowcom/cantos/issues/5) |
+| 07 | [020](020-cast-and-generate-dialogue.md) | [020.3 — Recover durable TTS jobs and reuse valid clips](https://github.com/loveoverflowcom/cantos/issues/7) | [#6](https://github.com/loveoverflowcom/cantos/issues/6) |
+| 08 | [020](020-cast-and-generate-dialogue.md) | [020.4 — Expose casting, production progress and partial regeneration](https://github.com/loveoverflowcom/cantos/issues/8) | [#7](https://github.com/loveoverflowcom/cantos/issues/7) |
+| 09 | [030](030-mix-review-and-publish.md) | [030.1 — Mix episodes and review versioned QC findings](https://github.com/loveoverflowcom/cantos/issues/9) | [#7](https://github.com/loveoverflowcom/cantos/issues/7) |
+| 10 | [030](030-mix-review-and-publish.md) | [030.2 — Stage private assets and verify media delivery](https://github.com/loveoverflowcom/cantos/issues/10) | [#7](https://github.com/loveoverflowcom/cantos/issues/7) |
+| 11 | [030](030-mix-review-and-publish.md) | [030.3 — Publish approved immutable releases atomically](https://github.com/loveoverflowcom/cantos/issues/11) | [#8](https://github.com/loveoverflowcom/cantos/issues/8), [#9](https://github.com/loveoverflowcom/cantos/issues/9), [#10](https://github.com/loveoverflowcom/cantos/issues/10) |
+| 12 | [040](040-theatre-web-listening.md) | [040.1 — Implement listener APIs and conflict-safe progress](https://github.com/loveoverflowcom/cantos/issues/12) | [#11](https://github.com/loveoverflowcom/cantos/issues/11) |
+| 13 | [040](040-theatre-web-listening.md) | [040.2 — Deliver Theatre Web discovery, streaming and resume](https://github.com/loveoverflowcom/cantos/issues/13) | [#12](https://github.com/loveoverflowcom/cantos/issues/12) |
+| 14 | [050](050-cmp-native-listening.md) | [050.1 — Bootstrap CMP Theatre and native foreground streaming](https://github.com/loveoverflowcom/cantos/issues/14) | [#12](https://github.com/loveoverflowcom/cantos/issues/12) |
+| 15 | [050](050-cmp-native-listening.md) | [050.2 — Add background playback, OS controls and interruption recovery](https://github.com/loveoverflowcom/cantos/issues/15) | [#14](https://github.com/loveoverflowcom/cantos/issues/14) |
+| 16 | [050](050-cmp-native-listening.md) | [050.3 — Deliver verified and resumable offline downloads](https://github.com/loveoverflowcom/cantos/issues/16) | [#14](https://github.com/loveoverflowcom/cantos/issues/14) |
+| 17 | [050](050-cmp-native-listening.md) | [050.4 — Synchronize mobile progress and verify the complete MVP journey](https://github.com/loveoverflowcom/cantos/issues/17) | [#13](https://github.com/loveoverflowcom/cantos/issues/13), [#15](https://github.com/loveoverflowcom/cantos/issues/15), [#16](https://github.com/loveoverflowcom/cantos/issues/16) |
 
 ## Sequence and parallel work
 
-Start with [#1](https://github.com/loveoverflowcom/voxdan/issues/1), then complete the import/adaptation/editor journey before casting. Casting and real provider integration establish the inputs needed by durable generation.
+Start with [#1](https://github.com/loveoverflowcom/cantos/issues/1), then complete the import/adaptation/editor journey before casting. Casting and real provider integration establish the inputs needed by durable generation.
 
-After [#7](https://github.com/loveoverflowcom/voxdan/issues/7), the Studio production controls ([#8](https://github.com/loveoverflowcom/voxdan/issues/8)), mixing/QC ([#9](https://github.com/loveoverflowcom/voxdan/issues/9)) and private storage/delivery ([#10](https://github.com/loveoverflowcom/voxdan/issues/10)) can proceed in parallel against concrete clip/artifact contracts. Publication ([#11](https://github.com/loveoverflowcom/voxdan/issues/11)) waits for all three acceptance results.
+After [#7](https://github.com/loveoverflowcom/cantos/issues/7), the Studio production controls ([#8](https://github.com/loveoverflowcom/cantos/issues/8)), mixing/QC ([#9](https://github.com/loveoverflowcom/cantos/issues/9)) and private storage/delivery ([#10](https://github.com/loveoverflowcom/cantos/issues/10)) can proceed in parallel against concrete clip/artifact contracts. Publication ([#11](https://github.com/loveoverflowcom/cantos/issues/11)) waits for all three acceptance results.
 
-Listener contracts ([#12](https://github.com/loveoverflowcom/voxdan/issues/12)) require a complete publication/delivery gate. Theatre Web ([#13](https://github.com/loveoverflowcom/voxdan/issues/13)) and native CMP streaming ([#14](https://github.com/loveoverflowcom/voxdan/issues/14)) can then proceed in parallel. Native background controls ([#15](https://github.com/loveoverflowcom/voxdan/issues/15)) and downloads ([#16](https://github.com/loveoverflowcom/voxdan/issues/16)) can run in parallel after native foreground playback. The final cross-device journey ([#17](https://github.com/loveoverflowcom/voxdan/issues/17)) waits for Web, background and download acceptance. Contract-fixture experiments before those gates must be labeled as prototypes.
+Listener contracts ([#12](https://github.com/loveoverflowcom/cantos/issues/12)) require a complete publication/delivery gate. Theatre Web ([#13](https://github.com/loveoverflowcom/cantos/issues/13)) and native CMP streaming ([#14](https://github.com/loveoverflowcom/cantos/issues/14)) can then proceed in parallel. Native background controls ([#15](https://github.com/loveoverflowcom/cantos/issues/15)) and downloads ([#16](https://github.com/loveoverflowcom/cantos/issues/16)) can run in parallel after native foreground playback. The final cross-device journey ([#17](https://github.com/loveoverflowcom/cantos/issues/17)) waits for Web, background and download acceptance. Contract-fixture experiments before those gates must be labeled as prototypes.
 
 ## Phase exit and review evidence
 

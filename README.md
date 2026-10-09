@@ -1,8 +1,8 @@
-# VoxDan
+# Cantos
 
 **Vọng Đài — Theatre of Voices.** An AI-assisted audio drama platform with a creator Studio and a podcast-like Theatre for listeners.
 
-VoxDan produces performances with a cast, narration, atmosphere, music and sound effects. Published audio is rendered once and streamed from stored assets; listening does not call a TTS provider.
+Cantos produces performances with a cast, narration, atmosphere, music and sound effects. Published audio is rendered once and streamed from stored assets; listening does not call a TTS provider.
 
 ## Repository status
 
@@ -14,8 +14,8 @@ This initial repository contains product specifications, architecture decisions,
 
 | Surface | Purpose | Technology |
 | --- | --- | --- |
-| VoxDan Studio | Import, adapt, edit, cast, preview, produce and approve episodes | Leptos Web |
-| VoxDan Theatre | Discover and listen to published audio drama | Leptos Web; Kotlin Compose Multiplatform on Android/iOS |
+| Cantos Studio | Import, adapt, edit, cast, preview, produce and approve episodes | Leptos Web |
+| Cantos Theatre | Discover and listen to published audio drama | Leptos Web; Kotlin Compose Multiplatform on Android/iOS |
 | Backend | Domain rules, APIs, production orchestration and publication | Rust, Axum, PostgreSQL |
 | Media delivery | Private production assets and approved episode renditions | S3-compatible object storage and CDN |
 

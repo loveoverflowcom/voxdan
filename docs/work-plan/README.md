@@ -1,6 +1,6 @@
 # MVP work queue
 
-Start with [#1](https://github.com/loveoverflowcom/voxdan/issues/1) within [010 — Import and edit a versioned script](010-import-and-edit-script.md). Each item delivers a usable business capability; implementation details must be confirmed against the code created in earlier items.
+Start with [#1](https://github.com/loveoverflowcom/cantos/issues/1) within [010 — Import and edit a versioned script](010-import-and-edit-script.md). Each item delivers a usable business capability; implementation details must be confirmed against the code created in earlier items.
 
 The repository starts with documentation and templates. The capabilities below are planned, not implemented. Numeric filename prefixes express the current recommended sequence, may be renumbered, and are not permanent task IDs.
 
@@ -16,15 +16,15 @@ The repository starts with documentation and templates. The capabilities below a
 
 [Kanban](https://github.com/users/loveoverflowcom/projects/6/views/1) · [Planning table](https://github.com/users/loveoverflowcom/projects/6/views/2) · [Detailed issue/dependency map](project-planning.md)
 
-The five capability specifications map to 17 bounded implementation issues. Use the Project for current execution Status and issue checklists/dependencies for evidence; this queue retains recommended sequence and scope. The first implementation task is [#1](https://github.com/loveoverflowcom/voxdan/issues/1).
+The five capability specifications map to 17 bounded implementation issues. Use the Project for current execution Status and issue checklists/dependencies for evidence; this queue retains recommended sequence and scope. The first implementation task is [#1](https://github.com/loveoverflowcom/cantos/issues/1).
 
 | Capability | Execution issues | Milestone |
 | --- | --- | --- |
-| [010](010-import-and-edit-script.md) | [#1](https://github.com/loveoverflowcom/voxdan/issues/1), [#2](https://github.com/loveoverflowcom/voxdan/issues/2), [#3](https://github.com/loveoverflowcom/voxdan/issues/3), [#4](https://github.com/loveoverflowcom/voxdan/issues/4) | [010 — Import and edit a versioned script](https://github.com/loveoverflowcom/voxdan/milestone/1) |
-| [020](020-cast-and-generate-dialogue.md) | [#5](https://github.com/loveoverflowcom/voxdan/issues/5), [#6](https://github.com/loveoverflowcom/voxdan/issues/6), [#7](https://github.com/loveoverflowcom/voxdan/issues/7), [#8](https://github.com/loveoverflowcom/voxdan/issues/8) | [020 — Cast and generate dialogue durably](https://github.com/loveoverflowcom/voxdan/milestone/2) |
-| [030](030-mix-review-and-publish.md) | [#9](https://github.com/loveoverflowcom/voxdan/issues/9), [#10](https://github.com/loveoverflowcom/voxdan/issues/10), [#11](https://github.com/loveoverflowcom/voxdan/issues/11) | [030 — Mix, review and publish](https://github.com/loveoverflowcom/voxdan/milestone/3) |
-| [040](040-theatre-web-listening.md) | [#12](https://github.com/loveoverflowcom/voxdan/issues/12), [#13](https://github.com/loveoverflowcom/voxdan/issues/13) | [040 — Theatre Web listening](https://github.com/loveoverflowcom/voxdan/milestone/4) |
-| [050](050-cmp-native-listening.md) | [#14](https://github.com/loveoverflowcom/voxdan/issues/14), [#15](https://github.com/loveoverflowcom/voxdan/issues/15), [#16](https://github.com/loveoverflowcom/voxdan/issues/16), [#17](https://github.com/loveoverflowcom/voxdan/issues/17) | [050 — CMP native listening](https://github.com/loveoverflowcom/voxdan/milestone/5) |
+| [010](010-import-and-edit-script.md) | [#1](https://github.com/loveoverflowcom/cantos/issues/1), [#2](https://github.com/loveoverflowcom/cantos/issues/2), [#3](https://github.com/loveoverflowcom/cantos/issues/3), [#4](https://github.com/loveoverflowcom/cantos/issues/4) | [010 — Import and edit a versioned script](https://github.com/loveoverflowcom/cantos/milestone/1) |
+| [020](020-cast-and-generate-dialogue.md) | [#5](https://github.com/loveoverflowcom/cantos/issues/5), [#6](https://github.com/loveoverflowcom/cantos/issues/6), [#7](https://github.com/loveoverflowcom/cantos/issues/7), [#8](https://github.com/loveoverflowcom/cantos/issues/8) | [020 — Cast and generate dialogue durably](https://github.com/loveoverflowcom/cantos/milestone/2) |
+| [030](030-mix-review-and-publish.md) | [#9](https://github.com/loveoverflowcom/cantos/issues/9), [#10](https://github.com/loveoverflowcom/cantos/issues/10), [#11](https://github.com/loveoverflowcom/cantos/issues/11) | [030 — Mix, review and publish](https://github.com/loveoverflowcom/cantos/milestone/3) |
+| [040](040-theatre-web-listening.md) | [#12](https://github.com/loveoverflowcom/cantos/issues/12), [#13](https://github.com/loveoverflowcom/cantos/issues/13) | [040 — Theatre Web listening](https://github.com/loveoverflowcom/cantos/milestone/4) |
+| [050](050-cmp-native-listening.md) | [#14](https://github.com/loveoverflowcom/cantos/issues/14), [#15](https://github.com/loveoverflowcom/cantos/issues/15), [#16](https://github.com/loveoverflowcom/cantos/issues/16), [#17](https://github.com/loveoverflowcom/cantos/issues/17) | [050 — CMP native listening](https://github.com/loveoverflowcom/cantos/milestone/5) |
 
 ## How to use this queue
 

@@ -48,3 +48,7 @@ Mixing targets and cue interpretation require listening tests. Storage operation
 ## Follow-ups
 
 Defer elaborate effects editing, automatic music composition, automated perceptual QC, and CDN optimization. Broken delivery or permission/approval bypass must be corrected before listener apps are released.
+
+## GitHub execution
+
+[#9](https://github.com/loveoverflowcom/voxdan/issues/9), [#10](https://github.com/loveoverflowcom/voxdan/issues/10), [#11](https://github.com/loveoverflowcom/voxdan/issues/11). See the [issue/dependency map](project-planning.md) and [Kanban](https://github.com/users/loveoverflowcom/projects/6/views/1) for the recommended sequence and live execution state.

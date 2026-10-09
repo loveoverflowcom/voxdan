@@ -1,6 +1,6 @@
 # MVP work queue
 
-Start with [010 — Import and edit a versioned script](010-import-and-edit-script.md). Each item delivers a usable business capability; implementation details must be confirmed against the code created in earlier items.
+Start with [#1](https://github.com/loveoverflowcom/voxdan/issues/1) within [010 — Import and edit a versioned script](010-import-and-edit-script.md). Each item delivers a usable business capability; implementation details must be confirmed against the code created in earlier items.
 
 The repository starts with documentation and templates. The capabilities below are planned, not implemented. Numeric filename prefixes express the current recommended sequence, may be renumbered, and are not permanent task IDs.
 
@@ -12,10 +12,24 @@ The repository starts with documentation and templates. The capabilities below a
 | [040](040-theatre-web-listening.md) | A listener discovers and streams published episodes in Theatre Web. | Published manifests and media from 030 |
 | [050](050-cmp-native-listening.md) | A listener uses native Android/iOS playback, downloads, and synchronized progress. | Publication contracts from 030 and listening contracts from 040 |
 
+## GitHub execution
+
+[Kanban](https://github.com/users/loveoverflowcom/projects/6/views/1) · [Planning table](https://github.com/users/loveoverflowcom/projects/6/views/2) · [Detailed issue/dependency map](project-planning.md)
+
+The five capability specifications map to 17 bounded implementation issues. Use the Project for current execution Status and issue checklists/dependencies for evidence; this queue retains recommended sequence and scope. The first implementation task is [#1](https://github.com/loveoverflowcom/voxdan/issues/1).
+
+| Capability | Execution issues | Milestone |
+| --- | --- | --- |
+| [010](010-import-and-edit-script.md) | [#1](https://github.com/loveoverflowcom/voxdan/issues/1), [#2](https://github.com/loveoverflowcom/voxdan/issues/2), [#3](https://github.com/loveoverflowcom/voxdan/issues/3), [#4](https://github.com/loveoverflowcom/voxdan/issues/4) | [010 — Import and edit a versioned script](https://github.com/loveoverflowcom/voxdan/milestone/1) |
+| [020](020-cast-and-generate-dialogue.md) | [#5](https://github.com/loveoverflowcom/voxdan/issues/5), [#6](https://github.com/loveoverflowcom/voxdan/issues/6), [#7](https://github.com/loveoverflowcom/voxdan/issues/7), [#8](https://github.com/loveoverflowcom/voxdan/issues/8) | [020 — Cast and generate dialogue durably](https://github.com/loveoverflowcom/voxdan/milestone/2) |
+| [030](030-mix-review-and-publish.md) | [#9](https://github.com/loveoverflowcom/voxdan/issues/9), [#10](https://github.com/loveoverflowcom/voxdan/issues/10), [#11](https://github.com/loveoverflowcom/voxdan/issues/11) | [030 — Mix, review and publish](https://github.com/loveoverflowcom/voxdan/milestone/3) |
+| [040](040-theatre-web-listening.md) | [#12](https://github.com/loveoverflowcom/voxdan/issues/12), [#13](https://github.com/loveoverflowcom/voxdan/issues/13) | [040 — Theatre Web listening](https://github.com/loveoverflowcom/voxdan/milestone/4) |
+| [050](050-cmp-native-listening.md) | [#14](https://github.com/loveoverflowcom/voxdan/issues/14), [#15](https://github.com/loveoverflowcom/voxdan/issues/15), [#16](https://github.com/loveoverflowcom/voxdan/issues/16), [#17](https://github.com/loveoverflowcom/voxdan/issues/17) | [050 — CMP native listening](https://github.com/loveoverflowcom/voxdan/milestone/5) |
+
 ## How to use this queue
 
 - Read the project brief and architecture documents before starting an item; the brief is authoritative.
-- Create or link a GitHub issue when execution begins. Linked GitHub issues are the source of truth for assignment, current status, discussion, and acceptance; these files preserve scope, reasoning, and sequence. Do not maintain a competing status board here.
+- Use the linked implementation issues when execution begins; create additional issues only for newly bounded work. Linked GitHub issues are the source of truth for assignment, current status, discussion, and acceptance; these files preserve scope, reasoning, and sequence. Do not maintain a competing status board here.
 - Deliver one reviewable outcome at a time. Internal steps may span several PRs, but each PR must identify its review boundary and avoid implying that the whole item is complete.
 - Confirm domain and platform assumptions against the actual code, migrations, provider behavior, and runtime before choosing concrete modules, tables, or routes.
 - After a completed item, update this queue to make the next task obvious. Record necessary correctness work as a dependency; put optional expansion in [the backlog](backlog/deferred-expansion.md).

@@ -49,3 +49,7 @@ iOS tooling cannot be replaced by Linux-only validation. Background permissions,
 ## Follow-ups
 
 Defer mobile Studio, car/wearable integrations, and advanced download scheduling. Any interruption, offline corruption, or synchronization failure is a release-blocking correctness follow-up for this slice.
+
+## GitHub execution
+
+[#14](https://github.com/loveoverflowcom/voxdan/issues/14), [#15](https://github.com/loveoverflowcom/voxdan/issues/15), [#16](https://github.com/loveoverflowcom/voxdan/issues/16), [#17](https://github.com/loveoverflowcom/voxdan/issues/17). See the [issue/dependency map](project-planning.md) and [Kanban](https://github.com/users/loveoverflowcom/projects/6/views/1) for the recommended sequence and live execution state.

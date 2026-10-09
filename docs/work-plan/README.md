@@ -36,6 +36,13 @@ The five capability specifications map to 17 bounded implementation issues. Use 
 
 ## Shared completion evidence
 
+The [story artifact workspace](../production/story-workspace.md) supplies agent-operated intake,
+proper-name mapping, radio-score authoring, production handoffs and audit through Drive/local
+folders. Its skills and local initializer support editorial preparation for 010–030; they do
+not complete the planned importer, provider workers, Studio UI or publication gates. Continue
+with the existing recommended implementation order above. Artifact sync failures are tracked
+by deduplicated recovery issues (or local drafts while GitHub is unavailable).
+
 For every item, provide the user journey demonstrated, relevant contract/migration changes, targeted failure-case checks, and known limitations. A successful mock response alone does not demonstrate a real provider, storage, or native playback integration. Label mocked and live evidence separately.
 
 Keep Rust/Axum and PostgreSQL as a modular backend with Leptos Web and CMP native mobile clients. Avoid introducing independent services without a demonstrated operational need. Apply the shared Material 3 Expressive design requirements to each UI slice.

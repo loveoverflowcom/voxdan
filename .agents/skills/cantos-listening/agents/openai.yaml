@@ -1,0 +1,4 @@
+interface:
+  display_name: "Cantos Listening"
+  short_description: "Listener API, playback semantics, progress sync and download contracts"
+  default_prompt: "Use $cantos-listening to keep listener contracts versioned and identity-stable, model playback as a pure reducer agreed through shared vectors, sync progress without blind overwrite, and report the contract version, vectors and platforms that ran them."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Cantos Production Pipeline"
+  short_description: "Durable production runs, providers, cost, fingerprints, mixing and QC"
+  default_prompt: "Use $cantos-production-pipeline to read frozen inputs only, claim work with fenced leases, reconcile ambiguous provider attempts before any repeat, keep fingerprints and budgets exact, prove crash and retry behavior at named fault points, and report the evidence level, fake versus live provider and residual risk."

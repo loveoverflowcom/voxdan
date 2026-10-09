@@ -1,0 +1,4 @@
+interface:
+  display_name: "Cantos Script IR"
+  short_description: "Script IR types, revisions, digests, import and adaptation boundaries"
+  default_prompt: "Use $cantos-script-ir to model the script hierarchy as validated typed values with stable IDs, keep revisions immutable, version and digest canonical bytes, treat import and AI output as untrusted, and report fixtures, compatibility effect and the residual risk."

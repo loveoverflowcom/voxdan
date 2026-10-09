@@ -1,0 +1,157 @@
+{
+  "schema_version": 1,
+  "id": "studio-script-editor-v1",
+  "status": "awaiting-implementation",
+  "surface": "studio-web",
+  "renderer": ["browser"],
+  "purpose": "Correct an unresolved speaker, see validation, save a draft and reopen it in the Studio script editor without losing position, input or revision identity, at narrow width, 200 % zoom and keyboard-only.",
+  "contract_refs": [
+    "docs/design/ui-system.md#studio-text-first-production",
+    "docs/design/ui-system.md#components-and-interaction-states",
+    "docs/design/ui-system.md#accessibility-and-motion-acceptance",
+    "docs/work-plan/010-import-and-edit-script.md#acceptance-criteria",
+    "docs/product/business-rules.md#content-and-revisions"
+  ],
+  "preconditions": [
+    "A local or QA Studio instance the user authorized; never production",
+    "A creator-role test account created through the official sign-in flow; no credential in this file",
+    "The fixture episode is loaded as a draft with one unresolved speaker and one valid line",
+    "The script editor exists; until then this scenario is only a contract and a live run reports blocked"
+  ],
+  "fixtures": {
+    "episode": {
+      "source": "contracts/examples/episode-draft.json",
+      "rights_status": "pending_review",
+      "title": "Một lời hẹn",
+      "work": "Ánh đèn cuối sân khấu",
+      "scene": "Sau buổi diễn"
+    },
+    "lines": [
+      "Ánh đèn cuối cùng còn sáng trên sân khấu.",
+      "Ngày mai, mình có diễn tiếp không?",
+      "Có chứ. Tôi sẽ chờ cậu ở đây."
+    ],
+    "characters": ["Người dẫn chuyện", "An", "Minh"],
+    "stress_text": [
+      "Nguyễn Thị Thanh Hương-Trần Quốc Việt (một tên nhân vật rất dài để kiểm tra việc xuống dòng)",
+      "ẤẦẨẪẬ ỆỄỂỀẾ ỮỪỬỨỰ: nhiều dấu chồng trên chữ hoa"
+    ],
+    "unresolved_speaker": "Bà cụ"
+  },
+  "viewports": [
+    { "name": "wide", "width": 1440, "height": 900, "unit": "css-px" },
+    { "name": "compact-window", "width": 800, "height": 700, "unit": "css-px" },
+    { "name": "reflow", "width": 320, "height": 720, "unit": "css-px", "note": "narrow reflow width from the UI system targets" }
+  ],
+  "themes": ["light", "dark"],
+  "locales": ["vi-VN", "en"],
+  "font_scales": [
+    { "name": "default", "value": "100%", "mechanism": "browser zoom" },
+    { "name": "zoom-200", "value": "200%", "mechanism": "browser zoom" }
+  ],
+  "input_modalities": ["pointer", "keyboard"],
+  "matrix": [
+    "wide/light/vi-VN/default/pointer",
+    "wide/dark/vi-VN/default/keyboard",
+    "reflow/light/vi-VN/zoom-200/keyboard",
+    "reflow/dark/en/default/pointer"
+  ],
+  "steps": [
+    {
+      "id": "open-script",
+      "action": "Open the fixture episode's script in the editor and read the first scene.",
+      "expected": "The reading area dominates; speaker, dialogue and sound cue are distinguishable without a separate card around each line; the explicit current draft or saved revision is visible.",
+      "ref": "docs/design/ui-system.md#studio-text-first-production",
+      "evidence": "screenshot-inspected",
+      "capture": ["script-initial"]
+    },
+    {
+      "id": "see-unresolved-speaker",
+      "action": "Find the line whose speaker is unresolved and read how the problem is shown.",
+      "expected": "The unresolved speaker is visible with text and an icon, not color alone, and states that it cannot pass into production until resolved.",
+      "ref": "docs/work-plan/010-import-and-edit-script.md#acceptance-criteria",
+      "evidence": "screenshot-inspected",
+      "capture": ["speaker-unresolved"]
+    },
+    {
+      "id": "correct-speaker",
+      "action": "Open the speaker control for that line and choose the character An using only the keyboard.",
+      "expected": "Focus is visible and unobscured; the choice is announced by name; the unresolved marker disappears; the caret and scroll position in the script are preserved.",
+      "ref": "docs/design/ui-system.md#components-and-interaction-states",
+      "evidence": "accessibility-checked",
+      "capture": ["speaker-corrected"]
+    },
+    {
+      "id": "show-validation",
+      "action": "Clear the text of one line and move focus away.",
+      "expected": "A validation message names the line and the problem, is associated with the field and appears outside volatile editor text; other lines keep their input.",
+      "ref": "docs/design/ui-system.md#components-and-interaction-states",
+      "evidence": "screenshot-inspected",
+      "capture": ["validation-error"]
+    },
+    {
+      "id": "restore-and-save",
+      "action": "Restore the line text and save the draft.",
+      "expected": "The saved state is shown only after the save is confirmed, names the resulting revision and does not alter the prior saved revision.",
+      "ref": "docs/product/business-rules.md#content-and-revisions",
+      "evidence": "interaction-tested",
+      "capture": ["saved-state"]
+    },
+    {
+      "id": "reload-and-reopen",
+      "action": "Reload the page and reopen the same script.",
+      "expected": "The saved text, speaker correction and revision identity are present; nothing was shown as saved that is absent after reload.",
+      "ref": "docs/work-plan/010-import-and-edit-script.md#acceptance-criteria",
+      "evidence": "interaction-tested",
+      "capture": ["after-reload"]
+    },
+    {
+      "id": "reflow-and-zoom",
+      "action": "Repeat the first screen at the narrow reflow width, then at 200 % zoom.",
+      "expected": "No horizontal page scroll; no clipped Vietnamese diacritics; no hidden actionable label; navigation offers a reliable return path.",
+      "ref": "docs/design/ui-system.md#accessibility-and-motion-acceptance",
+      "evidence": "cross-viewport-inspected",
+      "capture": ["reflow-320", "zoom-200"]
+    },
+    {
+      "id": "keyboard-tour",
+      "action": "Tab through the editor controls from the top and open and close one dialog or menu.",
+      "expected": "Order follows reading order; focus is visible, never covered by sticky bars; a dialog contains focus and restores it to the initiating control; no single-key global shortcut fires while typing.",
+      "ref": "docs/design/ui-system.md#components-and-interaction-states",
+      "evidence": "accessibility-checked",
+      "capture": ["focus-tour"]
+    },
+    {
+      "id": "gated-controls-without-activating",
+      "action": "Look at the Generate and Publish controls without activating them.",
+      "expected": "Each is visible with its enabled state or its disabled reason (rights pending review, unresolved speaker); the labels name their object.",
+      "ref": "docs/design/ui-system.md#studio-text-first-production",
+      "evidence": "screenshot-inspected",
+      "capture": ["gated-controls"]
+    }
+  ],
+  "states_to_capture": [
+    "script-initial",
+    "speaker-unresolved",
+    "speaker-corrected",
+    "validation-error",
+    "saved-state",
+    "after-reload",
+    "reflow-320",
+    "zoom-200",
+    "focus-tour",
+    "gated-controls"
+  ],
+  "forbidden_actions": [
+    "Activating Generate, voice preview or any control that calls a provider",
+    "Activating approve, Publish episode, republish or retract",
+    "Importing a manuscript that is not the fixture",
+    "Deleting any episode, revision or work the run did not create"
+  ],
+  "budget": { "minutes": 15, "ui_actions": 40, "images": 12 },
+  "cleanup": "Retain the fixture and the saved draft revision for the recheck. Remove only what this run created; never delete earlier revisions.",
+  "open_questions": [
+    "Which saved-state wording and revision label does the editor use? Until decided, the step reports the observed wording without judging it.",
+    "Is the editor's unresolved-speaker control a select, a combobox or a dialog? The expectation covers behavior, not the widget."
+  ]
+}

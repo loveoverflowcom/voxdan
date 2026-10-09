@@ -1,0 +1,4 @@
+interface:
+  display_name: "Cantos Code Review"
+  short_description: "Assurance-first read-only review of claims and evidence"
+  default_prompt: "Use $cantos-code-review to review this change read-only: pin the scope, ledger every changed durable claim with its owner, audit type bypasses, boundaries, immutable revisions, durability and publication gates, check that the evidence really runs on production code, and report findings, the assurance ledger and residual risk."

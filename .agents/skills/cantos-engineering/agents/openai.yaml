@@ -1,0 +1,4 @@
+interface:
+  display_name: "Cantos Engineering"
+  short_description: "Invariants, decoupling, immutability, functional core, honest evidence"
+  default_prompt: "Use $cantos-engineering to name the invariant, keep the rule in a pure core behind a decoupled boundary, keep settled facts immutable, choose the cheapest adequate test, and report the evidence level with its residual risk."

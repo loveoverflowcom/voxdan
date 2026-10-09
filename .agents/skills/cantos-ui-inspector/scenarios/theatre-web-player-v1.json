@@ -1,0 +1,149 @@
+{
+  "schema_version": 1,
+  "id": "theatre-web-player-v1",
+  "status": "awaiting-implementation",
+  "surface": "theatre-web",
+  "renderer": ["browser"],
+  "purpose": "Discover a published episode, play it from the mini and full player, bookmark, reload and resume, and meet interruption and expired access, while confirming that listening never starts production work.",
+  "contract_refs": [
+    "docs/design/ui-system.md#theatre-compact-listening",
+    "docs/design/ui-system.md#accessibility-and-motion-acceptance",
+    "docs/work-plan/040-theatre-web-listening.md#acceptance-criteria",
+    "docs/product/business-rules.md#listening-and-mobile"
+  ],
+  "preconditions": [
+    "A local or QA Theatre instance the user authorized; never production",
+    "At least one published episode with real delivered audio, one library entry with a missing cover and one with a very long title, plus a state with no listening history",
+    "A listener test account created through the official flow; no credential in this file",
+    "A way to observe, read-only, that no production job is created (a job count or the job list); if unavailable that step is inconclusive"
+  ],
+  "fixtures": {
+    "work": "Ánh đèn cuối sân khấu",
+    "episode": "Một lời hẹn",
+    "long_title": "Một lời hẹn dưới ánh đèn cuối cùng của sân khấu nhỏ ở cuối con phố cũ, mùa mưa năm ấy",
+    "missing_cover": true,
+    "empty_library_account": true,
+    "audio": "generated tone or permitted sample of known duration; never committed"
+  },
+  "viewports": [
+    { "name": "wide", "width": 1440, "height": 900, "unit": "css-px" },
+    { "name": "phone", "width": 360, "height": 800, "unit": "css-px", "density": "2.75x" },
+    { "name": "reflow", "width": 320, "height": 720, "unit": "css-px" }
+  ],
+  "themes": ["light", "dark"],
+  "locales": ["vi-VN", "en"],
+  "font_scales": [
+    { "name": "default", "value": "100%", "mechanism": "browser zoom" },
+    { "name": "zoom-200", "value": "200%", "mechanism": "browser zoom" }
+  ],
+  "input_modalities": ["pointer", "keyboard", "touch"],
+  "matrix": [
+    "wide/light/vi-VN/default/pointer",
+    "phone/dark/vi-VN/default/touch",
+    "reflow/light/vi-VN/zoom-200/keyboard",
+    "wide/dark/en/default/keyboard"
+  ],
+  "steps": [
+    {
+      "id": "discovery",
+      "action": "Open discovery and the library and read the first screen.",
+      "expected": "Cover art, title and availability lead; no oversized banner or gradient; a missing cover and a very long title are both usable; an account with no history has a usable empty state.",
+      "ref": "docs/design/ui-system.md#theatre-compact-listening",
+      "evidence": "screenshot-inspected",
+      "capture": ["discovery", "missing-cover", "long-title", "empty-library"]
+    },
+    {
+      "id": "open-episode-and-play",
+      "action": "Open the episode and start playback from its row.",
+      "expected": "The control reports Loading and then Playing only once audio runs; elapsed and total time are text; the accessible name carries action, item and state.",
+      "ref": "docs/work-plan/040-theatre-web-listening.md#acceptance-criteria",
+      "evidence": "interaction-tested",
+      "capture": ["player-loading", "player-playing"]
+    },
+    {
+      "id": "no-production-work",
+      "action": "Play, pause and seek repeatedly, then compare the production job count before and after.",
+      "expected": "No adaptation, synthesis or mixing job is created by listening.",
+      "ref": "docs/product/business-rules.md#listening-and-mobile",
+      "evidence": "integration-tested",
+      "capture": ["job-count-before-after"]
+    },
+    {
+      "id": "seek-and-speed",
+      "action": "Seek with the keyboard and with the pointer, then change playback speed.",
+      "expected": "Seeking works without relying on a waveform; position and speed are announced as text; an invalid seek leaves a recoverable state.",
+      "ref": "docs/design/ui-system.md#theatre-compact-listening",
+      "evidence": "accessibility-checked",
+      "capture": ["seek", "speed"]
+    },
+    {
+      "id": "mini-player-navigation",
+      "action": "Navigate to another Theatre view and back while the episode plays.",
+      "expected": "The mini-player persists with play or pause, title, position and an entry to the full player; playback continues; it never covers the focused control.",
+      "ref": "docs/design/ui-system.md#theatre-compact-listening",
+      "evidence": "interaction-tested",
+      "capture": ["mini-player", "full-player"]
+    },
+    {
+      "id": "bookmark-and-resume",
+      "action": "Add a bookmark, reload the page and reopen the episode.",
+      "expected": "The bookmark survives reload and names its position; the resume prompt states the actual position; no unrelated dialogue is entered silently.",
+      "ref": "docs/work-plan/040-theatre-web-listening.md#acceptance-criteria",
+      "evidence": "interaction-tested",
+      "capture": ["bookmark-added", "resume-prompt"]
+    },
+    {
+      "id": "interruption-and-expired-access",
+      "action": "Interrupt the network, then let media access expire or use the environment's documented way to simulate it.",
+      "expected": "A recoverable state distinct from a final failure appears; the position is preserved; recovery offers a clear action; no spinner without end.",
+      "ref": "docs/work-plan/040-theatre-web-listening.md#acceptance-criteria",
+      "evidence": "interaction-tested",
+      "capture": ["offline", "access-expired"]
+    },
+    {
+      "id": "unpublished-not-playable",
+      "action": "Look for a draft or unapproved episode in discovery.",
+      "expected": "No draft or unapproved episode is offered as playable public content.",
+      "ref": "docs/work-plan/040-theatre-web-listening.md#acceptance-criteria",
+      "evidence": "interaction-tested",
+      "capture": ["no-draft-visible"]
+    },
+    {
+      "id": "reflow-keyboard",
+      "action": "Repeat discovery and the full player at 320 CSS px and 200 % zoom with the keyboard only.",
+      "expected": "Primary controls remain reachable and labelled; no horizontal page scroll; no clipped Vietnamese diacritics; focus never hides under the mini-player.",
+      "ref": "docs/design/ui-system.md#accessibility-and-motion-acceptance",
+      "evidence": "cross-viewport-inspected",
+      "capture": ["reflow-320", "zoom-200", "focus-tour"]
+    }
+  ],
+  "states_to_capture": [
+    "discovery",
+    "missing-cover",
+    "long-title",
+    "empty-library",
+    "player-loading",
+    "player-playing",
+    "mini-player",
+    "full-player",
+    "bookmark-added",
+    "resume-prompt",
+    "offline",
+    "access-expired",
+    "reflow-320",
+    "zoom-200",
+    "focus-tour"
+  ],
+  "forbidden_actions": [
+    "Starting any production, regeneration or publication action",
+    "Downloading media outside the browser's normal playback",
+    "Deleting bookmarks, progress or accounts the run did not create",
+    "Changing account, sharing or permission settings"
+  ],
+  "budget": { "minutes": 15, "ui_actions": 40, "images": 12 },
+  "cleanup": "Remove only the bookmark and progress this run created; retain the fixtures and the account for the recheck.",
+  "open_questions": [
+    "What is the documented way to simulate an expired media URL in the QA environment? Until recorded, that step is inconclusive.",
+    "What is the product rule for completion versus restart? The scenario observes and reports the behavior; it does not judge it."
+  ]
+}

@@ -1,0 +1,181 @@
+---
+name: cantos-leptos-web
+description: >-
+  Web renderer execution for Cantos Studio and Cantos Theatre Web in Leptos: separate surface and
+  permission contexts, component → resource/action → port → HTTP adapter layering, explicit async
+  states with stale-response guards, DOM and HTMLMediaElement playback interop, the text-first
+  script editor (stable dialogue keys, Vietnamese IME composition, revision conflicts),
+  token-driven CSS/SCSS carrying Material 3 Expressive intent, and scoped browser evidence. Use
+  when building, changing or testing Leptos components, routes, signals, resources, actions,
+  web-sys code, the Studio script editor, casting or production-progress screens, the Theatre Web
+  player or mini-player, or Web stylesheets.
+---
+
+# Cantos Leptos Web
+
+This skill is the **Web renderer's behavioral contract and router** for Cantos Studio and Cantos
+Theatre Web. It composes two owners and redefines neither:
+
+- [`cantos-engineering`](../cantos-engineering/SKILL.md) — the required order, the
+  [evidence vocabulary](../cantos-engineering/SKILL.md#6-never-collapse-evidence-into-the-word-verified)
+  and the [completion report](../cantos-engineering/SKILL.md#9-completion-report).
+- [`cantos-ui-design`](../cantos-ui-design/SKILL.md) — the
+  [shared UI loop](../cantos-ui-design/SKILL.md#shared-ui-loop), Material 3 Expressive intent,
+  tokens, localization, accessibility, motion, component states, visual review and the
+  [UI completion report](../cantos-ui-design/SKILL.md#completion-report).
+
+Load this file, then only the references the change touches, one at a time.
+
+## When to use
+
+Use for Leptos components, routes, signals, resources, actions, `view!` markup, `web-sys` or
+`wasm-bindgen` code, CSS/SCSS, Web component or browser tests, and for these Web surfaces:
+Studio import and adaptation review, the script editor, casting, production progress and partial
+regeneration ([#8](../../../docs/work-plan/project-planning.md#ordered-implementation-issues)), QC
+and publication controls, and Theatre discovery, episode pages, the mini-player and full player.
+
+| The task is instead about… | Use |
+|---|---|
+| visual intent, token values, type scale, motion intent, copy, accessibility targets | [`cantos-ui-design`](../cantos-ui-design/SKILL.md) (this skill applies its output) |
+| Script IR shape, IDs, revisions, validator errors, import/adaptation output | [`cantos-script-ir`](../cantos-script-ir/SKILL.md) |
+| what regenerates, job states, costs, budgets, QC records | [`cantos-production-pipeline`](../cantos-production-pipeline/SKILL.md) |
+| rights, approvals, publish gates, manifests, signed delivery | [`cantos-publication`](../cantos-publication/SKILL.md) |
+| playback state meaning, progress and bookmark sync, listener API | [`cantos-listening`](../cantos-listening/SKILL.md) |
+| Android/iOS Theatre in Compose Multiplatform | [`cantos-cmp-mobile`](../cantos-cmp-mobile/SKILL.md) |
+| a report-only UI/UX audit | [`cantos-ui-inspector`](../cantos-ui-inspector/SKILL.md) |
+| reviewing an existing diff | [`cantos-code-review`](../cantos-code-review/SKILL.md) |
+
+A Web screen that changes domain state composes the owner for that state: this skill decides how
+the browser renders and drives it, the owner decides what is true.
+
+## Ground rules
+
+- **Repository reality.** No Leptos package, toolchain config, dev server or Web test harness
+  exists. Discover manifests, scripts and CI before citing a command. Commands, crates, paths and
+  types in this skill and its references are **proposed** or **candidates** until the repository
+  implements them; a library becomes a dependency only through a recorded decision
+  ([`templates/adr.md`](../../../templates/adr.md)) and a pinned, verified version.
+- **Product requirements are owned by docs.** [`apps/web/README.md`](../../../apps/web/README.md),
+  the [UI system](../../../docs/design/ui-system.md), and the work items
+  [010 (editor)](../../../docs/work-plan/010-import-and-edit-script.md),
+  [020 (casting, progress)](../../../docs/work-plan/020-cast-and-generate-dialogue.md),
+  [030 (QC, publication)](../../../docs/work-plan/030-mix-review-and-publish.md) and
+  [040 (Theatre Web)](../../../docs/work-plan/040-theatre-web-listening.md). Link them; never
+  restate a competing copy of a rule.
+- **Distinguish proposed, implemented and verified** in code comments, docs and reports.
+
+## Web non-negotiables
+
+| Rule | Failure it prevents | Oracle | Depth |
+|---|---|---|---|
+| Studio and Theatre are separate surfaces and permission contexts with their own route roots, contexts and ports | a listener route reaches a private draft, preview or Studio port | Theatre routes mount with only `TheatreContext`; backend authorization tests | [`web-architecture.md`](references/web-architecture.md#1-two-surfaces-two-permission-contexts) |
+| Components render and dispatch; ports come from context; adapters own URLs, DTOs and error classification | transport and provider details leak into markup and cannot be tested without a network | component test runs on an in-memory port | [`web-architecture.md`](references/web-architecture.md#2-layering-inside-a-surface) |
+| Durable rules live in pure core crates; the browser renders server gates (approval, publish, budget, regeneration scope) and never decides them | drifted copies of gates; UI-only permission checks | review; same validator crate on both sides | [`web-architecture.md`](references/web-architecture.md#3-which-decisions-the-browser-may-make) |
+| No credential, private object access or signed URL in client code, build-time config, routes, storage or logs | secrets shipped in the bundle; private media made shareable | review; proposed bundle grep | [`web-architecture.md`](references/web-architecture.md#5-secrets-and-private-media-never-reach-browser-code) |
+| Every remote state is explicit, failure is never empty, a stale response never wins, every mutation states its duplicate-submit behavior | "No episodes" on a 500; an old response replacing a new one; double-billed generation | out-of-order component test; per-state tests | [`leptos-async.md`](references/leptos-async.md) |
+| A failed or conflicting request never costs the creator text; conflicts are never last write wins | lost dialogue after a timeout; silent overwrite of a competing edit | failing and conflicting fake ports | [`script-editor.md`](references/script-editor.md#4-draft-save-and-version-states) |
+| Playback state comes from media events through the shared reducer; one shell-owned `<audio>` survives navigation | a "playing" button over blocked audio; playback stopping on route change | real-browser playback and navigation test | [`dom-and-media-interop.md`](references/dom-and-media-interop.md#6-theatre-playback-through-htmlmediaelement) |
+| The editor keys rows by dialogue ID and never commits, reformats or rewrites text during IME composition | Telex/VNI input corrupted; edits attached to the wrong line | insert-above focus test; composition regression; recorded IME walkthrough | [`script-editor.md`](references/script-editor.md) |
+| Styles consume token roles; classes are semantic; state styles hang off semantic attributes; themes, reduced motion and focus are always handled | literal colors and radii; utility walls; invisible focus | manual review now, proposed style gate later; inspected captures | [`styling.md`](references/styling.md) |
+| Evidence is named exactly: `DOM-tested` ≠ `interaction-tested` ≠ `integration-tested`; `compiled` and `screenshot-captured` are not inspection | overclaiming from fakes, synthetic events or unopened images | report review against the vocabulary | [`web-testing.md`](references/web-testing.md) |
+
+How the foundation lands in the browser:
+
+- **Decoupling.** Web depends on pure core crates and generated contract types, never on backend
+  application or infrastructure crates, provider SDKs or Narrative Forge types.
+- **Immutability.** Reducers take state by value and return new state; a save snapshot is an
+  immutable value; accepted revisions, approvals and release manifests arrive read-only and are
+  never patched client-side.
+- **Functional core.** Editor, playback, retry, poll-schedule and merge decisions are pure and
+  tested with plain `#[test]`; Leptos and `web-sys` are the shell.
+- **Types as proofs.** `Retryability::UnkeyedWrite` cannot be retried; `SpeakerRef::Unresolved` is
+  a state, not an empty string; exhaustive matches map every validator and port error.
+- **Clean syntax.** Readable `view!` with semantic classes, small named helpers, no `unwrap()` on
+  browser globals, formatter-clean Rust and stylesheets.
+- **Material 3 Expressive.** Applied through tokens at each surface's intensity: a quiet,
+  rectangular reading area in the editor; more expressive shape and motion in Theatre discovery and
+  the player ([`material3-expressive.md`](../cantos-ui-design/references/material3-expressive.md)).
+
+## The Web development loop
+
+Run the [shared UI loop](../cantos-ui-design/SKILL.md#shared-ui-loop); at each of its steps, apply
+these Web specifics:
+
+```text
+0  discover   apps/web manifests, toolchain config, scripts, CI. If none exist, the work item
+              establishes them through a reviewed decision; never hand-roll a server or runner
+1  scope      surface + permission context, route, ports, the owning doc's acceptance line,
+              the claim and its failure mode
+2  core       a durable decision? → its owner's pure crate with plain #[test] first
+3  boundary   port provided through context; HTTP adapter over generated contract types;
+              typed PortError
+4  async      resource/action states, request key, duplicate-submit policy, retry decision
+5  view       semantic HTML, NodeRef, cleanup, locale keys, token classes, attribute-driven state
+6  evidence   cheapest regression first: core → component with TestWorld → real-browser input
+7  look       documented app command → scenario → open captures → findings → fix → SAME scenario
+8  tidy       formatter and linter of every touched toolchain, in check mode
+9  report     shared UI report + the Web additions below; residual risk never empty
+```
+
+Step 8 candidates, to confirm against the real manifests: `cargo fmt --check`, Clippy for the
+`wasm32-unknown-unknown` target with warnings denied, a `view!` formatter such as `leptosfmt`, and
+the stylesheet formatter the package adopts. Skipping a step is a decision you state.
+
+| The change needs… | Put it in | Never in |
+|---|---|---|
+| a validation, merge, reconciliation, retry or schedule decision | the owner's pure core crate | a component, resource or effect |
+| a network call | a port and its HTTP adapter | a component |
+| state that must survive navigation (playback session, editor draft) | the surface shell or the route root | a route leaf or a pane |
+| a browser API | a `platform/` helper with a typed error | a component body |
+| a color, radius, spacing or motion value | a token role ([`tokens.md`](../cantos-ui-design/references/tokens.md)) | a component literal |
+| visible or accessible text | locale resources ([`localization.md`](../cantos-ui-design/references/localization.md)) | a `view!` literal |
+| an authorization or gate decision | the backend | anywhere in WASM |
+
+Before handing off, check states with [`component-states.md`](../cantos-ui-design/references/component-states.md),
+semantics and focus with [`accessibility.md`](../cantos-ui-design/references/accessibility.md),
+motion with [`motion.md`](../cantos-ui-design/references/motion.md), and captures with
+[`visual-review.md`](../cantos-ui-design/references/visual-review.md).
+
+## Web report additions
+
+Extend the [UI completion report](../cantos-ui-design/SKILL.md#completion-report), which already
+extends the [foundation report](../cantos-engineering/SKILL.md#9-completion-report), with:
+
+```text
+Surface / permission context:  Studio | Theatre; routes; ports and adapters touched
+Rendering mode / build:        CSR | SSR per ADR; exact build and serve command; debug | release
+Browsers / engines:            engine and version per result; headless | headed; flags used
+Backend for evidence:          fake ports | named local services | shared environment
+Async races covered:           stale response, duplicate submit, unmount, retry exhaustion
+Input methods:                 keyboard, pointer, touch emulation, IME (CDP-simulated | named OS IME)
+Media path:                    none | generated local file | real storage/CDN; range requests seen
+Style review:                  manual token, focus and motion review scope (no gate implemented)
+```
+
+A skill-only or docs-only edit needs no app run; say that no Web behavior was exercised.
+
+## References — load the relevant set, one at a time
+
+| The work is about… | Reference |
+|---|---|
+| surfaces, permission contexts, layering, ports in context, core crates in WASM, secrets, shell-owned mini-player, modules, SSR vs CSR | [`web-architecture.md`](references/web-architecture.md) |
+| resources, actions, explicit states, stale responses, duplicate submits, retries, optimistic UI, job progress | [`leptos-async.md`](references/leptos-async.md) |
+| `web-sys`, listeners and cleanup, focus and dialogs, shortcuts, storage, `HTMLMediaElement`, Media Session, autoplay, ranges, signed URLs | [`dom-and-media-interop.md`](references/dom-and-media-interop.md) |
+| the Studio editor: dialogue identity, IME composition, save/version/conflict, undo, reordering, speakers, validation, large scripts | [`script-editor.md`](references/script-editor.md) |
+| CSS custom properties, SCSS, themes, reduced motion, focus, container queries, Vietnamese text in layout, proposed style gate | [`styling.md`](references/styling.md) |
+| evidence layers, TestWorld, determinism, stale-response test, real-browser checks, visual loop, matrix, evidence storage | [`web-testing.md`](references/web-testing.md) |
+
+## Compose with
+
+Foundation: [`cantos-engineering`](../cantos-engineering/SKILL.md). Shared UI policy:
+[`cantos-ui-design`](../cantos-ui-design/SKILL.md). Domain owners:
+[`cantos-script-ir`](../cantos-script-ir/SKILL.md) for editor content and validation,
+[`cantos-production-pipeline`](../cantos-production-pipeline/SKILL.md) for casting, generation and
+progress, [`cantos-publication`](../cantos-publication/SKILL.md) for QC, approval and publish
+controls, and [`cantos-listening`](../cantos-listening/SKILL.md) for
+[playback semantics](../cantos-listening/references/playback-semantics.md) and
+[progress sync](../cantos-listening/references/progress-sync.md). Scenarios for the visual loop:
+[`cantos-ui-inspector`](../cantos-ui-inspector/references/scenarios.md). Native listening shares
+vocabulary and state meaning with [`cantos-cmp-mobile`](../cantos-cmp-mobile/SKILL.md), never
+runtime code. Task entrypoints [`cantos-work-item`](../cantos-work-item/SKILL.md) and
+[`cantos-code-review`](../cantos-code-review/SKILL.md) load this skill for Web changes.

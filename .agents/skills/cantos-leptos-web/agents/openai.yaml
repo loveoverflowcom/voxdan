@@ -1,0 +1,4 @@
+interface:
+  display_name: "Cantos Leptos Web"
+  short_description: "Studio and Theatre Web in Leptos: async state, DOM interop, script editor and styling"
+  default_prompt: "Use $cantos-leptos-web to keep domain decisions out of components, model async states with stale-response guards, render through semantic tokens and localized strings, and report browser, viewport, theme and Vietnamese text evidence with inspected captures and the residual risk."

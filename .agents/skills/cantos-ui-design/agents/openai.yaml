@@ -1,0 +1,4 @@
+interface:
+  display_name: "Cantos UI Design"
+  short_description: "Shared Material 3 Expressive policy, tokens, accessibility and evidence"
+  default_prompt: "Use $cantos-ui-design to set the surface's expressive intensity, keep domain decisions out of the UI, implement through shared semantic tokens and localized strings, check accessibility and motion, inspect the rendered states and report scoped UI evidence."

@@ -1,0 +1,146 @@
+{
+  "schema_version": 1,
+  "id": "cmp-theatre-playback-v1",
+  "status": "awaiting-implementation",
+  "surface": "cmp-theatre",
+  "renderer": ["android-device", "android-emulator", "ios-device", "ios-simulator", "desktop-host"],
+  "purpose": "Play a published episode natively on Android and iOS, then check background and lock-screen control, interruption and route change, sleep timer, cold-launch resume, large text and screen readers; a desktop host render only covers layout.",
+  "contract_refs": [
+    "docs/architecture/mobile.md#playback-behavior",
+    "docs/architecture/mobile.md#downloads-and-access-rights",
+    "docs/architecture/mobile.md#ui-and-accessibility",
+    "docs/architecture/mobile.md#future-acceptance-matrix",
+    "docs/work-plan/050-cmp-native-listening.md#acceptance-criteria"
+  ],
+  "preconditions": [
+    "A local or QA backend with a published episode and delivered audio the user authorized; never production",
+    "A listener test account created through the official flow; no credential in this file",
+    "A named Android device or emulator and a named iOS device or simulator; a platform that cannot be exercised is reported blocked, not skipped silently",
+    "TalkBack and VoiceOver walkthroughs need the real reader enabled on the named target"
+  ],
+  "fixtures": {
+    "work": "Ánh đèn cuối sân khấu",
+    "episode": "Một lời hẹn",
+    "long_title": "Một lời hẹn dưới ánh đèn cuối cùng của sân khấu nhỏ ở cuối con phố cũ, mùa mưa năm ấy",
+    "audio": "generated tone or permitted sample of known duration; never committed"
+  },
+  "viewports": [
+    { "name": "android-phone", "width": 360, "height": 800, "unit": "dp", "density": "2.75x" },
+    { "name": "iphone", "width": 390, "height": 844, "unit": "pt" },
+    { "name": "small-window", "width": 320, "height": 568, "unit": "dp" }
+  ],
+  "themes": ["light", "dark"],
+  "locales": ["vi-VN", "en"],
+  "font_scales": [
+    { "name": "default", "value": "1.0", "mechanism": "OS font size or Dynamic Type" },
+    { "name": "largest", "value": "largest OS setting", "mechanism": "OS font size or Dynamic Type" }
+  ],
+  "input_modalities": ["touch", "screen-reader"],
+  "matrix": [
+    "android-phone/light/vi-VN/default/touch",
+    "android-phone/dark/vi-VN/largest/screen-reader",
+    "iphone/light/vi-VN/default/touch",
+    "iphone/dark/vi-VN/largest/screen-reader",
+    "small-window/light/en/largest/touch"
+  ],
+  "steps": [
+    {
+      "id": "library-and-play",
+      "action": "Open the library, choose the published episode and start playback.",
+      "expected": "The UI reports the real player state: Loading until audio runs, then Playing; elapsed and total time are text; the title is not clipped.",
+      "ref": "docs/work-plan/050-cmp-native-listening.md#acceptance-criteria",
+      "evidence": "device-tested",
+      "capture": ["library", "player-loading", "player-playing"]
+    },
+    {
+      "id": "background-and-lock-screen",
+      "action": "Background the app, lock the device and use the OS media controls to pause, play and seek.",
+      "expected": "Playback continues; lock-screen and notification controls show title, artwork and position consistent with the active publication; the app state matches on return.",
+      "ref": "docs/architecture/mobile.md#playback-behavior",
+      "evidence": "device-tested",
+      "capture": ["lock-screen"]
+    },
+    {
+      "id": "interruption-and-route",
+      "action": "Cause an audio interruption (a call or competing audio) and remove headphones if hardware allows.",
+      "expected": "The player does not claim user playback during the interruption; user intent and position are preserved; playback does not resume unexpectedly after an explicit pause.",
+      "ref": "docs/architecture/mobile.md#future-acceptance-matrix",
+      "evidence": "device-tested",
+      "capture": ["interrupted"]
+    },
+    {
+      "id": "sleep-timer",
+      "action": "Set the sleep timer to a short value and let it expire.",
+      "expected": "Playback stops at expiry and does not resume afterwards; the timer state is understandable from the app and from the OS controls.",
+      "ref": "docs/architecture/mobile.md#playback-behavior",
+      "evidence": "device-tested",
+      "capture": ["sleep-timer-set", "sleep-timer-expired"]
+    },
+    {
+      "id": "cold-launch-resume",
+      "action": "Terminate the app from the OS and launch it again.",
+      "expected": "The restored session offers resume with the real position and does not auto-play after a cold launch.",
+      "ref": "docs/architecture/mobile.md#playback-behavior",
+      "evidence": "device-tested",
+      "capture": ["resume-offer"]
+    },
+    {
+      "id": "large-text",
+      "action": "Set the largest OS text size and review the library, mini-player and full player.",
+      "expected": "No clipped diacritics; no hidden actionable label; transport controls and their touch targets remain usable; safe areas are respected.",
+      "ref": "docs/architecture/mobile.md#ui-and-accessibility",
+      "evidence": "screenshot-inspected",
+      "capture": ["largest-text-library", "largest-text-player"]
+    },
+    {
+      "id": "screen-reader",
+      "action": "With TalkBack on Android and VoiceOver on iOS, operate play, pause, seek, speed and bookmark.",
+      "expected": "Controls announce action, item and state; playback is operable without the cover or a waveform; time and position are readable.",
+      "ref": "docs/design/ui-system.md#accessibility-and-motion-acceptance",
+      "evidence": "screen-reader-walked",
+      "capture": []
+    },
+    {
+      "id": "offline-download-state",
+      "action": "Open a downloaded episode with the network off, and review an interrupted or corrupt download if the environment can produce one.",
+      "expected": "A completed download plays offline; an interrupted, corrupt or insufficient-storage download is visible and recoverable; an incomplete file is never shown as ready.",
+      "ref": "docs/work-plan/050-cmp-native-listening.md#acceptance-criteria",
+      "evidence": "device-tested",
+      "capture": ["offline-play", "download-failed"]
+    }
+  ],
+  "states_to_capture": [
+    "library",
+    "player-loading",
+    "player-playing",
+    "lock-screen",
+    "interrupted",
+    "sleep-timer-set",
+    "sleep-timer-expired",
+    "resume-offer",
+    "largest-text-library",
+    "largest-text-player",
+    "offline-play",
+    "download-failed"
+  ],
+  "device_only_checks": [
+    "background playback and lock-screen controls",
+    "audio interruption and route change",
+    "sleep timer expiry in the background",
+    "cold-launch restore after OS termination",
+    "TalkBack and VoiceOver operation",
+    "offline playback of a completed download"
+  ],
+  "forbidden_actions": [
+    "Starting any production, regeneration or publication action",
+    "Changing account, subscription or permission settings",
+    "Deleting downloads, bookmarks or progress the run did not create",
+    "Installing system certificates or changing device security settings"
+  ],
+  "budget": { "minutes": 20, "ui_actions": 50, "images": 12 },
+  "cleanup": "Remove only the downloads, bookmarks and progress this run created; retain the account and the build for the recheck.",
+  "open_questions": [
+    "Which media and lifecycle libraries and which minimum OS versions are selected? Until the ADR exists, the renderer fields are recorded as observed.",
+    "What is the offline validity and revalidation policy for downloads? Steps that depend on it are inconclusive until it is chosen."
+  ]
+}

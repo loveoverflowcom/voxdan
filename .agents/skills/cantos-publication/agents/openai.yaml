@@ -1,0 +1,4 @@
+interface:
+  display_name: "Cantos Publication"
+  short_description: "Rights, approvals, the publication gate, staged release and delivery"
+  default_prompt: "Use $cantos-publication to fail closed on rights, bind approvals to exact revisions and checksums, decide publication in one pure gate that returns every blocker, publish bytes before the pointer, and report the gates, fault points and delivery path exercised with the residual risk."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Cantos CMP Mobile"
+  short_description: "Native Android/iOS Theatre playback, downloads and CMP UI evidence"
+  default_prompt: "Use $cantos-cmp-mobile to implement this Theatre mobile change with one process-wide media session behind native adapters, pure Kotlin reducers over immutable state, verified downloads and a durable progress outbox, Material 3 Expressive theming from shared tokens, and evidence named per platform and device."

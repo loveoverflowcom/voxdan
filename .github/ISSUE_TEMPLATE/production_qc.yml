@@ -1,0 +1,63 @@
+name: Production quality control
+description: Track a production failure or review a specific episode before publication.
+title: "[QC] "
+body:
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Review type
+      options:
+        - Pre-publication review
+        - Production failure
+        - Published asset correction
+    validations:
+      required: true
+  - type: textarea
+    id: identity
+    attributes:
+      label: Work, adaptation, episode, and versions
+      description: Identify the exact Script IR revision, render revision, and production job when available. Avoid private storage credentials.
+    validations:
+      required: true
+  - type: dropdown
+    id: stage
+    attributes:
+      label: Pipeline stage
+      options:
+        - Import and adaptation
+        - Segmentation and casting
+        - Dialogue TTS
+        - Mixing and normalization
+        - Quality control
+        - Storage and delivery
+        - Publication
+    validations:
+      required: true
+  - type: textarea
+    id: findings
+    attributes:
+      label: Findings and affected segments
+      description: Include scene/dialogue IDs, audio timestamps, pronunciation or casting problems, missing cues, clipping, delivery failures, and the expected correction.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: QC evidence
+      description: Link permitted previews, measurements against the approved audio profile, job logs, and checksums or asset identifiers.
+    validations:
+      required: true
+  - type: textarea
+    id: permissions
+    attributes:
+      label: Rights and approval status
+      description: Record manuscript, adaptation, voice, music, and sound-effect permission status and the responsible reviewer. Mark unresolved items explicitly.
+    validations:
+      required: true
+  - type: textarea
+    id: resolution
+    attributes:
+      label: Correction, cost, and publication plan
+      description: Identify partial regeneration scope, estimated extra cost, required approvals, rechecks, and whether a published revision must be replaced or withdrawn.
+    validations:
+      required: true

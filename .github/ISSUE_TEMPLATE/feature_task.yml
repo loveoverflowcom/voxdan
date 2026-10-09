@@ -1,0 +1,69 @@
+name: Feature or implementation task
+description: Define a small, reviewable change with a clear outcome.
+title: "[Task] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Start with the user or production outcome. Split work that cannot be reviewed and verified in one focused pull request.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Primary area
+      options:
+        - Studio
+        - Theatre Web
+        - CMP mobile
+        - Script IR and contracts
+        - Production pipeline
+        - Repository and developer workflow
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Problem and expected outcome
+      description: Who needs this change, what happens today, and what should happen afterward?
+      placeholder: "As a creator, I need ... so that ..."
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope and exclusions
+      placeholder: |
+        In scope:
+        - ...
+        Out of scope:
+        - ...
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Use observable outcomes, including failure and recovery behavior where relevant.
+      placeholder: |
+        - [ ] ...
+        - [ ] ...
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies and decisions
+      description: Link prerequisite issues, relevant decisions, contract changes, and unresolved questions.
+  - type: textarea
+    id: impact
+    attributes:
+      label: Production and compatibility impact
+      description: Describe affected script/audio versions, cache invalidation, costs, permissions, API compatibility, or migrations. Write N/A when irrelevant.
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification plan
+      description: State how the acceptance criteria will be checked and what evidence the PR should include.
+    validations:
+      required: true

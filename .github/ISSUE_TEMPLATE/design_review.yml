@@ -1,0 +1,55 @@
+name: Design proposal or review
+description: Propose or review a Studio, Theatre, or shared interface change.
+title: "[Design] "
+body:
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Surface
+      options:
+        - Studio Web
+        - Theatre Web
+        - CMP mobile
+        - Shared design system
+    validations:
+      required: true
+  - type: textarea
+    id: goal
+    attributes:
+      label: User task and design goal
+      description: Describe the task, current friction, and the result the interface should support.
+    validations:
+      required: true
+  - type: textarea
+    id: references
+    attributes:
+      label: References and evidence
+      description: Attach the approved reference image, current screenshots, a prototype, or relevant research. Explain what each reference informs.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed flow and states
+      description: Include the main path, loading, empty, error, disabled, and recovery states that apply.
+    validations:
+      required: true
+  - type: textarea
+    id: constraints
+    attributes:
+      label: Layout, accessibility, and interaction requirements
+      description: Cover compact responsive layouts, keyboard/focus, contrast, motion preferences, touch controls, and background playback when applicable.
+    validations:
+      required: true
+  - type: textarea
+    id: tokens
+    attributes:
+      label: Shared tokens and component impact
+      description: Identify shared Leptos/CMP colors, typography, shapes, spacing, icons, and components. Explain any platform-specific differences.
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Review criteria and validation evidence
+      description: Define the screenshots, viewport/device checks, or interaction checks needed before implementation is accepted.
+    validations:
+      required: true

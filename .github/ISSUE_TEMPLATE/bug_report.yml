@@ -1,0 +1,61 @@
+name: Bug report
+description: Report incorrect behavior with reproducible evidence.
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Remove secrets, private manuscripts, provider credentials, and personal data from logs and attachments.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected area
+      options:
+        - Studio
+        - Theatre Web
+        - CMP Android
+        - CMP iOS
+        - Script IR and contracts
+        - Production pipeline
+        - Repository and developer workflow
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected and actual behavior
+      placeholder: |
+        Expected:
+        Actual:
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Include a minimal, permitted input if the failure depends on a script or asset.
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment and versions
+      description: Include commit or release, browser/device/OS, relevant provider, and Script IR version when known.
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact and frequency
+      description: Is publishing blocked, listening interrupted, progress lost, or generation repeated? Identify affected versions and whether a workaround exists.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Attach sanitized logs, screenshots, audio timestamps, and job or asset identifiers when available.

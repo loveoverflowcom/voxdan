@@ -52,7 +52,7 @@ Native tests exclude the ignored real-PG cases, which were separately executed b
 | --- | --- | --- |
 | `cargo fmt --all -- --check` | PASS | `caller-checks/fmt-final.log` |
 | `cargo clippy --workspace --all-targets --locked -- -D warnings` | PASS | `caller-checks/native-clippy-final.log` |
-| `cargo test --workspace --locked` | PASS: 118 native tests | `caller-checks/native-tests-final.log` |
+| `cargo test --workspace --locked` | PASS: 119 native tests | `caller-checks/native-tests-final.log` |
 | `python3 scripts/reference_script_ir.py` | PASS | `caller-checks/reference.log` |
 | `TMPDIR=/private/tmp python3 scripts/mutate_script_ir.py` | PASS: 9 killed, 0 survived | `caller-checks/mutations.log`; bounded mutation set |
 | `python3 scripts/test_postgres.py --keep` | PASS: 12 revision + 9 import + 19 adaptation | `caller-checks/postgres-run.log`; new disposable cluster, never inherited DB URL |

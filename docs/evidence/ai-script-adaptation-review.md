@@ -68,7 +68,7 @@ invalid-output receipt guidance were reconciled with backend contracts.
 
 | Check | Result and evidence basis |
 | --- | --- |
-| Formatting, native Clippy/workspace tests | PASS; inspected final logs/results, 118 native tests |
+| Formatting, native Clippy/workspace tests | PASS; inspected final logs/results, 119 native tests |
 | Fresh PostgreSQL | PASS; inspected runner log, 12 revision + 9 import + 19 adaptation = 40 cases |
 | Actual terminal tool/authenticated HTTP | PASS; subprocess/socket integration in fresh PG runner |
 | Host/PG restart and exact receipts | PASS; inspected restart oracle |

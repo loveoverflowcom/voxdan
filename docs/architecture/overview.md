@@ -43,8 +43,9 @@ Publication is an atomic metadata transition to a complete immutable manifest af
 
 The root Cargo workspace contains `apps/server/`, `apps/web/` and `contracts/api/`. Server
 `script_ir`, `revisions` and the adaptation admission kernel are pure rules; `postgres` owns
-transactions and `http` maps the shared wire contract to Axum. The localhost adaptation adapter
-is a separate transport shell; proposals never move a revision head until explicit acceptance.
+transactions and `http` maps the shared wire contract to Axum. Adaptation tools export frozen context and admit caller-created proposals over the same HTTP
+service and a thin CLI. Generation belongs to the user-controlled AI host; the domain and
+store perform no inference. Proposals never move a revision head until explicit acceptance.
 The Studio WASM consumer imports only `cantos-api`, never server
 internals. This shared DTO crate has two concrete consumers. Migration and HTTP binaries live
 in the same server package. `apps/mobile/` remains a guide; Gradle belongs to the native

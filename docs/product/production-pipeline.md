@@ -1,8 +1,9 @@
 # Studio Production Pipeline
 
-> Status: target design. Bounded source import and local adaptation proposal/review have
-> [implementation evidence](../evidence/ai-script-adaptation.md); the live adaptation model gate
-> remains separate. Production workers, audio, storage/delivery and publication below remain
+> Status: target design. Bounded source import and caller-owned adaptation tools/review have
+> [implementation evidence](../evidence/ai-script-adaptation.md). Generation belongs to the
+> user-controlled Gemini/ChatGPT/Codex host; Cantos validates and persists submitted proposals.
+> Production workers, audio, storage/delivery and publication below remain
 > implementation requirements, not capabilities supplied by this repository.
 
 ## End-to-end flow

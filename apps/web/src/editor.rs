@@ -19,6 +19,7 @@ pub enum Status {
     EvidenceUnavailable,
     StaleRevision,
     OperationReused,
+    ProposalAlreadySubmitted,
     Unavailable,
     CorruptRevision,
 }
@@ -242,6 +243,7 @@ pub fn error_status(code: &ErrorCode) -> Status {
         ErrorCode::EvidenceUnavailable => Status::EvidenceUnavailable,
         ErrorCode::StaleRevision => Status::StaleRevision,
         ErrorCode::OperationReused => Status::OperationReused,
+        ErrorCode::ProposalAlreadySubmitted => Status::ProposalAlreadySubmitted,
         ErrorCode::Unavailable => Status::Unavailable,
         ErrorCode::CorruptRevision => Status::CorruptRevision,
     }

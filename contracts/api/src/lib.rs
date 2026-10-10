@@ -89,6 +89,7 @@ pub enum ErrorCode {
     EvidenceUnavailable,
     StaleRevision,
     OperationReused,
+    ProposalAlreadySubmitted,
     Unavailable,
     CorruptRevision,
 }

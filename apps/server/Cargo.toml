@@ -16,11 +16,10 @@ sha2 = "=0.10.9"
 unicode-normalization = "=0.1.24"
 tokio = { version = "=1.47.1", features = ["macros", "rt-multi-thread", "signal", "time", "net", "sync"] }
 tokio-postgres = "=0.7.15"
-tower-http = { version = "=0.6.11", features = ["fs"] }
+tower-http = { version = "=0.6.6", features = ["fs"] }
 uuid = { version = "=1.18.1", features = ["v4"] }
 quick-xml = "=0.38.4"
 zip = { version = "=4.6.1", default-features = false, features = ["deflate"] }
-reqwest = { version = "=0.12.28", default-features = false, features = ["json"] }
 
 [dev-dependencies]
 jsonschema = { version = "=0.33.0", default-features = false }

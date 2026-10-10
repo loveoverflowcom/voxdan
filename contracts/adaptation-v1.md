@@ -1,142 +1,134 @@
-# Private adaptation v1 contract
+# Private adaptation tools and v1 compatibility
 
-The local Cantos Studio adaptation slice consumes an immutable import receipt and an optional
-pinned revision. Shared raw DTOs live in [`api/src/adaptations.rs`](api/src/adaptations.rs).
-They do not establish rights, editorial approval, publication eligibility or production readiness.
-The [HTTP envelope schema](schema/adaptation/v1.schema.json) records admitted command/response
-shapes; runtime authorization and state consistency are enforced by the store.
-Script IR read/write remains `{0.1.0}`; existing c1/e1 digest schemes are unchanged.
+Cantos exports source-bound data and validates caller-created proposals. The user-controlled
+Gemini / ChatGPT / Codex host owns generation and chooses when to call these tools. Cantos
+performs no local inference or hosted inference API call. Script IR read/write remains
+`0.1.0`; source/revision c1/e1 digests are unchanged.
 
-## HTTP operations
+## Tool transport and identity
 
-All manuscript/proposal operations use the existing authenticated Studio session and same-origin
-mutation boundary. Run IDs, script IDs and operation IDs are canonical UUIDs; import source IDs
-retain the existing opaque source grammar. Provider readiness contains configuration only.
+[Four tool schemas](adaptation-tools-v1.json) describe the actual CLI surface in
+[`scripts/cantos_adaptation_tool.py`](../scripts/cantos_adaptation_tool.py). An authorized agent
+terminal tool invokes one command with a JSON object on stdin. Each command calls the existing
+Axum service; it does not implement another store or run shell commands from its inputs.
 
-| Method and path below `/api/v1` | Request | Response |
+| CLI command | Authenticated HTTP operation | Purpose |
 | --- | --- | --- |
-| `GET /adaptations/provider` | — | `AdaptationProviderResponse { provider: metadata or null }` |
-| `POST /adaptations` | `StartAdaptationRequest` | HTTP 202, `AdaptationRunResponse` |
-| `GET /adaptations/{run}` | — | `AdaptationRunResponse` |
-| `POST /adaptations/{run}/cancel` | `CancelAdaptationRequest { operation_id }` | `AdaptationRunResponse` |
-| `POST /adaptations/{run}/accept` | `AcceptAdaptationRequest` | Existing `RevisionResponse` |
+| `context` | `POST /api/v1/adaptations/contexts` | Freeze a source/revision context; return 201 |
+| `context-read` | `GET /api/v1/adaptations/{run}/context` | Reopen the same frozen caller context |
+| `submit` | `POST /api/v1/adaptations/{run}/proposals` | Validate caller output and persist a valid/invalid receipt; return 200 |
+| `review` | `GET /api/v1/adaptations/{run}/review` | Read caller context or historical run for editorial comparison |
 
-Start names `operation_id`, `source_id`, `script_id`, `expected_revision`, `expected_provider` and
-`rights_authorization`. The last field records explicit permission to process this source on the
-displayed local runtime; it is a creator assertion, never legal clearance. `expected_provider`
-must exactly match the current provider/model/endpoint/prompt/contract/configuration before a
-new run is recorded. Configuration drift cannot silently select another destination. An exact
-operation replay returns the originally recorded run; it never repeats generation.
+Run `python3 scripts/cantos_adaptation_tool.py schemas` to discover the four names/arguments.
+All other commands require an explicit `--base-url http://127.0.0.1:<port>` (numeric loopback,
+explicit port) and an existing operator-issued development session in the process-local
+`CANTOS_SESSION_TOKEN` environment variable. The CLI has no token argument or credential
+provisioning step. The HTTP cookie is `cantos_session`; mutation Origin must match the host.
+No token, source or exception body is echoed by local transport errors. Environment proxies and
+redirects are disabled; the session cannot follow a redirect to another destination.
 
-`expected_revision: 0` targets a new script; a nonzero revision must be the currently authorized
-owned script head. The immutable run pins source ID/checksum/extractor version, the complete
-base revision and its c1/e1 digests, request, generation evidence, pending rights evidence and
-provider metadata and a local model fingerprint. Provider configuration includes integer temperature milliunits, seed, context
-tokens, predicted token cap and timeout seconds. It contains no credential.
+This is a usable local terminal/HTTP tool seam, not a configured MCP server, public ChatGPT
+connector, Gemini account or production authentication deployment. A host needs an authorized
+terminal tool on this checkout, or its own authorized adapter to these HTTP contracts. Registering
+a cloud account/connector or provisioning its access is outside this change. No ChatGPT/Gemini
+web account was configured or connected by these tests.
 
-Run states are `queued`, `running`, `succeeded`, `invalid_output`, `failed`, `ambiguous`,
-`cancelled` and `accepted`. A queued run can be safely claimed once. The running attempt is
-recorded before dispatch; expiry or lost post-dispatch transport becomes ambiguous. A replay or
-restart never silently repeats an ambiguous call. Cancellation fences acceptance; it does not
-claim the external computation stopped. Actual reported token usage remains available when
-parsed generated output is rejected. Missing usage/cost is `null`, never invented as zero.
-The optional monetary record admits only provider-reported integer minor units in USD (2 decimal
-places) or VND (0). The Ollama adapter reports no monetary amount, so its cost remains `null`.
+The tool result is `{ok, http_status, result}`. Exit 0 means an HTTP success (an invalid
+proposal still has a successful, inspectable receipt); exit 1 means a parsed HTTP failure;
+exit 2 means local rejection or transport/response uncertainty. A write timeout, malformed,
+oversized or truncated reply reports `write_outcome_unknown_retry_exact_operation`: reconcile
+using the same operation ID and exact arguments. The CLI invents no operation ID, changes no
+base, performs no automatic retry and exposes no acceptance tool.
 
-Acceptance names `operation_id`, `expected_revision`, edited complete `script_json` and
-`reviewed_findings: true`. It validates Script IR and its fixed source/attempt/rights bindings,
-then uses the existing revision authorization, concurrency and idempotency path in the same
-transaction as the acceptance receipt. A stale head is a conflict. Source and prior accepted
-revisions are never overwritten. Editorial acceptance is distinct from production/publication
-approval; unresolved attribution and other findings remain in the immutable run history.
+Example input for `context` (original synthetic IDs; use actual owned import receipt values):
 
-## Narrow provider output
+```json
+{
+  "operation_id": "00000000-0000-4000-8000-000000000010",
+  "source_id": "src_synthetic",
+  "source_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "extractor_version": "cantos-import-1",
+  "script_id": "00000000-0000-4000-8000-000000000011",
+  "expected_revision": 0,
+  "rights_authorization": true
+}
+```
 
-The actual model output is **not Script IR**. Its independent
-[JSON Schema](schema/adaptation/cantos-adaptation-1.schema.json) and original synthetic
-[Vietnamese fixture](fixtures/adaptation/proposal-vi.json) define `cantos-adaptation-1`:
+Invoke `python3 scripts/cantos_adaptation_tool.py --base-url http://127.0.0.1:8080 context`
+with that JSON on stdin. `submit` instead takes
+`{"run_id":"<context UUID>","submission":{...}}`; `context-read` and `review` take
+`{"run_id":"<context UUID>"}`. Retain operation IDs and receipts privately outside Git.
+A supplied session authorizes only the current actor's backend permissions; model/source
+content cannot grant tool privileges.
 
-- `title`; proposed `characters` with names and personality text;
-- ordered `scenes`, each with spoken `lines`, typed `cues` and optional `pacing_note`;
-- each line has required nullable `speaker`, spoken `text`, nonempty `source_blocks`, supported
-  emotion/intensity delivery and an optional `prosody_note`;
-- each cue has kind `ambience`, `music` or `sfx`, a description, same-scene zero-based
-  `line_index`, edge `start` or `end`, and source block citations;
-- explicit `omitted_blocks` with reasons and free-text `review_notes`.
+## Frozen context and declared provenance
 
-Unknown fields, model IDs, rights, provenance, assets, approval/status fields and Markdown fences
-are rejected. Nullable speaker is required; missing attribution uses an explicitly unresolved
-placeholder. Optional notes can be absent but cannot be JSON `null`. This provider contract
-additionally requires unsigned literal integer tokens for block/anchor indices and intensity;
-`300.0` or `3e2` are refused even though JSON Schema treats them as mathematical integers.
-The existing Script IR reader retains its independent numeric compatibility behavior.
+`AdaptationContextRequest` pins source ID, exact SHA-256, extractor version, target script and
+expected revision, plus an explicit export/adaptation rights assertion. Missing source permission
+claims or changed source/version/base fail before creating context. Replaying an exact context
+operation returns its original context; changing the request with the same operation ID fails.
 
-Cantos mints random identities independently of text and position, preserves existing work,
-adaptation, episode and matched character identity, attaches trusted import/generated provenance,
-then runs the existing complete Script IR structural and semantic validator. The reserved model
-speaker label `Người dẫn chuyện` resolves by narrator **role**, including a renamed existing
-narrator. A suggested character cannot remove that narrator or convert it into an ordinary role.
+The c1 context stores the complete import receipt, ordered extraction/warnings, optional exact
+base export/digests, server-created generation/rights IDs, prompt/contract versions and prepared
+system/user text. Its separately labelled typed SHA-256 covers these frozen inputs. Output schema
+is fixed by contract version. The context response includes that schema, digest and pinned input.
+Publication eligibility remains unknown; export/adaptation assertions are not legal clearance.
 
-Every cited block must exist in the pinned extraction. Omission claims cannot conflict with
-represented blocks. Coverage records show cited dialogue IDs, omissions and uncovered blocks;
-they are model claims requiring source comparison, rather than proof of semantic coverage.
-Source warnings, unknown/new speaker labels, changed text, possible narration confusion,
-markup-like spoken text and unsupported performance controls remain explicit review findings.
-Pacing/prosody notes do not become invented Script IR controls. No full editor, name-map
-renaming system or cross-document identity reconciliation is claimed here.
+`SubmitAdaptationProposalRequest` supplies a distinct `operation_id`, exact `context_digest`,
+untrusted `proposal_json` and `generation` declarations: required `host_tool` and pinned
+`prompt_version`; optional provider/model/configuration JSON, token usage and cost.
+These are **caller-declared and unverified**, including any usage or monetary values. Absent
+values remain unknown, never zero. A supplied cost must use `basis: "caller_declared"`, with
+USD integer cents or VND integer dong. Model identity, authorship, actual billing and quality are
+not attested by Cantos. Tool names, source strings and proposal text are inert data.
 
-## Local transport and resource admission
+Each submission has an immutable receipt, output SHA-256, actor/time, generation declarations
+and valid/invalid result. Invalid domain output leaves the context `awaiting_proposal`; an
+explicit correction uses a new operation ID. An exact retry returns the original receipt even
+after acceptance. The first valid submission stores the proposal atomically and changes the run
+to `succeeded`; a distinct later submission conflicts instead of replacing it. Invalid HTTP
+shape, oversized body, bad binding or invalid metadata fails before recording a submission.
 
-The real adapter uses Ollama `POST /api/chat` with a schema `format`, `stream: false`, an explicitly
-configured model, bounded options and `keep_alive: 0`. Only numeric loopback HTTP URLs with an
-explicit port are admitted. DNS destinations, URL credentials, other paths, queries, fragments,
-proxies, redirects and automatic retries are refused. No model pull, credential configuration,
-host tool access or hosted-provider fallback is implemented.
+## Admission, bounds and editorial acceptance
 
-Loopback transport alone does not establish local inference: Ollama can forward cloud models.
-The real adapter connects through source-free, bounded `GET /api/status` and
-`POST /api/show { model, verbose: false }` probes. It requires `cloud.disabled: true`, rejects
-remote-model/remote-host metadata including aliases, and requires local GGUF metadata with an
-absolute `FROM` path naming a SHA-256 weight blob. A tagged `ollama-s1:sha256` fingerprint covers
-the safe model metadata and weight identity, including effective template/defaults.
-The fingerprint normalizes rendered parameter groups by key because Ollama renders its Go
-options map in arbitrary key order. Repeated values within a key retain their order. All other
-Modelfile directives and quoted multiline content retain their order and exact text; both
-Ollama-generated single and triple double-quote wrappers are recognized. Ambiguous multiline
-parameter rendering is rejected. Changed defaults, template/system/message text, adapters or
-weight identities invalidate the fingerprint.
+The model's narrow `cantos-adaptation-1` output is **not authoritative Script IR**. Its
+[closed schema](schema/adaptation/cantos-adaptation-1.schema.json) separates scenes, narrator/
+speakers, emotion/intensity, prosody/pacing notes, ambience/music/SFX cues, citations, omissions
+and review notes. Unknown fields, IDs, evidence, assets, approvals and Markdown fences are
+rejected. Nullable speaker is required; unsigned indices/intensity need literal integer tokens.
+Cantos mints trusted IDs/evidence, preserves existing work/adaptation/episode identity, and calls
+the actual Script IR structural/semantic validator.
 
-The verified provider freezes that fingerprint into displayed/authorized metadata. Before
-each source-bearing call, it repeats the probes and refuses changed weights/configuration.
-An unverified configuration-only provider cannot dispatch. Unknown/older runtimes without
-this attestation are blocked; Cantos changes no persistent runtime configuration.
-Prerequisites are an approved, managed, cloud-disabled local runtime and stable model
-configuration; this handshake does not cryptographically attest a malicious localhost process.
+Unknown speakers, uncovered/omitted blocks, source warnings and unsupported performance controls
+remain findings. Citation coverage is a caller claim requiring complete source comparison; it
+does not prove faithful meaning or correct attribution. Pacing/prosody notes remain proposals.
 
-Source blocks and instruction-like model/source text are inert JSON/text data. They are never
-executed, interpreted as host instructions or rendered as HTML. The prompt is versioned
-`cantos-radio-adapt-1`. At most 256 blocks and 24 KiB of source text enter request preparation;
-the actual request must also satisfy a conservative context check: system/prompt UTF-8 bytes +
-256 framing reserve + predicted output tokens must fit configured context tokens. This deliberately
-assumes at most one token per byte and rejects longer chapters instead of silently truncating.
-This is application admission, not proof of the runtime's rendered-template/tokenizer budget.
-Ollama's truncation/shift defaults are not established by the HTTP double; the approved model's
-actual behavior must be checked during live acceptance. Reviewed chunking/tokenizer integration
-and explicit runtime truncation policy are future work.
+The application caps source context at 24 KiB/256 blocks, prepared text at 96 KiB, output at
+256 KiB, scenes at 64, suggested characters at 128, total nodes at 1000, aggregate citations at
+1024 and findings at 2000. Caller configuration is a JSON object bounded to 16 KiB, depth 8 and
+256 nodes including keys. Context HTTP bodies are capped at 64 KiB; submission bodies at 1 MiB.
+The CLI bounds stdin/encoded requests to 1 MiB and responses to 8 MiB, with a 10-second timeout.
+These are data-pipeline limits, not claims about an external model's tokenizer or context fit.
 
-Request bodies are capped at 96 KiB, model output at 256 KiB, and the escaped Ollama envelope at
-6 × 256 KiB + 4096 bytes while streaming. Output admits at most 64 scenes, 128 suggested
-characters, 1000 total nodes, 1024 aggregate citations and 2000 findings. Text fields have
-independent UTF-8 byte bounds in addition to the schema's Unicode length bounds. The provider
-enforces context 1024–16384, prediction 128–8192 and timeout 1–180 seconds; the store limits
-dispatch concurrency separately.
+Studio reads `/review`, displays preserved source/proposal and declared provenance, permits
+bounded JSON correction, and requires explicit review/accept. Separate
+`POST /adaptations/{run}/accept` accepts `operation_id`, `expected_revision`, complete edited
+`script_json` and `reviewed_findings: true`. It uses the existing authorized revision-save
+transaction and receipt. Stale head, changed trusted bindings, cancellation or invalid Script IR
+cannot overwrite source/history. Acceptance grants no production or publication approval.
+The tool surface does not expose this editorial mutation.
 
-## Evidence boundary
+## Historical compatibility
 
-[`apps/server/tests/adaptation.rs`](../apps/server/tests/adaptation.rs) supplies deterministic
-admission, independent schema and evidence-binding cases. The
-[transport suite](../apps/server/tests/adaptation_provider.rs) operates synthetic loopback HTTP
-stubs for structured requests, redirects, context bounds, actual count preservation and ambiguous
-timeout. These are fixture and transport proofs, **not live-model acceptance**. Source fixtures
-are original synthetic Vietnamese text. A live local-model run still requires an approved,
-available Ollama runtime/model and separately recorded source/semantic/editor acceptance.
+Migration 0005 extends the existing run/proposal/acceptance authority with an immutable
+`input_version` and append-only submission receipts. c1 contexts never dispatch inference or
+create provider attempts. Historical a1 inputs keep their original decoder, field order and
+fingerprint; optional `local_model_digest`/legacy config keys stay solely for stored-record
+compatibility. Historical `GET /adaptations/{run}`, cancellation and acceptance receipts remain
+readable. The retired start/provider compatibility endpoints return unavailable/null and cannot
+generate. Expired historical dispatched attempts may reconcile to ambiguity without redispatch.
+
+[Shared DTOs](api/src/adaptations.rs) and the [HTTP schema](schema/adaptation/v1.schema.json)
+define both caller and historical wire shapes. Actual CLI/socket/PostgreSQL and Studio evidence
+belongs in the [execution record](../docs/evidence/ai-script-adaptation.md). Synthetic content and
+model generation quality are distinct; no live model acceptance is implied by these contracts.

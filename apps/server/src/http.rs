@@ -329,6 +329,12 @@ fn error_response(error: StoreError) -> Response {
             None,
             vec![],
         ),
+        StoreError::ProposalAlreadySubmitted => (
+            StatusCode::CONFLICT,
+            ErrorCode::ProposalAlreadySubmitted,
+            None,
+            vec![],
+        ),
         StoreError::Unavailable => (
             StatusCode::SERVICE_UNAVAILABLE,
             ErrorCode::Unavailable,

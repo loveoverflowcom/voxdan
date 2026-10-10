@@ -1,5 +1,5 @@
 //! Leptos adaptation shell: every mutation is an explicit, immutable intent.
-use super::{AdaptationIntent, AdaptationReview, Mutation};
+use super::{response_proposal, response_status, AdaptationIntent, AdaptationReview};
 use crate::{
     api::{StudioContext, StudioHttp},
     import::ExtractionPreview,
@@ -7,8 +7,9 @@ use crate::{
     view::operation_id,
 };
 use cantos_api::{
-    AdaptationCoverageDisposition, AdaptationFindingCode, AdaptationProviderMetadata,
-    AdaptationProviderResponse, AdaptationRunResponse, AdaptationStatus, ErrorCode, ImportOutcome,
+    AdaptationContextResponse, AdaptationCoverageDisposition, AdaptationFindingCode,
+    AdaptationProposal, AdaptationProviderMetadata, AdaptationReviewResponse,
+    AdaptationRunResponse, AdaptationStatus, AdaptationSubmissionReceipt, ImportOutcome,
     ImportResponse,
 };
 use leptos::{prelude::*, task::spawn_local};
@@ -16,52 +17,14 @@ use std::sync::Arc;
 
 fn dispatch(state: RwSignal<AdaptationReview>, api: StudioHttp, intent: AdaptationIntent) {
     spawn_local(async move {
-        if let Mutation::Accept {
-            run_id, request, ..
-        } = &intent.mutation
-        {
-            let result = api.accept_adaptation(run_id, request).await;
-            let _ = state.try_update(|review| {
-                if review.pending.as_ref() == Some(&intent) {
-                    *review = match result {
-                        Ok(revision) => review.accepted_result(&intent, revision),
-                        Err(error) => review.failed(&error),
-                    };
-                }
-            });
-            return;
-        }
-        let result = match &intent.mutation {
-            Mutation::Start(request) => api.start_adaptation(request).await,
-            Mutation::Cancel { run_id, request } => api.cancel_adaptation(run_id, request).await,
-            Mutation::Accept { .. } => return,
-        };
+        let result = api.accept_adaptation(&intent.run_id, &intent.request).await;
         let _ = state.try_update(|review| {
             if review.pending.as_ref() == Some(&intent) {
                 *review = match result {
-                    Ok(response) => review.mutated(&intent, response),
+                    Ok(revision) => review.accepted_result(&intent, revision),
                     Err(error) => review.failed(&error),
                 };
             }
-        });
-    });
-}
-
-fn read_source(state: RwSignal<AdaptationReview>, api: StudioHttp) {
-    let Some(reading) = state.get_untracked().start_source_read() else {
-        return;
-    };
-    let id = reading.source_id.clone();
-    let actor = reading.actor.clone();
-    let ticket = reading.ticket;
-    state.set(reading);
-    spawn_local(async move {
-        let result = api.read_import(&id).await;
-        let _ = state.try_update(|review| {
-            *review = match result {
-                Ok(source) => review.source_loaded(ticket, &actor, source),
-                Err(error) => review.read_failed(ticket, &actor, &error),
-            };
         });
     });
 }
@@ -88,99 +51,26 @@ fn read_run(state: RwSignal<AdaptationReview>, api: StudioHttp) {
 #[component]
 pub fn ScriptAdaptation(actor: Signal<String>, english: RwSignal<bool>) -> impl IntoView {
     let state = RwSignal::new(AdaptationReview::default());
-    let provider = RwSignal::new(None::<Result<AdaptationProviderResponse, ErrorCode>>);
-    let provider_busy = RwSignal::new(false);
-    let provider_ticket = RwSignal::new(0u64);
     let composing = RwSignal::new(false);
     let api = expect_context::<StudioContext>().api;
     let copy = move || messages::adaptation_copy(english.get());
     let signed_actor = Memo::new(move |_| actor.get());
     Effect::new(move |_| {
         state.update(|review| *review = review.signed_in_as(signed_actor.get()));
-        provider.set(None);
-        provider_busy.set(false);
-        provider_ticket.update(|ticket| *ticket = ticket.saturating_add(1));
     });
     // Immutable source/run facts do not remount their reading panes when the JSON changes.
     let source = Memo::new(move |_| state.with(|review| review.source.clone()));
-    let run = Memo::new(move |_| state.with(|review| review.run.clone()));
+    let stored = Memo::new(move |_| state.with(|review| review.stored.clone()));
+    let input_revision = Memo::new(move |_| state.with(|review| review.input_revision.clone()));
     let accepted = Memo::new(move |_| state.with(|review| review.accepted.clone()));
     let blocked = move || state.with(AdaptationReview::blocked);
-    let inputs_blocked = move || blocked() || run.get().is_some();
-    let start_blocked = move || {
-        provider.with(|value| !matches!(value, Some(Ok(config)) if config.provider.is_some()))
-            || state.with(|review| !review.can_start())
-    };
     let accept_blocked = move || state.with(|review| !review.can_accept());
 
     view! {
         <section class="script-adaptation" aria-labelledby="adaptation-title">
             <h2 id="adaptation-title">{move || copy().title}</h2>
             <p id="adaptation-help" class="help">{move || copy().help}</p>
-            <div class="adaptation-provider">
-                <button type="button" aria-disabled=move || provider_busy.get() || actor.get().is_empty() aria-describedby="adaptation-provider-status" on:click=move |_| {
-                    if provider_busy.get_untracked() || actor.get_untracked().is_empty() { return; }
-                    let submitted_actor = actor.get_untracked();
-                    provider_ticket.update(|ticket| *ticket = ticket.saturating_add(1));
-                    let ticket = provider_ticket.get_untracked();
-                    provider_busy.set(true);
-                    spawn_local(async move {
-                        let result = api.adaptation_provider().await.map_err(|error| error.code);
-                        if provider_ticket.try_get_untracked() == Some(ticket) && actor.try_get_untracked().as_deref() == Some(submitted_actor.as_str()) {
-                            let observed = result.as_ref().ok().and_then(|response| response.provider.clone());
-                            let _ = state.try_update(|review| *review = review.provider_observed(observed));
-                            let _ = provider.try_set(Some(result));
-                            let _ = provider_busy.try_set(false);
-                        }
-                    });
-                }>{move || copy().provider_check}</button>
-                <p id="adaptation-provider-status" class="help" role="status" aria-live="polite">{move || {
-                    if provider_busy.get() { copy().provider_loading } else { provider.with(|value| match value {
-                        None => copy().provider_unknown,
-                        Some(Ok(response)) if response.provider.is_some() => copy().provider_configured,
-                        Some(Ok(_)) => copy().provider_absent,
-                        Some(Err(_)) => copy().provider_failed,
-                    }) }
-                }}</p>
-                {move || provider.get().and_then(Result::ok).and_then(|response| response.provider).map(|metadata| view! { <ProviderDetails metadata=metadata english=english /> })}
-            </div>
-            <form on:submit=move |event| {
-                event.prevent_default();
-                if start_blocked() { return; }
-                match operation_id() {
-                    Ok(operation) => if let Some((sending, intent)) = state.get_untracked().start_run(operation) {
-                        state.set(sending); dispatch(state, api, intent);
-                    },
-                    Err(error) => state.update(|review| *review = review.failed(&error)),
-                }
-            }>
-                <label for="adaptation-source-id">{move || copy().source_id}</label>
-                <div class="toolbar">
-                    <input id="adaptation-source-id" maxlength="36" disabled=inputs_blocked autocomplete="off" spellcheck="false"
-                        prop:value=move || state.with(|review| review.source_id.clone())
-                        on:input=move |event| state.update(|review| *review = review.edit_inputs(|review| review.source_id = event_target_value(&event))) />
-                    <button type="button" aria-disabled=move || blocked() || actor.get().is_empty() aria-describedby="adaptation-reason" on:click=move |_| read_source(state, api)>{move || copy().source_open}</button>
-                </div>
-                <div class="adaptation-target">
-                    <div><label for="adaptation-script-id">{move || copy().script_id}</label>
-                        <input id="adaptation-script-id" maxlength="36" disabled=inputs_blocked autocomplete="off" spellcheck="false" aria-describedby="adaptation-base-help"
-                            prop:value=move || state.with(|review| review.script_id.clone())
-                            on:input=move |event| state.update(|review| *review = review.edit_inputs(|review| review.script_id = event_target_value(&event))) /></div>
-                    <div><label for="adaptation-base">{move || copy().base}</label>
-                        <input id="adaptation-base" type="number" min="0" step="1" disabled=inputs_blocked aria-describedby="adaptation-base-help"
-                            prop:value=move || state.with(|review| review.expected_revision.clone())
-                            on:input=move |event| state.update(|review| *review = review.edit_inputs(|review| review.expected_revision = event_target_value(&event))) /></div>
-                </div>
-                <p id="adaptation-base-help" class="help">{move || copy().base_help}</p>
-                <label class="adaptation-confirm" for="adaptation-rights">
-                    <input id="adaptation-rights" type="checkbox" disabled=move || inputs_blocked() || state.with(|review| review.provider.is_none())
-                        prop:checked=move || state.with(|review| review.rights_authorization)
-                        on:change=move |event| state.update(|review| *review = review.edit_inputs(|review| review.rights_authorization = event_target_checked(&event))) />
-                    <span>{move || copy().rights}</span>
-                </label>
-                <div class="toolbar"><button class="primary" type="submit" aria-disabled=start_blocked aria-describedby="adaptation-reason">{move || copy().start}</button></div>
-            </form>
-            <p id="adaptation-reason" class="help">{move || state.with(|review| if review.pending.is_some() { copy().pending } else if start_blocked() && review.run.is_none() { copy().required } else { "" })}</p>
+            <p id="adaptation-reason" class="help">{move || state.with(|review| if review.pending.is_some() { copy().pending } else { "" })}</p>
             <Show when=move || state.with(|review| review.pending.is_some())>
                 <p class="identity">{move || copy().operation}<output>{move || state.with(|review| review.pending.as_ref().map(|intent| intent.operation_id().to_owned()).unwrap_or_default())}</output></p>
                 <button type="button" aria-describedby="adaptation-reason" aria-disabled=move || state.with(|review| !review.can_retry()) on:click=move |_| {
@@ -198,11 +88,6 @@ pub fn ScriptAdaptation(actor: Signal<String>, english: RwSignal<bool>) -> impl 
             </form>
             <div class="toolbar">
                 <button type="button" aria-disabled=move || state.with(|review| !review.can_read()) on:click=move |_| read_run(state, api)>{move || copy().refresh}</button>
-                <button type="button" aria-disabled=move || state.with(|review| !review.can_cancel()) aria-describedby="adaptation-new-help" on:click=move |_| {
-                    if let Ok(operation) = operation_id() {
-                        if let Some((sending, intent)) = state.get_untracked().start_cancel(operation) { state.set(sending); dispatch(state, api, intent); }
-                    }
-                }>{move || copy().cancel}</button>
                 <button type="button" aria-disabled=blocked aria-describedby="adaptation-new-help" on:click=move |_| state.update(|review| *review = review.new_run())>{move || copy().new_run}</button>
             </div>
             <p id="adaptation-new-help" class="help">{move || copy().new_help}</p>
@@ -210,7 +95,7 @@ pub fn ScriptAdaptation(actor: Signal<String>, english: RwSignal<bool>) -> impl 
             <Show when=move || state.with(|review| !review.issues.is_empty())>
                 <ul class="import-warnings">{move || state.with(|review| review.issues.clone()).into_iter().map(|issue| view! { <li><code>{issue.path}</code>" · "<code>{issue.rule}</code></li> }).collect_view()}</ul>
             </Show>
-            {move || run.get().map(|run| view! { <RunDetails run=run english=english /> })}
+            {move || stored.get().map(|response| view! { <ReviewDetails response=response english=english /> })}
             <div class="adaptation-comparison">
                 <section aria-labelledby="adaptation-source-title">
                     <h3 id="adaptation-source-title">{move || copy().original}</h3>
@@ -220,10 +105,10 @@ pub fn ScriptAdaptation(actor: Signal<String>, english: RwSignal<bool>) -> impl 
                 <section aria-labelledby="adaptation-proposal-title">
                     <h3 id="adaptation-proposal-title">{move || copy().proposal}</h3>
                     <p id="adaptation-proposal-help" class="help">{move || copy().proposal_help}</p>
-                    <Show when=move || run.get().is_some_and(|run| run.proposal.is_some())>
+                    <Show when=move || stored.get().is_some_and(|response| response_proposal(&response).is_some())>
                         <label for="adaptation-proposal-json">{move || copy().edit}</label>
                         <textarea id="adaptation-proposal-json" lang="vi-VN" spellcheck="false" aria-describedby="adaptation-proposal-help adaptation-accept-reason"
-                            readonly=move || run.get().is_none_or(|run| !matches!(run.status, AdaptationStatus::Succeeded | AdaptationStatus::Accepted)) || state.with(|review| review.draft_actor != review.actor)
+                            readonly=move || stored.get().is_none_or(|response| !matches!(response_status(&response), AdaptationStatus::Succeeded | AdaptationStatus::Accepted)) || state.with(|review| review.draft_actor != review.actor)
                             prop:value=move || state.with(|review| if review.draft_actor == review.actor { review.draft.clone() } else { String::new() })
                             on:compositionstart=move |_| { composing.set(true); state.update(|review| *review = review.begin_composition()); }
                             on:compositionend=move |event| { composing.set(false); state.update(|review| *review = review.edit_draft(event_target_value(&event))); }
@@ -245,6 +130,12 @@ pub fn ScriptAdaptation(actor: Signal<String>, english: RwSignal<bool>) -> impl 
                     <p id="adaptation-accept-help" class="help">{move || copy().accept_help}</p>
                 </section>
             </div>
+            {move || input_revision.get().map(|revision| view! {
+                <details><summary>{move || messages::adaptation_input_revision(english.get())}</summary>
+                    <p class="identity">{format!("{} / {} · {}", revision.script_id, revision.revision, revision.export_digest)}</p>
+                    <pre tabindex="0" lang="vi-VN">{revision.script_json.clone()}</pre>
+                </details>
+            })}
             {move || accepted.get().map(|revision| {
                 let revision = StoredValue::new(revision);
                 view! {
@@ -281,9 +172,9 @@ fn ProviderDetails(metadata: AdaptationProviderMetadata, english: RwSignal<bool>
         <dl class="source-identity">
             <dt>{move || copy().provider}</dt><dd>{metadata.with_value(|metadata| metadata.provider.clone())}</dd>
             <dt>{move || copy().model}</dt><dd>{metadata.with_value(|metadata| metadata.model.clone())}</dd>
-            <dt>{move || messages::adaptation_local_model_label(english.get())}</dt><dd>
+            <dt>{move || messages::adaptation_model_evidence_label(english.get())}</dt><dd>
                 {metadata.with_value(|metadata| metadata.local_model_digest.clone()).map(|digest| view! { <code>{digest}</code> })}
-                <p class="help">{move || metadata.with_value(|metadata| messages::adaptation_local_model_evidence(metadata.local_model_digest.is_some(), english.get()))}</p>
+                <p class="help">{move || metadata.with_value(|metadata| messages::adaptation_model_evidence(metadata.local_model_digest.is_some(), english.get()))}</p>
             </dd>
             <dt>{move || copy().endpoint}</dt><dd>{metadata.with_value(|metadata| metadata.endpoint.clone())}</dd>
             <dt>{move || copy().prompt}</dt><dd>{metadata.with_value(|metadata| format!("{} / {}", metadata.prompt_version, metadata.contract_version))}</dd>
@@ -293,7 +184,85 @@ fn ProviderDetails(metadata: AdaptationProviderMetadata, english: RwSignal<bool>
 }
 
 #[component]
-fn RunDetails(run: Arc<AdaptationRunResponse>, english: RwSignal<bool>) -> impl IntoView {
+fn ReviewDetails(
+    response: Arc<AdaptationReviewResponse>,
+    english: RwSignal<bool>,
+) -> impl IntoView {
+    match response.as_ref() {
+        AdaptationReviewResponse::Caller { context } => view! { <CallerContextDetails context=Arc::new(context.as_ref().clone()) english=english /> }.into_any(),
+        AdaptationReviewResponse::Legacy { run, .. } => view! {
+            <p class="help">{move || messages::host_copy(english.get()).legacy}</p>
+            <LegacyRunDetails run=Arc::new(run.as_ref().clone()) english=english />
+        }.into_any(),
+    }
+}
+
+#[component]
+fn CallerContextDetails(
+    context: Arc<AdaptationContextResponse>,
+    english: RwSignal<bool>,
+) -> impl IntoView {
+    let context = StoredValue::new(context);
+    let copy = move || messages::adaptation_copy(english.get());
+    let host_copy = move || messages::host_copy(english.get());
+    view! {
+        <section aria-labelledby="adaptation-provenance-title">
+            <h3 id="adaptation-provenance-title">{move || copy().provenance}</h3>
+            <p class="status" role="status" aria-live="polite">{move || context.with_value(|context| messages::adaptation_run_status(context.status, english.get()))}</p>
+            <dl class="source-identity">
+                <dt>{move || copy().run_id}</dt><dd>{context.with_value(|context| context.id.clone())}</dd>
+                <dt>{move || copy().operation}</dt><dd>{context.with_value(|context| context.request.operation_id.clone())}</dd>
+                <dt>{move || host_copy().context_digest}</dt><dd><code>{context.with_value(|context| context.context_digest.clone())}</code></dd>
+                <dt>{move || host_copy().context_version}</dt><dd>{context.with_value(|context| context.context_version.clone())}</dd>
+                <dt>{move || copy().source_id}</dt><dd>{context.with_value(|context| context.request.source_id.clone())}</dd>
+                <dt>{move || copy().checksum}</dt><dd><code>{context.with_value(|context| context.request.source_sha256.clone())}</code></dd>
+                <dt>{move || copy().extraction}</dt><dd>{context.with_value(|context| context.request.extractor_version.clone())}</dd>
+                <dt>{move || copy().script_id}</dt><dd>{context.with_value(|context| context.request.script_id.clone())}</dd>
+                <dt>{move || copy().base}</dt><dd>{context.with_value(|context| context.request.expected_revision)}</dd>
+                <dt>{move || copy().prompt}</dt><dd>{context.with_value(|context| format!("{} / {}", context.prompt_version, context.contract_version))}</dd>
+                <dt>{move || copy().records}</dt><dd>{context.with_value(|context| format!("{} / {}", context.generation_record_id, context.rights_record_id))}</dd>
+                <dt>{move || host_copy().rights_claim}</dt><dd>{move || context.with_value(|context| if context.request.rights_authorization { host_copy().authorized } else { host_copy().absent })}</dd>
+            </dl>
+            {context.with_value(|context| context.latest_submission.clone()).map(|receipt| view! { <CallerReceiptDetails receipt=receipt english=english /> })}
+            {context.with_value(|context| context.proposal.clone()).map(|proposal| view! { <ProposalFindings proposal=proposal english=english /> })}
+        </section>
+    }
+}
+
+#[component]
+fn CallerReceiptDetails(
+    receipt: AdaptationSubmissionReceipt,
+    english: RwSignal<bool>,
+) -> impl IntoView {
+    let receipt = StoredValue::new(receipt);
+    let copy = move || messages::adaptation_copy(english.get());
+    let host_copy = move || messages::host_copy(english.get());
+    view! {
+        <h4>{move || host_copy().submission}</h4>
+        <p class="help">{move || host_copy().caller_warning}</p>
+        <p>{move || receipt.with_value(|receipt| messages::adaptation_submission_status(receipt.status, english.get()))}</p>
+        <dl class="source-identity">
+            <dt>{move || host_copy().host_tool}</dt><dd lang="vi-VN">{receipt.with_value(|receipt| receipt.generation.host_tool.clone())}</dd>
+            <dt>{move || copy().provider}</dt><dd>{move || receipt.with_value(|receipt| receipt.generation.provider.clone().unwrap_or_else(|| copy().unknown.into()))}</dd>
+            <dt>{move || copy().model}</dt><dd>{move || receipt.with_value(|receipt| receipt.generation.model.clone().unwrap_or_else(|| copy().unknown.into()))}</dd>
+            <dt>{move || copy().config}</dt><dd>{move || receipt.with_value(|receipt| receipt.generation.configuration_json.clone().unwrap_or_else(|| copy().unknown.into()))}</dd>
+            <dt>{move || host_copy().recorded_prompt}</dt><dd>{receipt.with_value(|receipt| receipt.generation.prompt_version.clone())}</dd>
+            <dt>{move || copy().usage}</dt><dd>{move || receipt.with_value(|receipt| messages::adaptation_usage(receipt.generation.usage.as_ref(), english.get()))}</dd>
+            <dt>{move || copy().cost}</dt><dd>{move || receipt.with_value(|receipt| messages::adaptation_cost(receipt.generation.cost.as_ref(), english.get()))}</dd>
+            <dt>{move || host_copy().submitted_by}</dt><dd>{receipt.with_value(|receipt| receipt.submitted_by.clone())}</dd>
+            <dt>{move || host_copy().submitted_at}</dt><dd>{receipt.with_value(|receipt| receipt.submitted_at.clone())}</dd>
+            <dt>{move || host_copy().output_checksum}</dt><dd><code>{receipt.with_value(|receipt| receipt.output_sha256.clone())}</code></dd>
+            <dt>{move || copy().operation}</dt><dd>{receipt.with_value(|receipt| receipt.operation_id.clone())}</dd>
+        </dl>
+        {receipt.with_value(|receipt| receipt.problem.clone()).map(|problem| view! {
+            <h4>{move || copy().problem}</h4><p>{move || messages::adaptation_problem(&problem.code, english.get())}</p>
+            <ul>{problem.issues.into_iter().map(|issue| view! { <li><code>{issue.path}</code>" · "<code>{issue.rule}</code></li> }).collect_view()}</ul>
+        })}
+    }
+}
+
+#[component]
+fn LegacyRunDetails(run: Arc<AdaptationRunResponse>, english: RwSignal<bool>) -> impl IntoView {
     let run = StoredValue::new(run);
     let copy = move || messages::adaptation_copy(english.get());
     view! {
@@ -318,39 +287,45 @@ fn RunDetails(run: Arc<AdaptationRunResponse>, english: RwSignal<bool>) -> impl 
                 <h4>{move || copy().problem}</h4><p>{move || messages::adaptation_problem(&problem.code, english.get())}</p>
                 <ul>{problem.issues.into_iter().map(|issue| view! { <li><code>{issue.path}</code>" · "<code>{issue.rule}</code></li> }).collect_view()}</ul>
             })}
-            {run.with_value(|run| run.proposal.clone()).map(|proposal| {
-                let no_findings = proposal.findings.is_empty();
-                view! {
-                    <h4>{move || copy().findings}</h4>
-                    <Show when=move || no_findings><p>{move || copy().no_findings}</p></Show>
-                    <ul class="import-warnings">{proposal.findings.into_iter().map(|finding| {
-                        let finding = StoredValue::new(finding);
-                        view! { <li><strong>{move || finding.with_value(|finding| messages::adaptation_finding(finding.code, english.get()))}</strong>
-                            {finding.with_value(|finding| finding.block).map(|block| view! { <p>{move || copy().block}" "{block}</p> })}
-                            <p>{move || finding.with_value(|finding| messages::adaptation_finding_explanation(finding.code, english.get()))}</p>
-                            <Show when=move || finding.with_value(|finding| finding.code == AdaptationFindingCode::SourceWarning)>
-                                <p>{move || finding.with_value(|finding| messages::import_diagnostic(&finding.detail, english.get()))}</p>
-                                <small><code>{finding.with_value(|finding| finding.detail.clone())}</code></small>
-                            </Show>
-                            <Show when=move || finding.with_value(|finding| messages::adaptation_has_provider_detail(finding.code))>
-                                <p class="help">{move || messages::adaptation_provider_detail(english.get())}</p>
-                                <blockquote lang="vi-VN">{finding.with_value(|finding| finding.detail.clone())}</blockquote>
-                            </Show>
-                        </li> }
-                    }).collect_view()}</ul>
-                    <details><summary>{move || copy().coverage}</summary>
-                        <p class="help">{move || copy().coverage_help}</p>
-                        <ul class="adaptation-coverage">{proposal.coverage.into_iter().map(|coverage| {
-                            let coverage = StoredValue::new(coverage);
-                            view! { <li><strong>{move || copy().block}" "{coverage.with_value(|coverage| coverage.block)}</strong>" · "{move || coverage.with_value(|coverage| match coverage.disposition { AdaptationCoverageDisposition::Represented => copy().represented, AdaptationCoverageDisposition::Omitted => copy().omitted })}
-                                <p class="identity"><code>{coverage.with_value(|coverage| coverage.dialogue_ids.join(", "))}</code></p>
-                                {coverage.with_value(|coverage| coverage.reason.clone()).map(|reason| view! { <p lang="vi-VN">{reason}</p> })}
-                            </li> }
-                        }).collect_view()}</ul>
-                    </details>
-                }
-            })}
+            {run.with_value(|run| run.proposal.clone()).map(|proposal| view! { <ProposalFindings proposal=proposal english=english /> })}
+
         </section>
+    }
+}
+
+#[component]
+fn ProposalFindings(proposal: AdaptationProposal, english: RwSignal<bool>) -> impl IntoView {
+    let copy = move || messages::adaptation_copy(english.get());
+
+    let no_findings = proposal.findings.is_empty();
+    view! {
+        <h4>{move || copy().findings}</h4>
+        <Show when=move || no_findings><p>{move || copy().no_findings}</p></Show>
+        <ul class="import-warnings">{proposal.findings.into_iter().map(|finding| {
+            let finding = StoredValue::new(finding);
+            view! { <li><strong>{move || finding.with_value(|finding| messages::adaptation_finding(finding.code, english.get()))}</strong>
+                {finding.with_value(|finding| finding.block).map(|block| view! { <p>{move || copy().block}" "{block}</p> })}
+                <p>{move || finding.with_value(|finding| messages::adaptation_finding_explanation(finding.code, english.get()))}</p>
+                <Show when=move || finding.with_value(|finding| finding.code == AdaptationFindingCode::SourceWarning)>
+                    <p>{move || finding.with_value(|finding| messages::import_diagnostic(&finding.detail, english.get()))}</p>
+                    <small><code>{finding.with_value(|finding| finding.detail.clone())}</code></small>
+                </Show>
+                <Show when=move || finding.with_value(|finding| messages::adaptation_has_provider_detail(finding.code))>
+                    <p class="help">{move || messages::adaptation_provider_detail(english.get())}</p>
+                    <blockquote lang="vi-VN">{finding.with_value(|finding| finding.detail.clone())}</blockquote>
+                </Show>
+            </li> }
+        }).collect_view()}</ul>
+        <details><summary>{move || copy().coverage}</summary>
+            <p class="help">{move || copy().coverage_help}</p>
+            <ul class="adaptation-coverage">{proposal.coverage.into_iter().map(|coverage| {
+                let coverage = StoredValue::new(coverage);
+                view! { <li><strong>{move || copy().block}" "{coverage.with_value(|coverage| coverage.block)}</strong>" · "{move || coverage.with_value(|coverage| match coverage.disposition { AdaptationCoverageDisposition::Represented => copy().represented, AdaptationCoverageDisposition::Omitted => copy().omitted })}
+                    <p class="identity"><code>{coverage.with_value(|coverage| coverage.dialogue_ids.join(", "))}</code></p>
+                    {coverage.with_value(|coverage| coverage.reason.clone()).map(|reason| view! { <p lang="vi-VN">{reason}</p> })}
+                </li> }
+            }).collect_view()}</ul>
+        </details>
     }
 }
 

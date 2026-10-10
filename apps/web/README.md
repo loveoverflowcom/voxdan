@@ -2,9 +2,11 @@
 
 `cantos-studio` is a minimal Leptos 0.7.8 CSR/WASM consumer of the actual local Axum/PostgreSQL
 revision API. It displays a complete JSON draft and a read-only stored export, plus bounded
-manuscript import and source/extraction comparison, plus a bounded AI proposal review flow.
-The full scene/speaker editor, production console and Cantos Theatre remain planned. The
-adapter's live model gate is separately recorded in the
+manuscript import and source/extraction comparison, plus a bounded host-submitted proposal review.
+The full scene/speaker editor, production console and Cantos Theatre remain planned. Cantos
+provides a data/tool pipeline: generation belongs to the user's chosen Gemini, ChatGPT or Codex
+host under their control. Cantos has no AI API client or generation runtime. Fixture and live host
+evidence are separately recorded in the
 [adaptation evidence](../../docs/evidence/ai-script-adaptation.md).
 
 ## Build and run
@@ -61,14 +63,24 @@ Prose labels and scene suggestions remain review findings, unknown speakers rema
 and publication permission stays unverified. The UI renders manuscript markup as inert text.
 It never assigns voices or silently submits an imported source as an accepted script.
 
-The adaptation section pins an imported source, target script UUID and base revision. It shows
-the configured server-side localhost provider and requires explicit source/adaptation permission
-authorization. Run IDs reopen private proposals; source blocks, conversion warnings, coverage
-claims and unsupported pacing/prosody remain inspectable beside the editable JSON candidate.
-Provider success remains a proposal. A creator explicitly acknowledges the findings and accepts
-the validated candidate, then reopens the pinned immutable revision. The ordinary editor's local
-draft is separate. Unknown cost displays as unavailable; provider configuration and an HTTP
-fixture result never prove a real model run.
+Adaptation tools prepare a context pinned to the imported source ID/checksum, extraction version,
+target script and input revision, with a recorded source export permission claim. The host generates
+under the user's control and submits a bounded structured result through the tools. Studio opens
+the context or proposal ID through `GET /api/v1/adaptations/{id}/review`; it never requests AI
+generation. Historical proposals remain readable through the same tagged response.
+
+The review shows preserved source text, paged extraction and warnings, the pinned input revision,
+coverage claims and unsupported pacing/prosody beside editable proposal JSON. Caller-declared host,
+provider, model, settings, usage and cost are explicitly unverified; absent values stay unknown.
+A valid submitted result remains a proposal. Its creator acknowledges review of the current text
+and explicitly accepts a validated immutable revision through the existing guarded acceptance path.
+The exact accepted revision can be reopened read-only. Ordinary editor text stays separate.
+Unresolved acceptance retains the original actor, operation ID, base and JSON snapshot for exact
+retry; later typing and IME composition survive responses. A changed base requires a new context.
+Rights claims do not establish legal eligibility, production approval or publication permission.
+
+Historical model evidence can be shown for preserved run metadata. The compatibility fingerprint
+field records prior evidence; it does not configure a current runtime or prove a successful run.
 
 An uncertain mutation retains its exact actor/operation/snapshot for reconciliation. A different
 actor, stale response or changed input cannot silently replace the visible proposal or accepted

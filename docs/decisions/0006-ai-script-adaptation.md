@@ -1,108 +1,98 @@
-# ADR 0006: Keep AI adaptation proposals separate from accepted script revisions
+# ADR 0006: Host-owned generation, Cantos-owned adaptation data pipeline
 
-- Status: proposed; local development implementation under review
+- Status: proposed for production adoption; implemented local tool pipeline under review
 - Date: 2026-10-10
 - Decision owner: Cantos maintainers
 - Related issue: [#3](https://github.com/loveoverflowcom/cantos/issues/3)
 - Extends: [ADR 0005](0005-manuscript-import.md)
 
-## Context
+## Context and confirmed scope
 
-The importer preserves exact source bytes, extraction blocks, conversion warnings and creator
-rights claims. The existing revision store admits complete validated Script IR exports with
-current authorization, optimistic concurrency and operation receipts. AI output is untrusted
-editorial content: a successful model response cannot authorize rights, invent reliable speaker
-attribution or move a script head.
+The importer preserves exact source bytes, extraction blocks, warnings and creator rights claims.
+The existing revision store admits complete validated Script IR exports with current authorization,
+optimistic concurrency and operation receipts. AI output is untrusted editorial content and cannot
+grant rights, establish reliable attribution or move a script head.
 
-The initial integration needs one concrete provider boundary and a practical Studio consumer.
-Paid hosted inference, production identity, legal adjudication, full scene/character editing,
-casting and audio production remain outside this slice. A provider call and a database commit
-cannot form one transaction, so a lost response or process crash must leave a visible attempt
-whose outcome is unknown rather than silently issue another call.
+The user's confirmed decision is to control Gemini / ChatGPT / Codex generation externally and
+ask that host to call Cantos tools. Cantos must supply the data pipeline, not local inference or
+OpenAI/Gemini API calls. The previous local-adapter direction and live-local-model prerequisite
+are superseded, not passed. No key, paid-call budget, account setup or cloud connection is required
+by Cantos' data pipeline. The external host's generation and disclosure choices remain its user's
+responsibility; this change sends no manuscript to an inference service.
 
 ## Decision
 
-Reuse the modular server, imported source records and immutable revision authority. Persist an
-immutable run input before dispatch: source identity/checksum/extractor snapshot, target script
-and base revision, current actor's explicit adaptation authorization, provider/model/config,
-prompt/adapter versions and an input fingerprint. Import permission claims alone do not enable
-dispatch. Missing required source permission evidence or explicit authorization fails closed.
-Publication permission remains unknown and is carried into the proposal separately.
+Reuse the modular Axum service, source registry, Script IR admission and immutable revision
+authority. Expose four bounded authenticated tools over existing HTTP and a thin standard-library
+Python CLI: context creation, exact context read, proposal submission and editorial review read.
+An agent with an authorized terminal tool can invoke the CLI using JSON stdin and an existing
+process-local Studio session. Publish tool schemas and examples. Do not build another engine,
+service, generic provider abstraction, MCP framework or credential authority.
 
-The start request also pins the exact provider metadata the creator reviewed. A changed
-endpoint, model, prompt version or configuration is rejected before creating a run. An exact
-operation replay keeps its original input even after server reconfiguration; a queued worker
-cannot substitute a different provider.
+Context creation pins source ID/SHA-256, extraction version, exact base revision and its c1/e1
+digests, actor's export/adaptation authorization, prompt/contract versions and prepared text.
+Missing source claims, expected-source/version drift or stale base fail closed. The c1 frozen
+context receives its own typed digest and server-created evidence IDs. Source and model content
+remain inert data without host/tool privileges.
 
-Use an opt-in server-side localhost Ollama adapter and a deterministic provider double for
-tests. The adapter never accepts a browser-supplied endpoint or credential. Disable redirects,
-environment proxies, hosted destinations and automatic transport retries. Bound input/output,
-time and concurrency; retain provider-reported usage only when supplied. Unavailable cost data
-is unavailable, not a zero charge. The development provider is a concrete adapter rather than
-a canned proposal presented as AI. Its deployment selection and live acceptance require an
-available, authorized runtime and model; this ADR does not install either.
+A caller supplies a separate submission operation, exact context digest, bounded narrow proposal
+JSON and declared host/provider/model/config/prompt metadata. Supplied usage/cost is a caller
+assertion with explicit caller-declared basis, not a provider attestation. Missing facts remain
+unknown. Cantos cannot establish which model created a result, its billing or quality.
 
-Loopback alone does not prove local inference: Ollama can forward cloud models, including
-locally named aliases, using the daemon's account. Before exposing verified provider metadata,
-the adapter must read bounded `/api/status` and `/api/show` responses, require cloud features
-disabled, reject remote model fields and identify local GGUF weights. Freeze the verified model
-metadata fingerprint with the reviewed configuration and recheck it before sending source text.
-Unknown/older daemons without this proof fail closed. This relies on an approved, host-controlled
-runtime without concurrent configuration/model replacement; HTTP cannot attest an arbitrary
-malicious localhost service. No persistent daemon configuration is changed by this slice.
-See [Ollama cloud disablement](https://docs.ollama.com/faq#how-do-i-disable-ollama-cloud-features),
-[model details](https://docs.ollama.com/api-reference/show-model-details) and
-[upstream status/show handlers](https://github.com/ollama/ollama/blob/main/server/routes.go).
+Validate declarations and the closed output contract, construct trusted identities/provenance,
+then call the actual Script IR structural and semantic validator. Preserve unknown speakers,
+source warnings, omission/coverage claims and unsupported performance intent as review findings.
+Structural coverage cannot prove faithful meaning or correct attribution.
 
-The concrete transport uses pinned `reqwest = 0.12.28` with default features disabled and JSON
-enabled. Its dependency on `tower-http ^0.6.8` requires updating the existing pinned
-`tower-http 0.6.6` to `0.6.11`; the existing static-file consumer remains in the same crate.
-Both package manifests declare Rust 1.64, within the repository's Rust 1.87 toolchain. Official
-API references: [reqwest ClientBuilder](https://docs.rs/reqwest/0.12.28/reqwest/struct.ClientBuilder.html),
-[tower-http](https://docs.rs/tower-http/0.6.11/tower_http/),
-[Ollama chat](https://docs.ollama.com/api/chat) and
-[structured outputs](https://docs.ollama.com/capabilities/structured-outputs).
-These document adapter behavior; they do not establish an installed model or live integration.
+Persist an immutable valid/invalid submission receipt. Invalid domain output leaves its context
+awaiting an explicit correction with a new operation ID. The first valid proposal and status
+commit atomically; a later distinct submission conflicts instead of relabelling or overwriting it.
+An exact retry returns the first receipt, including after editorial acceptance. HTTP malformed/
+oversized requests and invalid bindings fail without a submission. No context schedules inference,
+creates a provider attempt or retries external generation.
 
-The model returns a closed proposal format with scenes, speaker labels, spoken text, source
-block citations, delivery suggestions, typed sound cues and review notes. It cannot supply
-authoritative IDs, rights, provenance, asset URLs or approval state. Cantos creates the IDs and
-provenance, then admits the complete candidate through the existing Script IR shape and semantic
-validator. Unsupported pacing/prosody intent stays in review notes; Script IR 0.1.0 is unchanged.
-Uncertain speakers, cited omissions and uncovered blocks require human comparison. Structural
-coverage does not prove that meaning was preserved or that attribution is correct.
+Studio is an editorial consumer: open a saved context/run, compare source and proposal, edit bounded
+JSON, explicitly confirm review and accept. The separate acceptance mutation uses the existing
+authorized revision-save transaction, CAS and idempotent receipt. Cancellation fences selection,
+and stale head or changed bindings cannot replace source or accepted history. The CLI tool surface
+contains no acceptance mutation. Full scene/character authoring remains #4.
 
-Persist dispatch intent before network I/O. Keep its terminal observations and valid proposal
-private and immutable. Exact command retries reconcile the recorded run. Timeout or abandoned
-dispatch is ambiguous, with no automatic repeat; cancellation fences proposal selection but
-does not erase an already issued call or its usage. The source and last accepted revision never
-change on generation failure.
+A lost write response can still hide a committed context/submission. The CLI performs no automatic
+retry or ID generation, reports exact-operation reconciliation for uncertain writes and retains
+bounded structured errors without token/source echo. It uses numeric loopback HTTP, explicit port,
+no environment proxy or redirect, bounded request/response reads and timeouts. This development
+transport does not imply production identity/TLS or a configured public ChatGPT/Gemini connector.
 
-Studio displays the pinned source and proposal separately, permits bounded JSON correction and
-requires an explicit review/accept action. Acceptance uses the existing authorized revision-save
-rules and commits its outcome receipt with the revision. A changed head conflicts; an exact
-acceptance retry returns the original result. Editorial acceptance grants no production or
-publication permission.
+## Compatibility and persistence
 
-## Alternatives
+Migration 0005 extends the same adaptation run/proposal/acceptance authority with immutable input
+version and append-only submission receipts. Historical a1 frozen inputs keep their exact typed
+decoder and digest preimage; c1 inputs have a distinct type/label. Keep optional
+`local_model_digest` and legacy configuration keys for stored-record compatibility. Never rewrite
+immutable rows or rename/default-skip their nested serialized fields.
 
-| Option | Benefits | Costs and limitations | Disposition |
+Historical run/proposal/acceptance reads remain supported. Retired start/provider compatibility
+endpoints fail unavailable/null and have no inference implementation. Expired historical dispatched
+attempts may reconcile to ambiguity; nothing redispatches them. Existing source/revision exports,
+migrations and Script IR schema remain unchanged.
+
+## Alternatives and consequences
+
+| Option | Benefit | Limitation | Decision |
 | --- | --- | --- | --- |
-| Localhost provider plus closed proposal contract | Concrete adapter, bounded synthetic tests, no new credential authority | Live runtime/model availability and output quality still require evidence | Selected for this local slice |
-| Hosted commercial adaptation API | Potentially stronger Vietnamese output | Requires explicit destination, credentials and spending authorization | Deferred |
-| Model emits authoritative Script IR directly | Smaller conversion layer | Allows fabricated IDs/evidence and couples prompts to trusted metadata | Rejected |
-| Automatically save a successful response | Fewer creator actions | Can overwrite competing edits and mistakes inferred content for reviewed content | Rejected |
-| New AI service or generalized job platform | Independent deployment | No concrete need beyond this bounded consumer | Deferred |
+| Existing authenticated HTTP plus thin CLI | Concrete tool consumer, no new framework/credentials, shared domain/store | Host needs authorized terminal/HTTP adapter; no public connector configured | Selected |
+| MCP server | Standard host discovery | Adds SDK/runtime and a new integration surface without a current configured consumer | Deferred until a concrete host requires it |
+| Cantos-owned local or cloud inference | Automated generation | Contradicts the confirmed host-owned scope | Removed / out of scope |
+| Model emits trusted Script IR/evidence or automatically accepts | Fewer editorial steps | Lets untrusted output fabricate authority or overwrite competing edits | Rejected |
 
-## Consequences and revisit conditions
+The merge gate is real CLI/HTTP context → valid/invalid submission → review/accept/reopen against
+fresh disposable PostgreSQL, with ownership/revocation, source/version/base binding, duplicate/
+retry/restart, bounds and transaction-fault evidence, mandatory checks and fresh review.
+Actual model generation and editorial quality remain **NOT_RUN**, a separate nonblocking fact
+for this pipeline scope. [Execution evidence](../evidence/ai-script-adaptation.md) must distinguish
+the actual tool/storage path from synthetic content.
 
-Migration 0004 is additive. Earlier migrations and accepted exports stay unchanged. Runtime
-privileges permit only the new bounded state transitions and append-only facts; they do not
-grant source/revision mutation or credential provisioning. Reads remain indexed, currently
-authorized PostgreSQL lookups. No aggregate consumer currently justifies DBSP.
-
-The [evidence record](../evidence/ai-script-adaptation.md) separates deterministic provider
-tests, real PostgreSQL evidence, browser observations and live model acceptance. A missing live
-gate keeps issue #3 open and its PR in draft. Revisit for production rights review/identity,
-hosted inference, multiple workers, larger chapters, model replacement or full editor #4.
-No TTS, media asset, publication or mobile behavior is changed.
+No TTS, media asset, publication, deployment or native mobile behavior changes. Revisit for a
+concrete MCP/remote host consumer, production identity/TLS, larger chapters/chunking, rights
+eligibility or full Studio authoring; keep the same source and revision authority.

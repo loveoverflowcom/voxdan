@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run revision integration tests in a newly created disposable PostgreSQL cluster.
+"""Run revision, import and adaptation tests in a new disposable PostgreSQL cluster.
 
 Never reads DATABASE_URL or connects to an existing database. --keep retains this
 test cluster for local Studio inspection; its explicit stop command is printed.
@@ -13,18 +13,60 @@ from pathlib import Path
 import shutil
 import socket
 import subprocess
-import threading
+import sys
 import time
 import urllib.error
 import urllib.request
 import uuid
 import zipfile
 
-from adaptation_fixture_server import FixtureRuntime, create_server
-
 ROOT = Path(__file__).resolve().parents[1]
 EVIDENCE = ROOT / "target" / "revision-evidence"
 ADAPTATION_EVIDENCE = ROOT / "target" / "adaptation-evidence"
+ADAPTATION_TOOL = ROOT / "scripts" / "cantos_adaptation_tool.py"
+
+
+def adaptation_tool(env, port, token, command, payload, expected_status):
+    """Exercise the real CLI without putting an authentication token in argv or evidence."""
+    command_line = [sys.executable, str(ADAPTATION_TOOL), "--base-url",
+                    f"http://127.0.0.1:{port}", command]
+    result = subprocess.run(command_line, cwd=ROOT,
+                            env=dict(env, CANTOS_SESSION_TOKEN=token),
+                            input=json.dumps(payload, ensure_ascii=False), text=True,
+                            capture_output=True, timeout=15)
+    if token in result.stdout or token in result.stderr:
+        raise RuntimeError("adaptation tool exposed its session token; output suppressed")
+    try:
+        envelope = json.loads(result.stdout)
+    except (ValueError, TypeError):
+        raise RuntimeError("adaptation tool did not return one JSON envelope") from None
+    expected_ok = 200 <= expected_status < 300
+    if (not isinstance(envelope, dict) or set(envelope) != {"ok", "http_status", "result"}
+            or envelope["ok"] is not expected_ok
+            or envelope["http_status"] != expected_status
+            or not isinstance(envelope["result"], dict)
+            or result.returncode != (0 if expected_ok else 1)):
+        raise RuntimeError("adaptation tool returned an unexpected status or envelope")
+    return envelope
+
+
+def adaptation_http(port, token, path, payload, expected_status=200):
+    """Authenticated review acceptance and raw malformed-body probes on this test host."""
+    body = payload if isinstance(payload, bytes) else json.dumps(payload).encode()
+    request = urllib.request.Request(
+        f"http://127.0.0.1:{port}/api/v1/adaptations{path}", data=body, method="POST",
+        headers={"Cookie": f"cantos_session={token}",
+                 "Origin": f"http://127.0.0.1:{port}", "Content-Type": "application/json"})
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    try:
+        response = opener.open(request, timeout=10)
+    except urllib.error.HTTPError as error:
+        response = error
+    with response:
+        assert response.status == expected_status
+        assert response.headers["Cache-Control"] == "no-store"
+        assert response.headers["X-Content-Type-Options"] == "nosniff"
+        return json.load(response)
 
 
 def run(command, env=None, output=None):
@@ -97,128 +139,187 @@ def import_restart_fixtures():
     return fixtures
 
 
-def adaptation_http(port, token, path="", request=None):
-    call = urllib.request.Request(
-        f"http://127.0.0.1:{port}/api/v1/adaptations{path}",
-        data=None if request is None else json.dumps(request).encode(),
-        method="GET" if request is None else "POST",
-        headers={"Cookie": f"cantos_session={token}", "Origin": f"http://127.0.0.1:{port}",
-                 "Content-Type": "application/json"},
-    )
-    try:
-        response = urllib.request.urlopen(call, timeout=5)
-    except urllib.error.HTTPError as error:
-        response = error
-    with response:
-        assert response.headers["Cache-Control"] == "no-store"
-        assert response.headers["X-Content-Type-Options"] == "nosniff"
-        return response.status, json.load(response)
+def adaptation_snapshot(env, app_url):
+    """Independent application-role row counts, outside the HTTP response implementation."""
+    query = """SELECT json_build_object(
+        'caller_runs',(SELECT count(*) FROM adaptation_runs WHERE input_version='c1'),
+        'attempts',(SELECT count(*) FROM adaptation_attempts),
+        'submissions',(SELECT count(*) FROM adaptation_submissions),
+        'proposals',(SELECT count(*) FROM adaptation_proposals),
+        'acceptances',(SELECT count(*) FROM adaptation_acceptances),
+        'revisions',(SELECT count(*) FROM script_revisions),
+        'evidence',(SELECT count(*) FROM script_evidence))::text;"""
+    result = subprocess.run(["psql", "-X", "-A", "-t", app_url, "-v", "ON_ERROR_STOP=1",
+                             "-c", query], cwd=ROOT, env=env, text=True,
+                            capture_output=True, timeout=10)
+    if result.returncode:
+        raise RuntimeError("adaptation row-count oracle failed")
+    snapshot = json.loads(result.stdout)
+    assert snapshot["attempts"] == 0
+    return snapshot
 
 
-def adaptation_settled(port, token, identity):
-    deadline = time.monotonic() + 10
-    while time.monotonic() < deadline:
-        status, value = adaptation_http(port, token, f"/{identity}")
-        assert status == 200
-        if value["status"] not in ("queued", "running"):
-            return value
-        time.sleep(0.01)
-    raise RuntimeError("adaptation fixture did not settle within its bounded wait")
+def assert_adaptation_delta(before, after, **changes):
+    assert before.keys() == after.keys()
+    for name in before:
+        assert after[name] == before[name] + changes.get(name, 0), (name, before, after)
 
 
-def adaptation_restart_journey(env, cluster, data, pg_port):
-    """Real HTTP host/PG recovery with a synthetic loopback provider contract double."""
-    fixture = json.loads((ADAPTATION_EVIDENCE / "restart.json").read_text())
-    app_url = f"postgresql://cantos_app@127.0.0.1:{pg_port}/{fixture['database']}"
-    admin_url = f"postgresql://cantos_test_admin@127.0.0.1:{pg_port}/{fixture['database']}"
-    runtime = FixtureRuntime((ADAPTATION_EVIDENCE / "provider-document.json").read_text())
-    provider = create_server(runtime)
-    provider_thread = threading.Thread(target=provider.serve_forever, daemon=True)
-    provider_thread.start()
-    host_env = dict(env, DATABASE_URL=app_url,
-                    CANTOS_ADAPTATION_ENDPOINT=f"http://127.0.0.1:{provider.server_port}",
-                    CANTOS_ADAPTATION_MODEL="fixture-test-double")
-    host = None
-    try:
-        with (ADAPTATION_EVIDENCE / "host-restart.log").open("w") as log:
-            http_port = free_port()
-            host = start_host(host_env, http_port, log, fixture)
-            token = fixture["token"]
-            assert adaptation_http(http_port, token, f"/{fixture['run']['id']}") == (200, fixture["run"])
-            assert adaptation_http(http_port, token, request=fixture["start_request"]) == (202, fixture["run"])
-            assert adaptation_http(http_port, token, f"/{fixture['run']['id']}/accept", fixture["accept_request"]) == (200, fixture["response"])
-            assert runtime.requests == 0, "terminal replay cannot contact a newly configured provider"
-            assert import_http(http_port, token, source=fixture["source"]["id"], original=True) == fixture["source"]["original_text"].encode()
-            live_request = {"operation_id": str(uuid.uuid4()), "source_id": fixture["source"]["id"],
-                            "script_id": str(uuid.uuid4()), "expected_revision": 0,
-                            "rights_authorization": True,
-                            "expected_provider": adaptation_http(http_port, token, "/provider")[1]["provider"]}
-            status, started = adaptation_http(http_port, token, request=live_request)
-            assert status == 202
-            completed = adaptation_settled(http_port, token, started["id"])
-            assert completed["status"] == "succeeded"
-            assert completed["source_sha256"] == hashlib.sha256(fixture["source"]["original_text"].encode()).hexdigest()
-            assert completed["usage"] == {"input_tokens": 87, "output_tokens": 123}
-            assert completed["cost"] is None
-            assert [item["block"] for item in completed["proposal"]["coverage"]] == [0, 1, 2]
-            accepted_request = {"operation_id": str(uuid.uuid4()), "expected_revision": 0,
-                                "script_json": completed["proposal"]["script_json"], "reviewed_findings": True}
-            status, accepted_revision = adaptation_http(http_port, token, f"/{completed['id']}/accept", accepted_request)
-            assert status == 200 and accepted_revision["revision"] == 1
-            accepted_run = adaptation_http(http_port, token, f"/{completed['id']}")[1]
-            assert accepted_run["status"] == "accepted"
-            assert runtime.requests == 1
-            # Kill after provider dispatch and before completion: the durable attempt remains ambiguous.
-            runtime.release.clear()
-            runtime.entered.clear()
-            crash_request = dict(live_request, operation_id=str(uuid.uuid4()), expected_revision=1)
-            status, interrupted = adaptation_http(http_port, token, request=crash_request)
-            assert status == 202
-            assert runtime.entered.wait(timeout=5), "actual HTTP provider was never dispatched"
-            assert runtime.requests == 2
-            host.kill()
-            host.wait(timeout=5)
-            host = None
-            run_identity = str(uuid.UUID(interrupted["id"]))
-            # Test admin injects deadline expiry; runtime cannot alter this guard or input.
-            run(["psql", "-X", admin_url, "-v", "ON_ERROR_STOP=1", "-c",
-                 "BEGIN; ALTER TABLE adaptation_runs DISABLE TRIGGER adaptation_run_guard; "
-                 f"UPDATE adaptation_runs SET dispatch_deadline=clock_timestamp()-interval '1 second' WHERE id='{run_identity}' AND status='running'; "
-                 "ALTER TABLE adaptation_runs ENABLE TRIGGER adaptation_run_guard; COMMIT;"], env=env)
-            run(["pg_ctl", "-D", str(data), "-l", str(cluster / "postgres.log"), "-m", "fast", "-w", "restart"], env=env)
-            run([str(ROOT / "target/debug/cantos-migrate")], env=dict(env, DATABASE_URL=admin_url))
-            host = start_host(host_env, http_port, log, fixture)
-            ambiguous = adaptation_settled(http_port, token, interrupted["id"])
-            assert ambiguous["status"] == "ambiguous" and ambiguous["proposal"] is None
-            assert adaptation_http(http_port, token, request=crash_request) == (202, ambiguous)
-            assert runtime.requests == 2, "restart/retry must not silently duplicate generation"
-            runtime.release.set()
-            assert adaptation_http(http_port, token, f"/{completed['id']}") == (200, accepted_run)
-            assert adaptation_http(http_port, token, f"/{completed['id']}/accept", accepted_request) == (200, accepted_revision)
-            assert adaptation_http(http_port, token, f"/{fixture['run']['id']}") == (200, fixture["run"])
-            assert import_http(http_port, token, source=fixture["source"]["id"]) == fixture["source"]
-            assert runtime.requests == 2
-            (ADAPTATION_EVIDENCE / "http-restart.json").write_text(json.dumps({
-                "provider_evidence": "synthetic loopback HTTP contract double; no AI inference",
-                "provider_requests": runtime.requests, "accepted_run": accepted_run,
-                "interrupted_run": ambiguous,
-            }, ensure_ascii=False, indent=2) + "\n")
-            (ADAPTATION_EVIDENCE / "run.json").write_text(json.dumps({
-                "cluster": str(cluster), "port": pg_port, "app_url": app_url,
-                "database": fixture["database"], "script": fixture["script"],
-                "source_id": fixture["source"]["id"], "run_id": fixture["run"]["id"],
-                "model": "fixture-test-double",
-                "provider_document": str(ADAPTATION_EVIDENCE / "provider-document.json"),
-            }, indent=2) + "\n")
-            print("PASS: actual host/Ollama HTTP adapter + explicit acceptance + host kill after dispatch + PostgreSQL restart + ambiguous retry without duplicate generation (synthetic contract double; no AI inference)")
-    finally:
-        if host is not None:
-            host.kill()
-            host.wait(timeout=5)
-        runtime.release.set()
-        provider.shutdown()
-        provider.server_close()
-        provider_thread.join(timeout=5)
+def adaptation_before_restart(env, port, token, app_url):
+    """Synthetic caller-created output crosses the actual CLI, socket, host and PostgreSQL."""
+    original = (ROOT / "contracts/fixtures/adaptation/source-vi.txt").read_bytes()
+    import_request = {
+        "metadata": {"operation_id": str(uuid.uuid4()), "file_name": "adaptation-source-vi.txt",
+                     "format": "txt", "reference": "original synthetic CLI recovery fixture",
+                     "rights_holder": "Synthetic fixture author",
+                     "permission_evidence": "Repository-authored fixture; no publication clearance",
+                     "usage_scope": "Disposable local integration checks only"},
+        "original_bytes": list(original)}
+    source = import_http(port, token, request=import_request)
+    assert source["sha256"] == hashlib.sha256(original).hexdigest()
+    assert source["outcome"]["status"] == "parsed"
+    assert import_http(port, token, source=source["id"], original=True) == original
+    initial = adaptation_snapshot(env, app_url)
+    invalid_body = {"code": "invalid_request", "current_revision": None, "issues": []}
+    assert adaptation_http(port, token, "/contexts", b"{", 400) == invalid_body
+    assert adaptation_http(port, token, "/contexts", b" " * (64 * 1024 + 1), 413) == invalid_body
+    assert adaptation_snapshot(env, app_url) == initial
+
+    context_request = {
+        "operation_id": str(uuid.uuid4()), "source_id": source["id"],
+        "source_sha256": source["sha256"],
+        "extractor_version": source["outcome"]["extraction"]["extractor_version"],
+        "script_id": str(uuid.uuid4()), "expected_revision": 0, "rights_authorization": True}
+    context_envelope = adaptation_tool(env, port, token, "context", context_request, 201)
+    context = context_envelope["result"]
+    assert context["request"] == context_request
+    assert context["source"] == source
+    assert context["context_version"] == "c1"
+    assert context["contract_version"] == "cantos-adaptation-1"
+    assert context["status"] == "awaiting_proposal"
+    assert context["input_revision"] is None
+    assert context["proposal"] is None
+    assert context["latest_submission"] is None
+    assert context["accepted_revision"] is None
+    assert json.loads(context["proposal_schema_json"]) == json.loads(
+        (ROOT / "contracts/schema/adaptation/cantos-adaptation-1.schema.json").read_text())
+    prompt_source = json.loads(context["user_prompt"])["source"]
+    assert prompt_source["id"] == source["id"]
+    assert prompt_source["sha256"] == hashlib.sha256(original).hexdigest()
+    assert prompt_source["blocks"] == source["outcome"]["extraction"]["blocks"]
+    created = adaptation_snapshot(env, app_url)
+    assert_adaptation_delta(initial, created, caller_runs=1, evidence=2)
+
+    generation = {"host_tool": "synthetic-cli-fixture-no-inference", "provider": None,
+                  "model": None, "configuration_json": None,
+                  "prompt_version": context["prompt_version"], "usage": None, "cost": None}
+    invalid_submission = {"run_id": context["id"], "submission": {
+        "operation_id": str(uuid.uuid4()), "context_digest": context["context_digest"],
+        "proposal_json": "{", "generation": generation}}
+    invalid_envelope = adaptation_tool(env, port, token, "submit", invalid_submission, 200)
+    invalid = invalid_envelope["result"]
+    assert invalid["status"] == "invalid"
+    assert invalid["proposal"] is None
+    assert invalid["problem"] == {"code": "invalid_output", "issues": [
+        {"path": "/", "rule": "json_contract"}]}
+    assert invalid["output_sha256"] == hashlib.sha256(b"{").hexdigest()
+    assert invalid["generation"] == generation
+    invalid_context = adaptation_tool(env, port, token, "context-read", {"run_id": context["id"]}, 200)
+    assert invalid_context["result"]["status"] == "awaiting_proposal"
+    assert invalid_context["result"]["latest_submission"] == invalid
+    assert_adaptation_delta(created, adaptation_snapshot(env, app_url), submissions=1)
+
+    # This is repository-authored proposal data, never a synthetic service labelled as AI.
+    document = json.loads((ROOT / "contracts/fixtures/adaptation/proposal-vi.json").read_text())
+    document["scenes"][0]["cues"].extend([
+        {"kind": "music", "description": "Nhạc nền là đề xuất cần tác giả duyệt.",
+         "line_index": 1, "edge": "start", "source_blocks": [1]},
+        {"kind": "sfx", "description": "Âm thanh cần xác minh trước sản xuất.",
+         "line_index": 2, "edge": "end", "source_blocks": [2]}])
+    assert document["scenes"][0]["lines"][2]["speaker"] is None
+    output = json.dumps(document, ensure_ascii=False)
+    valid_submission = {"run_id": context["id"], "submission": {
+        "operation_id": str(uuid.uuid4()), "context_digest": context["context_digest"],
+        "proposal_json": output, "generation": generation}}
+    valid_envelope = adaptation_tool(env, port, token, "submit", valid_submission, 200)
+    valid = valid_envelope["result"]
+    assert valid["status"] == "valid"
+    assert valid["problem"] is None
+    assert valid["generation"] == generation
+    assert valid["output_sha256"] == hashlib.sha256(output.encode()).hexdigest()
+    proposal = valid["proposal"]
+    assert any(finding["code"] == "unresolved_speaker" for finding in proposal["findings"])
+    proposed_script = json.loads(proposal["script_json"])
+    scene = proposed_script["episode"]["acts"][0]["scenes"][0]
+    unknown_speaker = next(character for character in proposed_script["characters"]
+                           if character["id"] == scene["dialogues"][2]["speaker_id"])
+    assert unknown_speaker["name"] == "Người nói chưa xác định"
+    assert unknown_speaker["role"] == "character"
+    assert unknown_speaker["personality"] == "Attribution unresolved; creator confirmation required."
+    assert [line["text"] for line in scene["dialogues"]] == [
+        "Đêm xuống bên bến sông.", "Tôi sẽ chờ ở đây.", "Có ai nghe thấy không?"]
+    assert {cue["kind"] for cue in scene["sound_cues"]} == {"ambience", "music", "sfx"}
+    review_envelope = adaptation_tool(env, port, token, "review", {"run_id": context["id"]}, 200)
+    assert review_envelope["result"]["workflow"] == "caller"
+    reviewed = review_envelope["result"]["context"]
+    assert reviewed["source"] == source
+    assert reviewed["proposal"] == proposal
+    assert reviewed["latest_submission"] == valid
+    assert reviewed["status"] == "succeeded"
+    assert reviewed["accepted_revision"] is None
+    assert_adaptation_delta(created, adaptation_snapshot(env, app_url), submissions=2, proposals=1)
+
+    acceptance = {"operation_id": str(uuid.uuid4()), "expected_revision": 0,
+                  "script_json": proposal["script_json"], "reviewed_findings": True}
+    saved = adaptation_http(port, token, f"/{context['id']}/accept", acceptance)
+    assert saved["script_id"] == context_request["script_id"]
+    assert saved["revision"] == 1
+    assert json.loads(saved["script_json"]) == proposed_script
+    accepted_envelope = adaptation_tool(env, port, token, "context-read", {"run_id": context["id"]}, 200)
+    accepted = accepted_envelope["result"]
+    assert accepted["status"] == "accepted"
+    assert accepted["accepted_revision"] == saved
+    assert import_http(port, token, source=source["id"]) == source
+    assert import_http(port, token, source=source["id"], original=True) == original
+    settled = adaptation_snapshot(env, app_url)
+    assert_adaptation_delta(created, settled, submissions=2, proposals=1, acceptances=1, revisions=1)
+    return {"source": source, "original": original, "context_request": context_request,
+            "context_envelope": context_envelope, "invalid_submission": invalid_submission,
+            "invalid_envelope": invalid_envelope, "valid_submission": valid_submission,
+            "valid_envelope": valid_envelope, "review_envelope": review_envelope,
+            "acceptance": acceptance, "saved": saved, "accepted_envelope": accepted_envelope,
+            "snapshot": settled}
+
+
+def adaptation_after_restart(env, port, token, app_url, fixture):
+    """Exact immutable receipts/revision survive process death, database restart and replay."""
+    accepted = fixture["accepted_envelope"]
+    context = accepted["result"]
+    reopened = adaptation_tool(env, port, token, "context-read", {"run_id": context["id"]}, 200)
+    assert reopened == accepted
+    replayed_context = adaptation_tool(env, port, token, "context", fixture["context_request"], 201)
+    assert replayed_context["result"] == context
+    for kind in ("invalid", "valid"):
+        assert adaptation_tool(env, port, token, "submit", fixture[f"{kind}_submission"], 200) == fixture[f"{kind}_envelope"]
+    assert adaptation_http(port, token, f"/{context['id']}/accept", fixture["acceptance"]) == fixture["saved"]
+    replayed_review = adaptation_tool(env, port, token, "review", {"run_id": context["id"]}, 200)
+    assert replayed_review["result"] == {"workflow": "caller", "context": context}
+    assert http(port, {"script": fixture["saved"]["script_id"], "token": token}) == fixture["saved"]
+    assert import_http(port, token, source=fixture["source"]["id"]) == fixture["source"]
+    assert import_http(port, token, source=fixture["source"]["id"], original=True) == fixture["original"]
+    assert adaptation_snapshot(env, app_url) == fixture["snapshot"]
+    ADAPTATION_EVIDENCE.mkdir(parents=True, exist_ok=True)
+    evidence = {"generation": "repository-authored synthetic fixture; no inference", "attempts": 0,
+                "source_sha256_oracle": hashlib.sha256(fixture["original"]).hexdigest(),
+                "initial_context_cli": fixture["context_envelope"],
+                "invalid_submission_cli": fixture["invalid_envelope"],
+                "valid_submission_cli": fixture["valid_envelope"],
+                "review_cli": fixture["review_envelope"], "accepted_revision": fixture["saved"],
+                "reopened_context_cli": reopened, "replayed_context_cli": replayed_context,
+                "replayed_review_cli": replayed_review, "row_count_oracle": fixture["snapshot"]}
+    (ADAPTATION_EVIDENCE / "external-tool-restart.json").write_text(
+        json.dumps(evidence, ensure_ascii=False, indent=2) + "\n")
+    print("PASS: actual subprocess CLI + loopback HTTP + app-role PostgreSQL context/invalid+valid proposal/review/accept + host kill + PostgreSQL restart + exact replay + immutable source/revision + zero generation attempts")
 
 
 def start_host(env, port, log, fixture):
@@ -274,7 +375,10 @@ def main():
         fixture = json.loads((EVIDENCE / "restart.json").read_text())
         migration_url = f"postgresql://cantos_test_admin@127.0.0.1:{port}/{fixture['database']}"
         run(["psql", "-X", migration_url, "-v", "ON_ERROR_STOP=1", "-c",
-             "GRANT INSERT ON source_records,script_evidence TO cantos_app;"], env=env)
+             "GRANT INSERT ON source_records,script_evidence TO cantos_app; "
+             "GRANT SELECT,INSERT ON adaptation_runs,adaptation_attempts,adaptation_observations,"
+             "adaptation_proposals,adaptation_cancellations,adaptation_acceptances,adaptation_submissions TO cantos_app; "
+             "GRANT UPDATE(status,problem,dispatch_deadline,updated_at) ON adaptation_runs TO cantos_app;"], env=env)
         app_url = f"postgresql://cantos_app@127.0.0.1:{port}/{fixture['database']}"
         env["DATABASE_URL"] = app_url
         with (EVIDENCE / "host.log").open("w") as log:
@@ -291,6 +395,7 @@ def main():
             assert receipts[0]["original_text"].encode() == bytes(imports[0]["original_bytes"])
             assert [block["text"] for block in receipts[1]["outcome"]["extraction"]["blocks"]] == [
                 "Mai: Ngày mai, mình có diễn tiếp không?", "Nam: Có, ở Vọng Đài."]
+            adaptation = adaptation_before_restart(env, http_port, fixture["token"], app_url)
             # Abrupt HTTP process death after a committed save (lost response replay).
             host.kill()
             host.wait(timeout=5)
@@ -305,13 +410,10 @@ def main():
                 assert import_http(http_port, fixture["token"], request=item) == receipt
                 assert import_http(http_port, fixture["token"], source=receipt["id"]) == receipt
                 assert import_http(http_port, fixture["token"], source=receipt["id"], original=True) == bytes(item["original_bytes"])
+            adaptation_after_restart(env, http_port, fixture["token"], app_url, adaptation)
             (EVIDENCE / "import-restart.json").write_text(json.dumps({"sources": receipts}, ensure_ascii=False, indent=2) + "\n")
             print("PASS: original TXT/DOCX/failed-input bytes and SHA-256 + HTTP kill + PostgreSQL restart + immutable receipt replay")
             print("PASS: HTTP process kill + PostgreSQL restart + migration replay + exact export/actor/time + same-operation replay")
-        host.kill()
-        host.wait(timeout=5)
-        host = None
-        adaptation_restart_journey(env, cluster, data, port)
         (EVIDENCE / "run.json").write_text(json.dumps({"cluster": str(cluster), "port": port, "app_url": app_url, "script": fixture["script"]}, indent=2) + "\n")
     finally:
         if host is not None:

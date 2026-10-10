@@ -15,9 +15,11 @@ The compatible [editorial handoff](docs/evidence/editorial-handoff.md) adds priv
 sources, bounded history, owner review records and operator credential tools on that backend.
 Bounded manuscript import preserves TXT, Markdown, DOCX and Script IR originals with a minimal
 Studio comparison flow; see the [import evidence](docs/evidence/manuscript-import.md).
-The bounded AI adaptation implementation adds a localhost provider adapter, private durable
-proposals and explicit Studio review/acceptance; [adaptation evidence](docs/evidence/ai-script-adaptation.md)
-separates its deterministic checks from the pending live model gate. Full authoring, production,
+The bounded adaptation implementation exports immutable source/revision context through
+[authenticated HTTP/CLI tools](contracts/adaptation-v1.md), validates host-created proposals,
+and supports explicit Studio review/acceptance. Gemini / ChatGPT / Codex generation belongs to
+the user-controlled host; Cantos performs no inference. [Adaptation evidence](docs/evidence/ai-script-adaptation.md)
+separates actual tool/storage tests from synthetic content and unrun model quality. Full authoring, production,
 Theatre and native mobile playback remain planned. No runnable Gradle project or production
 identity deployment is claimed.
 

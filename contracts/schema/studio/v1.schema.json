@@ -93,7 +93,8 @@
             "stale_revision",
             "operation_reused",
             "unavailable",
-            "corrupt_revision"
+            "corrupt_revision",
+            "proposal_already_submitted"
           ]
         },
         "current_revision": {

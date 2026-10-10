@@ -12,8 +12,8 @@ Production identity deployment, production workers and paid providers are not im
 - `imports.rs`: bounded deterministic TXT, Markdown, DOCX and Script IR extraction.
   Unknown speakers remain unresolved; prose labels and scene cues require review.
 - `adaptation.rs`: closed proposal admission, bounded source context, trusted evidence bindings,
-  source coverage findings and complete Script IR semantic validation. Its provider adapter
-  supports opt-in localhost Ollama; domain decisions do not import provider transport.
+  source coverage findings and complete Script IR semantic validation. Domain decisions do
+  not import provider transport; the development host has no enabled generation provider.
 - `postgres.rs`: current actor/session/access facts, transactions, locked heads, complete
   immutable bytes, evidence ownership links and integrity checks on every load.
 - `http.rs`: thin Axum mapping over the [Studio v1 contract](../../contracts/studio-v1.md).
@@ -157,59 +157,57 @@ DOCX formatting, embedded content and omitted annotations are visible conversion
 tracked changes and suspected legacy Vietnamese encodings require an explicit future choice.
 See [import evidence](../../docs/evidence/manuscript-import.md) for executed checks and limitations.
 
-## AI adaptation proposals
+## Caller-owned adaptation tools
 
-The [adaptation contract](../../contracts/adaptation-v1.md) extends the same authenticated
-development host. Enable its provider only by explicitly exporting `CANTOS_ADAPTATION_MODEL`
-with an already installed, authorized exact Ollama model tag. The optional
-`CANTOS_ADAPTATION_ENDPOINT` defaults to `http://127.0.0.1:11434`; only numeric loopback HTTP
-with an explicit port is admitted. There is no credential, hosted destination, model pull,
-redirect, proxy or automatic HTTP retry path. The provider-info endpoint describes configuration;
-it does not establish successful AI inference or a passed live gate. Enabling the adapter requires
-bounded status/model probes proving cloud features are disabled and local GGUF identity is
-available. Remote models and local aliases of cloud models fail closed. Older daemons without
-the required verification fields are blocked. The same model metadata fingerprint is checked
-again before source dispatch. Use an approved, stable daemon; no persistent configuration is
-changed by Cantos.
+The [adaptation contract](../../contracts/adaptation-v1.md) exports immutable context and accepts
+caller-created proposals on this same authenticated development host. The user-controlled
+Gemini / ChatGPT / Codex host owns generation. Cantos performs no inference, has no provider
+transport or credentials, and creates no provider attempt for a c1 context.
 
-The host freezes temperature 0.2, seed 0, context 8192, output limit 4096 and timeout 120 seconds.
-The source cap is 24 KiB/256 blocks, output 256 KiB and total proposed nodes 1000. A conservative
-context guard additionally budgets one possible token per UTF-8 byte plus framing and output
-reserve. Many longer chapters will require future reviewed chunking; this adapter rejects them
-instead of silently truncating. Verified local weight/model metadata is fingerprinted and
-frozen with each run; changed identity fails before dispatch. This is a trusted local runtime
-check, not cryptographic attestation of a hostile localhost service or production model pinning.
-The byte admission guard does not prove the rendered template/tokenizer fits the actual model;
-runtime truncation behavior belongs to the separate live acceptance record.
+Use the [four HTTP/CLI tool schemas](../../contracts/adaptation-tools-v1.json): create context,
+reopen exact context, submit proposal and read editorial review. The CLI requires an explicit
+numeric loopback host/port and an existing process-local `CANTOS_SESSION_TOKEN`; it neither
+provisions credentials nor connects a cloud account. All commands use the backend's current
+session, source ownership and script permissions. The tool surface has no acceptance mutation.
 
-Starting a run requires a parsed owned import with nonblank rights holder, permission evidence
-and intended scope, plus an explicit source/adaptation-use authorization for the configured
-local destination. The start command pins the exact provider metadata the creator reviewed;
-changed configuration fails before run creation. These are preserved creator assertions,
-not legal adjudication. Unknown
-publication permission remains visible. Queued runs have no dispatched attempt. A current
-authorized refresh can resume queued work with matching provider configuration; each run can
-dispatch at most once. The host bounds calls/tasks to one local slot; multiple-host resource
-coordination is outside this development runtime.
+A context pins source ID/SHA-256/extractor version, ordered blocks/warnings, optional exact base
+export, rights assertion, prompt/contract versions and digest. It requires a parsed owned import
+with nonblank rights holder, permission evidence and usage scope. These are recorded claims,
+not legal adjudication. Publication permission remains unknown. Source/model strings have no
+host or tool privileges. No context operation advances a revision head.
 
-The dispatch intent commits before network I/O. Timeout or expired running state is ambiguous,
-with no automatic repeat. Cancellation prevents a late proposal from becoming selectable but
-retains its observed usage. Run inputs, proposals and observations cannot be edited. A creator
-compares the pinned source, corrections and findings before accepting a valid export; acceptance
-and the revision receipt commit together through the existing save rules. A stale base conflicts.
-Exact start/accept retries reuse their first identity and outcome. Source bytes and accepted
-history survive rejected output, failed calls and interrupted acceptance.
+A submission pins the exact context digest and a separate operation ID. Host/provider/model/
+config/prompt, supplied usage and cost are caller-declared, unverified evidence; absent values
+stay unknown. Closed output admission constructs trusted IDs/provenance and uses the actual
+Script IR validator. An invalid domain result stores an immutable receipt while awaiting a new
+explicit correction. The first valid proposal is immutable; later distinct submission conflicts.
+Exact context/submission retries reconcile their first result, including after acceptance.
 
-The runtime role also needs:
+Studio opens the saved context/proposal and supports source comparison, findings, bounded JSON
+correction and explicit review/acceptance. Acceptance uses the same atomic revision-save/CAS/
+idempotency path. Source and prior exports survive invalid submissions, lost replies and failed
+commits. Full scene/character editing belongs to #4.
+
+Application bounds are 24 KiB/256 source blocks, 96 KiB prepared text, 256 KiB proposal output,
+1000 proposed nodes and 16 KiB/depth8/256nodes caller configuration. Context/submit HTTP bodies
+are bounded to 64 KiB/1 MiB. The CLI bounds stdin/request to 1 MiB, response to 8 MiB and wait to
+10 seconds, with no proxy, redirect, automatic retry or automatic operation ID. An uncertain
+write must be retried with the exact operation and payload. These are pipeline bounds, not an
+external model tokenizer/context guarantee. There is no automatic splitting or truncation.
+
+The runtime role needs the existing adaptation permissions plus the append-only submission table:
 
 ```sql
 GRANT SELECT, INSERT ON adaptation_runs,adaptation_attempts,adaptation_observations,
-  adaptation_proposals,adaptation_cancellations,adaptation_acceptances TO cantos_app;
+  adaptation_proposals,adaptation_cancellations,adaptation_acceptances,
+  adaptation_submissions TO cantos_app;
 GRANT UPDATE(status,problem,dispatch_deadline,updated_at) ON adaptation_runs TO cantos_app;
 ```
 
-Migration 0004 is additive; deploy it with the current host and these restricted grants. The
-source/revision tables receive no new UPDATE/DELETE privileges. See
-[ADR 0006](../../docs/decisions/0006-ai-script-adaptation.md) and
-[evidence](../../docs/evidence/ai-script-adaptation.md). A localhost HTTP double tests transport
-and recovery but supplies no AI inference. Live model acceptance remains a separate gate.
+Migrations 0004/0005 retain the existing source/revision authority and add no UPDATE/DELETE rights
+for its immutable facts. a1 frozen history keeps its exact decoder/digest; c1 has a separate type
+and fingerprint. Retired start/provider endpoints fail unavailable/null, and historical queued/
+expired attempts are never redispatched. See [ADR 0006](../../docs/decisions/0006-ai-script-adaptation.md)
+and [current evidence](../../docs/evidence/ai-script-adaptation.md). Historical local-adapter
+checks are explicitly superseded. Actual CLI/socket/PostgreSQL proof is required; real external
+model generation and output quality remain separately NOT_RUN for this data-pipeline slice.

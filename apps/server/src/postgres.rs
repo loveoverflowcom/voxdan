@@ -1,5 +1,5 @@
 //! PostgreSQL shell: authentication facts, authorization, locked head and immutable exports.
-use std::{sync::Arc, time::Duration};
+use std::time::Duration;
 
 use cantos_api::{FieldIssue, RevisionResponse, SaveRevisionRequest};
 use deadpool_postgres::{Manager, ManagerConfig, Pool, RecyclingMethod};
@@ -10,11 +10,12 @@ use uuid::Uuid;
 use crate::revisions::{decide_save, permits, Access, Action, PriorOperation, SaveDecision};
 use crate::script_ir::{read_canonical_script, read_script, ReadError, WRITE_VERSION};
 
-const MIGRATIONS: [(i32, &str); 4] = [
+const MIGRATIONS: [(i32, &str); 5] = [
     (1, include_str!("../migrations/0001_script_revisions.sql")),
     (2, include_str!("../migrations/0002_editorial_handoff.sql")),
     (3, include_str!("../migrations/0003_manuscript_import.sql")),
     (4, include_str!("../migrations/0004_ai_adaptation.sql")),
+    (5, include_str!("../migrations/0005_caller_adaptation.sql")),
 ];
 const REVISION_COLUMNS: &str = "script_id, revision, expected_revision, accepted_by, canonical_export, content_digest, export_digest, to_char(accepted_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"') AS accepted_at";
 
@@ -33,6 +34,7 @@ pub enum StoreError {
     EvidenceUnavailable,
     StaleRevision(u64),
     OperationReused,
+    ProposalAlreadySubmitted,
     Unavailable,
     CorruptRevision,
 }
@@ -46,8 +48,6 @@ impl From<tokio_postgres::Error> for StoreError {
 #[derive(Clone)]
 pub struct Store {
     pool: Pool,
-    adaptation_provider: Option<Arc<dyn crate::adaptation::provider::AdaptationProvider>>,
-    adaptation_slots: Arc<tokio::sync::Semaphore>,
 }
 
 pub fn token_hash(token: &str) -> Vec<u8> {
@@ -95,11 +95,7 @@ impl Store {
             .runtime(deadpool_postgres::Runtime::Tokio1)
             .build()
             .map_err(|_| StoreError::Unavailable)?;
-        Ok(Self {
-            pool,
-            adaptation_provider: None,
-            adaptation_slots: Arc::new(tokio::sync::Semaphore::new(1)),
-        })
+        Ok(Self { pool })
     }
 
     async fn connection(&self) -> Result<deadpool_postgres::Object, StoreError> {

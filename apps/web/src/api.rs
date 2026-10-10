@@ -1,8 +1,7 @@
 //! Same-origin HTTP transport. Session credential becomes an HttpOnly cookie.
 use cantos_api::{
-    AcceptAdaptationRequest, AdaptationProviderResponse, AdaptationRunResponse, ApiError,
-    CancelAdaptationRequest, ErrorCode, ImportRequest, ImportResponse, RevisionResponse,
-    SaveRevisionRequest, SessionRequest, SessionResponse, StartAdaptationRequest,
+    AcceptAdaptationRequest, AdaptationReviewResponse, ApiError, ErrorCode, ImportRequest,
+    ImportResponse, RevisionResponse, SaveRevisionRequest, SessionRequest, SessionResponse,
 };
 use gloo_net::http::{Request, Response};
 
@@ -31,29 +30,9 @@ async fn decode<T: serde::de::DeserializeOwned>(response: Response) -> Result<T,
 }
 
 impl StudioHttp {
-    pub async fn adaptation_provider(&self) -> Result<AdaptationProviderResponse, ApiError> {
+    pub async fn read_adaptation(&self, id: &str) -> Result<AdaptationReviewResponse, ApiError> {
         decode(
-            Request::get("/api/v1/adaptations/provider")
-                .send()
-                .await
-                .map_err(|_| unavailable())?,
-        )
-        .await
-    }
-
-    pub async fn start_adaptation(
-        &self,
-        request: &StartAdaptationRequest,
-    ) -> Result<AdaptationRunResponse, ApiError> {
-        let request = Request::post("/api/v1/adaptations")
-            .json(request)
-            .map_err(|_| unavailable())?;
-        decode(request.send().await.map_err(|_| unavailable())?).await
-    }
-
-    pub async fn read_adaptation(&self, id: &str) -> Result<AdaptationRunResponse, ApiError> {
-        decode(
-            Request::get(&adaptation_path(id)?)
+            Request::get(&format!("{}/review", adaptation_path(id)?))
                 .send()
                 .await
                 .map_err(|_| unavailable())?,
@@ -67,17 +46,6 @@ impl StudioHttp {
         request: &AcceptAdaptationRequest,
     ) -> Result<RevisionResponse, ApiError> {
         let request = Request::post(&format!("{}/accept", adaptation_path(id)?))
-            .json(request)
-            .map_err(|_| unavailable())?;
-        decode(request.send().await.map_err(|_| unavailable())?).await
-    }
-
-    pub async fn cancel_adaptation(
-        &self,
-        id: &str,
-        request: &CancelAdaptationRequest,
-    ) -> Result<AdaptationRunResponse, ApiError> {
-        let request = Request::post(&format!("{}/cancel", adaptation_path(id)?))
             .json(request)
             .map_err(|_| unavailable())?;
         decode(request.send().await.map_err(|_| unavailable())?).await

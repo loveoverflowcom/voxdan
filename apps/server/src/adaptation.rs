@@ -1,19 +1,16 @@
-//! Bounded adaptation admission; durable I/O belongs to PostgreSQL and the provider shell.
+//! Pure bounded context preparation and caller-proposal admission; durable I/O belongs to PostgreSQL.
 use std::collections::{BTreeMap, BTreeSet};
 
 use cantos_api::{
-    AdaptationConfig, AdaptationCoverage, AdaptationCoverageDisposition, AdaptationFinding,
-    AdaptationFindingCode, AdaptationProblem, AdaptationProposal, Extraction, FieldIssue,
-    ImportBlockKind, ImportOutcome, ImportResponse,
+    AdaptationCostBasis, AdaptationCoverage, AdaptationCoverageDisposition, AdaptationFinding,
+    AdaptationFindingCode, AdaptationProblem, AdaptationProposal, CallerGenerationMetadata,
+    Extraction, FieldIssue, ImportBlockKind, ImportOutcome, ImportResponse,
 };
 use serde::Deserialize;
 use serde_json::{json, Value};
 use uuid::Uuid;
 
 use crate::script_ir::{read_script, ReadError, ScriptContent};
-
-pub mod provider;
-use provider::ProviderRequest;
 
 pub const CONTRACT_VERSION: &str = "cantos-adaptation-1";
 pub const PROMPT_VERSION: &str = "cantos-radio-adapt-1";
@@ -22,8 +19,18 @@ pub const MAX_REQUEST_BYTES: usize = 96 * 1024;
 pub const MAX_OUTPUT_BYTES: usize = 256 * 1024;
 pub const MAX_NODES: usize = 1000;
 pub const MAX_FINDINGS: usize = 2000;
+pub const MAX_CALLER_CONFIGURATION_BYTES: usize = 16 * 1024;
+const MAX_CALLER_CONFIGURATION_DEPTH: usize = 8;
+const MAX_CALLER_CONFIGURATION_NODES: usize = 256;
 pub const OUTPUT_SCHEMA: &str =
     include_str!("../../../contracts/schema/adaptation/cantos-adaptation-1.schema.json");
+
+/// Exported instructions and inert source data; Cantos does not execute inference.
+#[derive(Clone, Debug)]
+pub struct PreparedAdaptationContext {
+    pub system: String,
+    pub prompt: String,
+}
 
 /// Application-loaded facts; the model has no fields through which to forge these references.
 #[derive(Clone, Debug)]
@@ -71,7 +78,7 @@ fn text(value: &Value) -> Result<&str, AdaptationProblem> {
 pub fn prepare_request(
     source: &ImportResponse,
     base_script_json: Option<&str>,
-) -> Result<ProviderRequest, AdaptationProblem> {
+) -> Result<PreparedAdaptationContext, AdaptationProblem> {
     let extraction = extracted(source)?;
     let size = extraction.blocks.iter().try_fold(0usize, |size, block| {
         size.checked_add(block.text.len())
@@ -123,28 +130,101 @@ pub fn prepare_request(
             "request_limit",
         ));
     }
-    Ok(ProviderRequest { system, prompt })
+    Ok(PreparedAdaptationContext { system, prompt })
 }
 
-/// Byte-per-token upper bound plus framing reserve; no tokenizer or truncation is assumed.
-pub fn validate_request_budget(
-    request: &ProviderRequest,
-    config: &AdaptationConfig,
-) -> Result<(), AdaptationProblem> {
-    let budget = request
-        .system
-        .len()
-        .checked_add(request.prompt.len())
-        .and_then(|bytes| bytes.checked_add(256))
-        .and_then(|bytes| bytes.checked_add(config.num_predict as usize));
-    if budget.is_none_or(|bytes| bytes > config.num_context as usize) {
-        return Err(problem(
-            "source_context_too_large",
-            "/source_id",
-            "provider_context_budget",
-        ));
+/// Validate declarations without attesting them or inventing missing provider/accounting facts.
+pub fn validate_caller_generation(
+    metadata: &CallerGenerationMetadata,
+    pinned_prompt_version: &str,
+) -> Vec<FieldIssue> {
+    let mut issues = Vec::new();
+    for (value, max, path) in [
+        (
+            Some(metadata.host_tool.as_str()),
+            128,
+            "/generation/host_tool",
+        ),
+        (metadata.provider.as_deref(), 128, "/generation/provider"),
+        (metadata.model.as_deref(), 256, "/generation/model"),
+        (
+            Some(metadata.prompt_version.as_str()),
+            128,
+            "/generation/prompt_version",
+        ),
+    ] {
+        if value.is_some_and(|value| {
+            value.trim().is_empty() || value.len() > max || value.chars().any(char::is_control)
+        }) {
+            issues.push(FieldIssue {
+                path: path.into(),
+                rule: "bounded_declaration".into(),
+            });
+        }
     }
-    Ok(())
+    if metadata.prompt_version != pinned_prompt_version {
+        issues.push(FieldIssue {
+            path: "/generation/prompt_version".into(),
+            rule: "pinned_prompt_version".into(),
+        });
+    }
+    if let Some(configuration) = &metadata.configuration_json {
+        if let Some(rule) = configuration_problem(configuration) {
+            issues.push(FieldIssue {
+                path: "/generation/configuration_json".into(),
+                rule: rule.into(),
+            });
+        }
+    }
+    if metadata
+        .cost
+        .as_ref()
+        .is_some_and(|cost| cost.basis != AdaptationCostBasis::CallerDeclared)
+    {
+        issues.push(FieldIssue {
+            path: "/generation/cost/basis".into(),
+            rule: "caller_declared".into(),
+        });
+    }
+    issues
+}
+
+fn configuration_problem(configuration: &str) -> Option<&'static str> {
+    if configuration.len() > MAX_CALLER_CONFIGURATION_BYTES {
+        return Some("byte_length");
+    }
+    let value: Value = match serde_json::from_str(configuration) {
+        Ok(Value::Object(object)) => Value::Object(object),
+        _ => return Some("json_object"),
+    };
+    let mut nodes = 0usize;
+    let mut pending = vec![(&value, 1usize)];
+    while let Some((value, depth)) = pending.pop() {
+        nodes = nodes.saturating_add(1);
+        if nodes > MAX_CALLER_CONFIGURATION_NODES {
+            return Some("bounded_json_object");
+        }
+        match value {
+            Value::Object(object) => {
+                nodes = nodes.saturating_add(object.len()); // Keys are bounded nodes too.
+                if depth > MAX_CALLER_CONFIGURATION_DEPTH || nodes > MAX_CALLER_CONFIGURATION_NODES
+                {
+                    return Some("bounded_json_object");
+                }
+                pending.extend(object.values().map(|value| (value, depth + 1)));
+            }
+            Value::Array(array) => {
+                if depth > MAX_CALLER_CONFIGURATION_DEPTH
+                    || array.len() > MAX_CALLER_CONFIGURATION_NODES.saturating_sub(nodes)
+                {
+                    return Some("bounded_json_object");
+                }
+                pending.extend(array.iter().map(|value| (value, depth + 1)));
+            }
+            _ => {}
+        }
+    }
+    None
 }
 
 #[derive(Deserialize)]

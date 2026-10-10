@@ -17,8 +17,9 @@ wire examples are checked by the shared consumer and backend contract tests.
 The [adaptation v1 contract](adaptation-v1.md) adds private revision-pinned runs, a closed
 provider proposal format and explicit reviewed acceptance. Server-created IDs/evidence and the
 existing Script IR reader form the admission boundary. Proposal citation coverage and findings
-stay outside Script IR and require source comparison. The real localhost adapter and deterministic
-HTTP double have separate evidence; no live model result is implied by this contract.
+stay outside Script IR and require source comparison. The [tool schemas](adaptation-tools-v1.json) expose source-bound context/read/submit/review
+operations over the existing authenticated HTTP service and CLI. Caller provenance is declared,
+unverified evidence; no inference integration or live model result is implied.
 
 The historical [draft example](examples/episode-draft.json) stays byte-for-byte unchanged. Its
 `0.1.0-draft` version is illustrative and explicitly unsupported by the reader. The new fixtures

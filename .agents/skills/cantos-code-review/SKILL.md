@@ -109,6 +109,7 @@ Skipping a pass is a decision to state, not silence.
 | catalog or listener routes, play, progress, bookmarks, downloads, listener DTOs | § 7 listening contracts | [`cantos-listening`](../cantos-listening/SKILL.md) |
 | Leptos views, CSS, Compose UI, tokens, strings, motion, UI evidence | § 8 UI | [`cantos-ui-design`](../cantos-ui-design/SKILL.md) and the renderer skill |
 | tests, fixtures, golden files, generators, mutation config, CI workflows | § 9 tests and evidence | [verification-strategy](../cantos-engineering/references/verification-strategy.md) |
+| database-backed GET/read/fetch, query/index changes, DBSP/CDC or writes feeding read models | § 9 tests and evidence, plus the applicable domain pass | [read-performance acceptance](../cantos-engineering/references/postgresql-read-performance.md#review-and-acceptance) |
 | `AGENTS.md`, skills, docs that own rules, templates, check scripts | lens A policy under review, then § 9 | [diff-review § 3](../cantos-engineering/references/diff-review.md#3-the-five-lenses) |
 
 Passes 10 and 11 apply to every review that cites or produces evidence.

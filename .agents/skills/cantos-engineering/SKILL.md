@@ -4,7 +4,8 @@ description: >-
   Engineering foundation for Cantos (Rust, Axum, PostgreSQL, Leptos, Compose Multiplatform).
   Invariant-first workflow, decoupled module boundaries, immutable values and revisions, types
   as proof barriers, functional core with imperative shell, clean readable syntax, cheapest
-  adequate test evidence, one evidence vocabulary and a mandatory residual-risk report. Use for
+  adequate test evidence, PostgreSQL read performance and conditional DBSP evaluation,
+  one evidence vocabulary and a mandatory residual-risk report. Use for
   any domain, backend, persistence, contract, test, refactoring or verification change.
 ---
 
@@ -54,6 +55,16 @@ report the exact evidence level and the residual risk
 
 Skipping a step is a decision you must state. "No core extracted: this adapter only maps types"
 is a fine answer; silence is not.
+
+### Database-backed GET, read and fetch work
+
+Load [PostgreSQL read performance and DBSP evaluation](references/postgresql-read-performance.md)
+before adding or changing a database-backed read, its query, or a write that feeds a read model.
+It owns the mandatory inventory, PostgreSQL baseline, simpler optimization comparison, DBSP
+fit decision, differential/failure checks, benchmark record and acceptance checklist. Prioritize
+hot read paths; adopt incremental views only when measured benefit and semantics justify them.
+Mutations require a separate, workload-specific overhead and consistency decision. This is a
+manual working requirement; no DBSP integration or performance gate is implemented here.
 
 ## 1. Name the invariant before writing code
 
@@ -253,6 +264,7 @@ A report with an empty residual-risk line is a report nobody can act on.
 | making an invalid state or identity unrepresentable | [`types-as-proofs.md`](references/types-as-proofs.md) |
 | serde, SQL rows, fixtures, AI output or migrations around a refined type | [`boundary-hardening.md`](references/boundary-hardening.md) |
 | PostgreSQL transactions, constraints, concurrency control, migrations, test databases | [`persistence.md`](references/persistence.md) |
+| database-backed GET/read/fetch, hot queries, indexes, DBSP incremental views, CDC, read-model invalidation or performance acceptance | [`postgresql-read-performance.md`](references/postgresql-read-performance.md) |
 | Axum handlers, DTOs, error mapping, authorization, OpenAPI and client contracts | [`http-api-boundary.md`](references/http-api-boundary.md) |
 | naming, function shape, errors, comments, Rust/Kotlin/Leptos style | [`clean-code.md`](references/clean-code.md) |
 | choosing an oracle, partitioning edge cases, the verification ledger | [`verification-strategy.md`](references/verification-strategy.md) |

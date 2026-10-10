@@ -292,6 +292,11 @@ state.
 [mutation-and-formal](../../cantos-engineering/references/mutation-and-formal.md),
 [fault-injection-testing](../../cantos-production-pipeline/references/fault-injection-testing.md).
 
+For database-backed read/query/index changes, DBSP/CDC or dependent writes, load the foundation's
+[read-performance acceptance checklist](../../cantos-engineering/references/postgresql-read-performance.md#review-and-acceptance).
+Check actual query/test paths, oracle alignment and benchmark provenance; a skill edit alone
+supplies no database correctness or performance evidence.
+
 | Changed surface | Questions to weigh |
 |---|---|
 | pure domain rule | a type barrier? a deterministic regression with the exact error variant? exhaustive finite cases? a law with an independent oracle? |

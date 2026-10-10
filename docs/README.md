@@ -8,6 +8,7 @@
 | [Story workspace](production/story-workspace.md) | Agent-operated Drive/local story folders, indexes, synchronization and offline recovery |
 | [Radio score](production/radio-score.md) | Dialogue adaptation, proper-name mapping and performance cues using Script IR |
 | [Story workspace evidence](evidence/story-workspace-skills.md) | Skill/initializer checks, editorial rehearsal, verified Drive setup and residual limits |
+| [PostgreSQL/DBSP skill evidence](evidence/postgresql-dbsp-skills.md) | Read-performance workflow validation, routing walkthrough and explicitly unrun database/engine gates |
 | [Architecture overview](architecture/overview.md) | Planned boundaries, deployment and data ownership |
 | [Script IR](architecture/script-ir.md) | Versioned interchange and reuse without project coupling |
 | [Mobile architecture](architecture/mobile.md) | CMP shell and native listening behavior |

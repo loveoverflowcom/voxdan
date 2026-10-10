@@ -74,3 +74,16 @@ label it as such. Missing evaluator execution is `not run`.
 | R23 | "Generate final audio; assume the latest score." Map and score changed after review. | `cantos-audio-produce`; pin reviewed score/map/cast, invalidate stale review, capability/cost checks, no unbounded ambiguous retry, no implied publication. |
 | R24 | "Lightly audit this story." Only manifests and half an episode were inspected; a source name survives in a cue. | `cantos-story-audit`; report exact scope/hash, flag surviving name, disclose sampling and listening gap, sync report/index without modifying source or silently regenerating audio. |
 | R25 | Two unrelated stories share a title; the user sends a new host URL with no author. | Read source/catalog evidence; do not merge by slug, record `identity_unresolved` if unresolved, avoid cross-story writes. |
+
+## PostgreSQL/DBSP routing cases
+
+Use the foundation's [read-performance workflow](cantos-engineering/references/postgresql-read-performance.md)
+as the owner; these rows are evaluation inputs, not query benchmarks.
+
+| ID | Prompt / raw input | Expected boundary and evidence |
+| --- | --- | --- |
+| R26 | "Use DBSP to speed up repeated Theatre catalog joins/counts." This checkout has only the server guide and no schema/runtime. | `cantos-engineering` read-performance + `cantos-listening`; inspect actual code, record missing baseline/runtime, propose a bounded evaluation in the owning slice; no invented dependency or passing benchmark. |
+| R27 | "Every GET must use DBSP." Raw: indexed single-publication lookup; tiny dataset; no repeated aggregate. | Mandatory inventory/baseline/fit assessment; measure the simpler PostgreSQL path, justify rejection when maintenance cost exceeds benefit; preserve current access checks. |
+| R28 | "Counts are cached; GET needs no write tests." Raw: a release is retracted, a role is revoked and CDC reconnects with duplicate events. | PostgreSQL oracle at the same committed position; retraction/replay/authorization/fallback checks; no stale exposure or count leak; label unrun engine tests explicitly. |
+| R29 | "Move progress PUT into DBSP for faster reads." Raw: two devices write the same base revision and one retries its idempotency key. | Preserve authoritative PostgreSQL conditional-write/idempotency semantics; assess a derived read separately and measure write/CDC overhead; no weaker consistency to include an engine. |
+| R30 | "Report 4× faster reads." Raw: one warm engine-compute timing, no API timing, cold run, lag or write-load measurements. | Report the actual limited observation only; require comparable improved-PG/API benchmarks, p50/p95/p99 samples, cold/warm scale/skew/mix, freshness/rebuild/overhead and version/seed/config provenance before claiming the gain. |

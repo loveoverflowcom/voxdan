@@ -9,6 +9,10 @@ Listener-facing contracts are owned by [`cantos-listening`](../../cantos-listeni
 this reference owns the general shape every endpoint follows. No endpoint exists yet; the first
 slice establishes the contract tooling ([contracts README](../../../../contracts/README.md)).
 
+For database-backed GET/read/fetch, load the foundation's mandatory
+[read-performance workflow](postgresql-read-performance.md). Include internal reads behind
+non-GET handlers; the HTTP verb alone does not decide DBSP suitability or freshness.
+
 ## A handler is a shell
 
 ```text

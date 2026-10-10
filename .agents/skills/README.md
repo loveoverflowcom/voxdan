@@ -64,6 +64,7 @@ completeness, orphaned references and local links. Passing it proves skill hygie
 | The task is about… | Load |
 |---|---|
 | any Rust domain/backend change, persistence, HTTP contract, tests, verification, refactoring | [`cantos-engineering`](cantos-engineering/SKILL.md) |
+| database-backed GET/read/fetch performance, DBSP evaluation, or writes feeding read models | [`cantos-engineering`](cantos-engineering/SKILL.md), then its [read-performance workflow](cantos-engineering/references/postgresql-read-performance.md); add the domain owner |
 | Script IR schema, stable IDs, revisions, digests, import, AI adaptation output, Narrative Forge | [`cantos-script-ir`](cantos-script-ir/SKILL.md) |
 | production runs, jobs, leases, TTS/adaptation providers, budgets, cache keys, mixing, QC records | [`cantos-production-pipeline`](cantos-production-pipeline/SKILL.md) |
 | rights, approvals, release manifests, object storage, CDN, publish/republish/retract | [`cantos-publication`](cantos-publication/SKILL.md) |

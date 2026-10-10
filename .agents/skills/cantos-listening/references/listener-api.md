@@ -35,6 +35,13 @@ Playback authorization is a `POST` because each call makes an access decision an
 credential; it is not a safe, cacheable read. The immutable manifest never contains a URL with a
 signature, so it stays cacheable and loggable.
 
+## Read performance
+
+For the database-backed reads in the resource map, use the foundation's
+[PostgreSQL/DBSP workflow](../../cantos-engineering/references/postgresql-read-performance.md).
+Keep the visibility matrix, cursor law, no-production-work test and backend access checks below
+as acceptance oracles for every serving path, including fallback.
+
 ## Identity
 
 **A1 — Identifiers are opaque, typed and immutable.**

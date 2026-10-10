@@ -12,6 +12,11 @@ publication manifests and listener progress; media bytes live in object storage
 No schema, migration tool or SQL library is selected yet; record the choice in an ADR with the
 first slice.
 
+For queries or writes feeding a read model, apply the foundation's
+[read-performance workflow](postgresql-read-performance.md). It owns PostgreSQL baselines,
+index/query comparisons, conditional DBSP evaluation and maintenance/recovery evidence; this
+reference continues to own transaction and persistence correctness.
+
 ## The database is the second barrier, not the first
 
 Domain types are the first barrier. Constraints catch what a bug, a concurrent writer or a manual

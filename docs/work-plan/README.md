@@ -36,6 +36,13 @@ The five capability specifications map to 17 bounded implementation issues. Use 
 
 ## Shared completion evidence
 
+Database-backed read work in every slice uses the foundation's
+[PostgreSQL/DBSP evaluation workflow](../../.agents/skills/cantos-engineering/references/postgresql-read-performance.md).
+Prioritize measured GET/read/fetch bottlenecks as their implementation appears; keep the order
+above. [Skill-update evidence](../evidence/postgresql-dbsp-skills.md) records instruction checks,
+not an engine integration or benchmark. A candidate with measured need must earn a scoped
+proposal/ADR within its owning slice; this update schedules no engine deployment or migration.
+
 The [story artifact workspace](../production/story-workspace.md) supplies agent-operated intake,
 proper-name mapping, radio-score authoring, production handoffs and audit through Drive/local
 folders. Its skills and local initializer support editorial preparation for 010–030; they do

@@ -1,0 +1,56 @@
+{
+  "schema_version": "0.1.0",
+  "work": {
+    "id": "work-demo",
+    "title": "Ánh đèn cuối sân khấu",
+    "rights_record_id": "rights-demo",
+    "source_ref": "origin-demo"
+  },
+  "adaptation": {
+    "id": "adaptation-demo",
+    "language": "vi-VN",
+    "rights_record_id": "rights-adaptation-demo",
+    "provenance_refs": [
+      "origin-demo"
+    ]
+  },
+  "characters": [
+    {
+      "id": "narrator",
+      "name": "Người dẫn chuyện",
+      "role": "narrator",
+      "personality": "Calm and observant"
+    },
+    {
+      "id": "an",
+      "name": "An",
+      "role": "character",
+      "personality": "Curious and hopeful"
+    },
+    {
+      "id": "minh",
+      "name": "Minh",
+      "role": "character",
+      "personality": "Reserved but warm"
+    }
+  ],
+  "episode": {
+    "id": "episode-demo-01",
+    "title": "Một lời hẹn",
+    "acts": [
+      {
+        "id": "act-01",
+        "title": "Sân khấu trống",
+        "scenes": []
+      }
+    ]
+  },
+  "provenance": [
+    {
+      "id": "origin-demo",
+      "kind": "original",
+      "source_record_id": "source-demo",
+      "rights_record_id": "rights-demo"
+    }
+  ]
+}

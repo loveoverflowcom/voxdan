@@ -18,7 +18,11 @@ TTS, audio mixing, public playback, a general document-conversion service, real-
 
 ## Dependencies
 
-The project brief and architecture guidance. The repository is initially empty; inspect the resulting bootstrap before selecting modules, migrations, API routes, or editor libraries. Establish a local backend/PostgreSQL development path as part of this user capability.
+The project brief and architecture guidance. An executable [Script IR contract](../../contracts/README.md)
+now supplies structured-draft validation, exports and speech bytes. Inspect that module before
+selecting migrations, API routes or editor libraries. Establish Axum/PostgreSQL and an authorized
+save/retrieve consumer before expanding intake. Immutable revision persistence, actor checks,
+stale-write/retry behavior and restart evidence remain in #1.
 
 ## Suggested sequence
 

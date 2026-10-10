@@ -1,6 +1,8 @@
 # Business Rules
 
-> Status: proposed product contract for implementation. The repository scaffold does not enforce these rules yet.
+> Status: target product contract. Script IR structure, reference and text rules have an
+> [implemented validator](../../contracts/README.md); revision persistence, authorization,
+> rights eligibility, production and publication gates remain planned.
 
 ## Content and revisions
 

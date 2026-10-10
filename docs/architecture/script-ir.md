@@ -1,6 +1,10 @@
 # Versioned Script IR
 
-Status: proposed interchange design. The [example](../../contracts/examples/episode-draft.json) is illustrative JSON with `schema_version: 0.1.0-draft`; it is not a stable API, implemented schema or Narrative Forge format.
+Script IR `0.1.0` has an implemented [JSON Schema, reader and semantic contract](../../contracts/README.md)
+with [local test evidence](../evidence/script-ir-contract.md). The
+[policy ADR](../decisions/0002-script-ir-contract.md) remains proposed for production adoption.
+The unchanged [example](../../contracts/examples/episode-draft.json) is historical illustrative
+`0.1.0-draft` JSON, explicitly unsupported by this reader; it is not a Narrative Forge format.
 
 ## Purpose
 
@@ -20,11 +24,19 @@ Narration uses an explicit narrator character/speaker. Sound effects, music and 
 
 ## Revision and validation policy
 
-Assign stable IDs independently of row position. Moving a dialogue changes scene sequencing but does not inherently change its spoken render. Duplicate IDs, missing speakers, invalid ordering, unresolved required voice casting and unknown schema versions must be caught before production.
+Assign stable IDs independently of row position. Moving a dialogue changes scene sequencing but
+does not inherently change its spoken render. The implemented contract rejects duplicate IDs,
+missing/unknown speakers, empty sequence levels, invalid references and unknown schema versions;
+array order is the only sequence representation. Required voice casting remains a separate
+production input gate, not a Script IR validation claim.
 
 Treat imported/AI-adapted content as editable drafts. Accepting a script produces an immutable revision and content digest. Provider requests and approvals reference that revision, not a mutable "latest" row. An edit produces a new revision and invalidates only dependent render/QC/approval artifacts.
 
-Before the first contract implementation, finalize a JSON Schema, semantic validator, canonical serialization/digest policy and compatibility fixtures. Schema compatibility and semantic compatibility both matter: accepting a new field must not silently discard performance meaning. Reject unsupported versions with an actionable error; explicit converters preserve provenance.
+The [contract](../../contracts/README.md) specifies canonical content/export/speech encodings,
+tagged SHA-256 digests and the exact read/write set `{0.1.0}`. Schema compatibility and semantic
+compatibility both matter: accepting a new field must not silently discard performance meaning.
+Reject unsupported versions with an actionable error; future explicit converters must preserve
+provenance. No converter or persisted revision lifecycle is implemented here.
 
 ## TTS cache boundary
 

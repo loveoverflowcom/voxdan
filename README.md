@@ -6,7 +6,10 @@ Cantos produces performances with a cast, narration, atmosphere, music and sound
 
 ## Repository status
 
-This initial repository contains product specifications, architecture decisions, directory guides and project-management templates. The server, Web apps, production workers and mobile player are **not implemented yet**. No runnable Rust or Gradle project is claimed by this bootstrap.
+This repository contains product specifications, architecture decisions, directory guides and
+project-management templates, plus an executable Rust [Script IR contract](contracts/README.md)
+and validation CLI. The Axum HTTP host, persistence/auth, Web apps, production workers and mobile
+player are **not implemented yet**. No runnable Gradle project is claimed.
 
 `develop` is the first and default branch. Create short-lived feature branches from it and target pull requests to `develop`.
 
@@ -34,16 +37,16 @@ Start with one modular backend. Worker execution can run separately for resource
 
 | Path | Responsibility at bootstrap |
 | --- | --- |
-| `apps/server/` | Guide for the future Axum host and production execution |
+| `apps/server/` | Script IR domain/reader and validation CLI; guide for the future Axum host |
 | `apps/web/` | Guide for Studio and Theatre Web |
 | `apps/mobile/` | Guide for the native CMP listening app |
-| `contracts/` | Versioning guidance and an illustrative Script IR fixture |
+| `contracts/` | Script IR JSON Schema, compatibility/validation fixtures and canonical policy |
 | `docs/` | Product, architecture, design, decisions and the work queue |
 | `templates/` | Reusable feature, decision, production and publication records |
 | `.agents/skills/` | Canonical agent skills shared by Codex, Claude Code and other agents |
 | `.claude/skills/` | Per-skill symlinks so Claude Code discovers `.agents/skills/` |
 | `.github/` | Issue forms, PR template and repository checks |
-| `scripts/` | Dependency-free checks (and their tests) for this documentation bootstrap |
+| `scripts/` | Repository checks, story initializer, independent digest oracle and bounded mutation runner |
 
 ## Validate the bootstrap
 
@@ -53,7 +56,21 @@ python3 -m unittest discover -s scripts -p 'test_*.py'
 git diff --check
 ```
 
-Application build, database migration and audio QA commands will be added with the corresponding implementation. [.env.example](.env.example) records proposed configuration names only; it does not start services.
+Verify the implemented contract with Rust 1.87:
+
+```sh
+cargo fmt --all -- --check
+cargo clippy --workspace --all-targets --locked -- -D warnings
+cargo test --workspace --locked
+python3 scripts/reference_script_ir.py
+cargo run --locked --bin validate-script -- contracts/fixtures/script-ir/0.1.0/accept/two-scenes.json
+```
+
+[Contract evidence](docs/evidence/script-ir-contract.md) names the actual verification boundary.
+On macOS where temporary symlink tests encounter `/var` versus `/private/var`, use
+`TMPDIR=/private/tmp` for the Python unit/mutation runs. Database migration, full application
+and audio QA commands will be added with those implementations. [.env.example](.env.example)
+records proposed configuration names only; it does not start services.
 
 ## MVP completion
 

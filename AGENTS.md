@@ -43,4 +43,11 @@ Skills own working method; `docs/` owns product rules. Keep one copy of each ski
 
 Run `python3 scripts/check_repository.py`, `python3 -m unittest discover -s scripts -p 'test_*.py'` and `git diff --check` for this bootstrap. Once code exists, run the documented checks appropriate to the change. Add meaningful crash/retry and publication-gate coverage when implementing those flows. UI changes require observations on relevant viewports/platforms, realistic Vietnamese text, focus/text scaling and accessibility; an image alone does not verify interaction or motion.
 
+The implemented Script IR package also requires `cargo fmt --all -- --check`,
+`cargo clippy --workspace --all-targets --locked -- -D warnings`, `cargo test --workspace --locked`
+and `python3 scripts/reference_script_ir.py`. Use `python3 scripts/mutate_script_ir.py` for the
+bounded validator/encoder mutation checks. These validate the contract only; there is no Axum,
+PostgreSQL, Leptos or mobile runtime gate yet. On affected macOS temporary-path setups, use
+`TMPDIR=/private/tmp` for Python unit/mutation runs.
+
 Do not report an app build, mobile test, audio quality result or end-to-end production run unless it actually ran. Record limitations and required follow-ups with evidence.

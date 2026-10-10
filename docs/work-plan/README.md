@@ -2,7 +2,10 @@
 
 Start with [#1](https://github.com/loveoverflowcom/cantos/issues/1) within [010 — Import and edit a versioned script](010-import-and-edit-script.md). Each item delivers a usable business capability; implementation details must be confirmed against the code created in earlier items.
 
-The repository starts with documentation and templates. The capabilities below are planned, not implemented. Numeric filename prefixes express the current recommended sequence, may be renumbered, and are not permanent task IDs.
+The repository has documentation/templates and an executable
+[Script IR contract](../../contracts/README.md). The end-to-end capabilities below remain
+planned. Numeric filename prefixes express the current recommended sequence, may be renumbered,
+and are not permanent task IDs.
 
 | Order | Outcome | Prerequisite |
 | --- | --- | --- |
@@ -16,7 +19,14 @@ The repository starts with documentation and templates. The capabilities below a
 
 [Kanban](https://github.com/users/loveoverflowcom/projects/6/views/1) · [Planning table](https://github.com/users/loveoverflowcom/projects/6/views/2) · [Detailed issue/dependency map](project-planning.md)
 
-The five capability specifications map to 17 bounded implementation issues. Use the Project for current execution Status and issue checklists/dependencies for evidence; this queue retains recommended sequence and scope. The first implementation task is [#1](https://github.com/loveoverflowcom/cantos/issues/1).
+The five capability specifications map to 17 bounded implementation issues. Use the Project for
+current execution Status and issue checklists/dependencies for evidence; this queue retains
+recommended sequence and scope. Continue [#1](https://github.com/loveoverflowcom/cantos/issues/1)
+with persistence/auth and the minimal Studio consumer, building on the contract module. Preserve
+the complete canonical export and evidence references, authorize reads/writes, reject stale
+updates and make retries return the original accepted revision. Contract validation alone does
+not satisfy that issue or the 010 journey. The next slice still precedes importer/adaptation,
+casting and production work.
 
 | Capability | Execution issues | Milestone |
 | --- | --- | --- |

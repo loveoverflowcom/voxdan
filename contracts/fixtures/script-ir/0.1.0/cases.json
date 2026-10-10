@@ -1,0 +1,253 @@
+[
+  {
+    "file": "reject/duplicate-id.json",
+    "stage": "semantic",
+    "diagnostics": [
+      {
+        "path": "episode/act:act-01/scene:scene-01/dialogue:dialogue-01/id",
+        "issue": {
+          "code": "duplicate_id",
+          "id": "dialogue-01",
+          "first_seen": "episode/act:act-01/scene:scene-01/dialogue:dialogue-01/id"
+        }
+      }
+    ]
+  },
+  {
+    "file": "reject/unknown-speaker.json",
+    "stage": "semantic",
+    "diagnostics": [
+      {
+        "path": "episode/act:act-01/scene:scene-01/dialogue:dialogue-02/speaker_id",
+        "issue": {
+          "code": "unknown_speaker",
+          "speaker_id": "ba-cu"
+        }
+      }
+    ]
+  },
+  {
+    "file": "reject/cross-scene-anchor.json",
+    "stage": "semantic",
+    "diagnostics": [
+      {
+        "path": "episode/act:act-01/scene:scene-01/cue:cue-01/anchor/dialogue_id",
+        "issue": {
+          "code": "cue_anchor_unresolved",
+          "dialogue_id": "dialogue-04"
+        }
+      }
+    ]
+  },
+  {
+    "file": "reject/empty-text.json",
+    "stage": "semantic",
+    "diagnostics": [
+      {
+        "path": "episode/act:act-01/scene:scene-01/dialogue:dialogue-02/text",
+        "issue": {
+          "code": "empty_text"
+        }
+      }
+    ]
+  },
+  {
+    "file": "reject/format-control.json",
+    "stage": "semantic",
+    "diagnostics": [
+      {
+        "path": "episode/act:act-01/scene:scene-01/dialogue:dialogue-02/text",
+        "issue": {
+          "code": "forbidden_character",
+          "code_point": 8238
+        }
+      }
+    ]
+  },
+  {
+    "file": "reject/missing-narrator.json",
+    "stage": "semantic",
+    "diagnostics": [
+      {
+        "path": "characters",
+        "issue": {
+          "code": "narrator_count",
+          "found": 0
+        }
+      }
+    ]
+  },
+  {
+    "file": "reject/two-narrators.json",
+    "stage": "semantic",
+    "diagnostics": [
+      {
+        "path": "characters",
+        "issue": {
+          "code": "narrator_count",
+          "found": 2
+        }
+      }
+    ]
+  },
+  {
+    "file": "reject/missing-source.json",
+    "stage": "semantic",
+    "diagnostics": [
+      {
+        "path": "work/source_ref",
+        "issue": {
+          "code": "unknown_provenance",
+          "source_id": "origin-missing"
+        }
+      }
+    ]
+  },
+  {
+    "file": "reject/unknown-provenance.json",
+    "stage": "semantic",
+    "diagnostics": [
+      {
+        "path": "adaptation/provenance_refs/0",
+        "issue": {
+          "code": "unknown_provenance",
+          "source_id": "origin-missing"
+        }
+      }
+    ]
+  },
+  {
+    "file": "reject/duplicate-provenance-ref.json",
+    "stage": "semantic",
+    "diagnostics": [
+      {
+        "path": "adaptation/provenance_refs/1",
+        "issue": {
+          "code": "duplicate_provenance_ref",
+          "source_id": "origin-demo"
+        }
+      }
+    ]
+  },
+  {
+    "file": "reject/pronunciation-target-missing.json",
+    "stage": "semantic",
+    "diagnostics": [
+      {
+        "path": "episode/act:act-01/scene:scene-01/dialogue:dialogue-02/pronunciation_overrides/0/surface",
+        "issue": {
+          "code": "pronunciation_target_missing",
+          "surface": "Vọng Đài"
+        }
+      }
+    ]
+  },
+  {
+    "file": "reject/pronunciation-overlap.json",
+    "stage": "semantic",
+    "diagnostics": [
+      {
+        "path": "episode/act:act-01/scene:scene-01/dialogue:dialogue-02/pronunciation_overrides/1/surface",
+        "issue": {
+          "code": "pronunciation_overlap",
+          "surface": "mai"
+        }
+      }
+    ]
+  },
+  {
+    "file": "reject/multiple-faults.json",
+    "stage": "semantic",
+    "diagnostics": [
+      {
+        "path": "work/source_ref",
+        "issue": {
+          "code": "unknown_provenance",
+          "source_id": "origin-missing"
+        }
+      },
+      {
+        "path": "episode/act:act-01/scene:scene-01/dialogue:dialogue-02/speaker_id",
+        "issue": {
+          "code": "unknown_speaker",
+          "speaker_id": "ba-cu"
+        }
+      },
+      {
+        "path": "episode/act:act-01/scene:scene-01/dialogue:dialogue-02/text",
+        "issue": {
+          "code": "empty_text"
+        }
+      },
+      {
+        "path": "episode/act:act-01/scene:scene-01/cue:cue-01/anchor/dialogue_id",
+        "issue": {
+          "code": "cue_anchor_unresolved",
+          "dialogue_id": "dialogue-missing"
+        }
+      }
+    ]
+  },
+  {
+    "file": "reject/missing-speaker.json",
+    "stage": "invalid_document"
+  },
+  {
+    "file": "reject/missing-asset-rights.json",
+    "stage": "invalid_document"
+  },
+  {
+    "file": "reject/generated-without-attempt.json",
+    "stage": "invalid_document"
+  },
+  {
+    "file": "reject/unknown-field.json",
+    "stage": "invalid_document"
+  },
+  {
+    "file": "reject/null-asset.json",
+    "stage": "invalid_document"
+  },
+  {
+    "file": "reject/unsupported-version.json",
+    "stage": "unsupported_version"
+  },
+  {
+    "file": "reject/missing-version.json",
+    "stage": "missing_version"
+  },
+  {
+    "file": "reject/empty-scenes.json",
+    "stage": "shape",
+    "shape_diagnostics": [
+      {
+        "path": "/episode/acts/0/scenes",
+        "rule": "array_length"
+      }
+    ]
+  },
+  {
+    "file": "reject/ordinal-field.json",
+    "stage": "invalid_document"
+  },
+  {
+    "file": "reject/invalid-id.json",
+    "stage": "shape",
+    "shape_diagnostics": [
+      {
+        "path": "/episode/acts/0/scenes/0/dialogues/1/id",
+        "rule": "id_format"
+      }
+    ]
+  },
+  {
+    "file": "reject/intensity-range.json",
+    "stage": "shape",
+    "shape_diagnostics": [
+      {
+        "path": "/episode/acts/0/scenes/0/dialogues/1/delivery/intensity_permille",
+        "rule": "intensity_range"
+      }
+    ]
+  }
+]

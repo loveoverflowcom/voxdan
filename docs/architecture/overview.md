@@ -1,6 +1,9 @@
 # Architecture overview
 
-Status: initial design; there is no application implementation in this bootstrap. The user-selected stack and modular starting point are recorded in [decision 0001](../decisions/0001-modular-monolith.md).
+Status: target runtime design. The [Script IR domain/CLI](../../apps/server/README.md) is
+implemented and locally tested; HTTP, persistence, workers and clients remain planned. The
+user-selected stack and modular starting point are recorded in
+[decision 0001](../decisions/0001-modular-monolith.md).
 
 ## Runtime and ownership
 
@@ -36,7 +39,11 @@ Publication is an atomic metadata transition to a complete immutable manifest af
 
 ## Initial source layout
 
-The tracked `apps/server/`, `apps/web/` and `apps/mobile/` directories currently contain guides. The first implementation work item will establish actual Rust/Leptos/Gradle manifests and verification commands. Keep shared contracts in `contracts/`; add shared Rust modules/packages only as their consumers appear.
+The root Cargo workspace contains one `apps/server/` package, whose Script IR module serves the
+validation CLI and contract tests. `apps/web/` and `apps/mobile/` still contain guides. The
+remaining first implementation slice will establish Axum/PostgreSQL/Leptos runtime paths;
+Gradle belongs to the native listening slice. Keep shared contracts in `contracts/`; add shared
+Rust modules/packages only as their consumers appear.
 
 ## First verification targets
 

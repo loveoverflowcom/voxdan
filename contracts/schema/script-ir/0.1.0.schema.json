@@ -1,0 +1,446 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/loveoverflowcom/cantos/contracts/script-ir/0.1.0",
+  "title": "Cantos Script IR 0.1.0",
+  "description": "Structured draft admission shape; cross-references, text and provenance semantics require the Rust validator.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "work",
+    "adaptation",
+    "characters",
+    "episode",
+    "provenance"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.1.0"
+    },
+    "work": {
+      "$ref": "#/$defs/work"
+    },
+    "adaptation": {
+      "$ref": "#/$defs/adaptation"
+    },
+    "characters": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 10000,
+      "items": {
+        "$ref": "#/$defs/character"
+      }
+    },
+    "episode": {
+      "$ref": "#/$defs/episode"
+    },
+    "provenance": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 10000,
+      "items": {
+        "$ref": "#/$defs/source"
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-z0-9_-]+$"
+    },
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 10000
+    },
+    "work": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "source_ref",
+        "rights_record_id"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "title": {
+          "$ref": "#/$defs/text"
+        },
+        "source_ref": {
+          "$ref": "#/$defs/id"
+        },
+        "rights_record_id": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "adaptation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "language",
+        "rights_record_id",
+        "provenance_refs"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "language": {
+          "enum": [
+            "vi",
+            "vi-VN",
+            "en",
+            "en-US"
+          ]
+        },
+        "rights_record_id": {
+          "$ref": "#/$defs/id"
+        },
+        "provenance_refs": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 10000,
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        }
+      }
+    },
+    "character": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "role",
+        "personality"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "$ref": "#/$defs/text"
+        },
+        "role": {
+          "enum": [
+            "narrator",
+            "character"
+          ]
+        },
+        "personality": {
+          "$ref": "#/$defs/text"
+        }
+      }
+    },
+    "episode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "acts"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "title": {
+          "$ref": "#/$defs/text"
+        },
+        "acts": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 10000,
+          "items": {
+            "$ref": "#/$defs/act"
+          }
+        }
+      }
+    },
+    "act": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "scenes"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "title": {
+          "$ref": "#/$defs/text"
+        },
+        "scenes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 10000,
+          "items": {
+            "$ref": "#/$defs/scene"
+          }
+        }
+      }
+    },
+    "scene": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "dialogues"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "title": {
+          "$ref": "#/$defs/text"
+        },
+        "dialogues": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 10000,
+          "items": {
+            "$ref": "#/$defs/dialogue"
+          }
+        },
+        "sound_cues": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 10000,
+          "items": {
+            "$ref": "#/$defs/cue"
+          }
+        }
+      }
+    },
+    "dialogue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "speaker_id",
+        "text",
+        "delivery"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "speaker_id": {
+          "$ref": "#/$defs/id"
+        },
+        "text": {
+          "$ref": "#/$defs/text"
+        },
+        "delivery": {
+          "$ref": "#/$defs/delivery"
+        },
+        "pronunciation_overrides": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 10000,
+          "items": {
+            "$ref": "#/$defs/pronunciation"
+          }
+        }
+      }
+    },
+    "delivery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "emotion",
+        "intensity_permille"
+      ],
+      "properties": {
+        "emotion": {
+          "enum": [
+            "neutral",
+            "calm",
+            "hopeful",
+            "warm",
+            "sad",
+            "angry"
+          ]
+        },
+        "intensity_permille": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        }
+      }
+    },
+    "pronunciation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "surface",
+        "replacement"
+      ],
+      "properties": {
+        "surface": {
+          "$ref": "#/$defs/text"
+        },
+        "replacement": {
+          "$ref": "#/$defs/text"
+        }
+      }
+    },
+    "cue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "description",
+        "anchor"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "kind": {
+          "enum": [
+            "ambience",
+            "music",
+            "sfx"
+          ]
+        },
+        "description": {
+          "$ref": "#/$defs/text"
+        },
+        "anchor": {
+          "$ref": "#/$defs/anchor"
+        },
+        "asset": {
+          "$ref": "#/$defs/asset"
+        }
+      }
+    },
+    "anchor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dialogue_id",
+        "edge"
+      ],
+      "properties": {
+        "dialogue_id": {
+          "$ref": "#/$defs/id"
+        },
+        "edge": {
+          "enum": [
+            "start",
+            "end"
+          ]
+        }
+      }
+    },
+    "asset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "rights_record_id"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "rights_record_id": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "source": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id",
+            "source_record_id",
+            "rights_record_id"
+          ],
+          "properties": {
+            "kind": {
+              "const": "original"
+            },
+            "id": {
+              "$ref": "#/$defs/id"
+            },
+            "source_record_id": {
+              "$ref": "#/$defs/id"
+            },
+            "rights_record_id": {
+              "$ref": "#/$defs/id"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id",
+            "source_record_id",
+            "rights_record_id"
+          ],
+          "properties": {
+            "kind": {
+              "const": "imported"
+            },
+            "id": {
+              "$ref": "#/$defs/id"
+            },
+            "source_record_id": {
+              "$ref": "#/$defs/id"
+            },
+            "rights_record_id": {
+              "$ref": "#/$defs/id"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id",
+            "source_record_id",
+            "rights_record_id",
+            "generation_record_id"
+          ],
+          "properties": {
+            "kind": {
+              "const": "generated"
+            },
+            "id": {
+              "$ref": "#/$defs/id"
+            },
+            "source_record_id": {
+              "$ref": "#/$defs/id"
+            },
+            "rights_record_id": {
+              "$ref": "#/$defs/id"
+            },
+            "generation_record_id": {
+              "$ref": "#/$defs/id"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

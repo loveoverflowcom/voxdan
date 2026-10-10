@@ -11,9 +11,11 @@
 | [PostgreSQL/DBSP skill evidence](evidence/postgresql-dbsp-skills.md) | Read-performance workflow validation, routing walkthrough and explicitly unrun database/engine gates |
 | [Architecture overview](architecture/overview.md) | Planned boundaries, deployment and data ownership |
 | [Script IR](architecture/script-ir.md) | Versioned interchange and reuse without project coupling |
+| [Script IR evidence](evidence/script-ir-contract.md) | Executed contract checks and unrun application gates |
 | [Mobile architecture](architecture/mobile.md) | CMP shell and native listening behavior |
 | [UI system](design/ui-system.md) | Shared semantic design requirements and validation |
 | [Decision 0001](decisions/0001-modular-monolith.md) | Initial stack and modular-backend decision |
+| [Decision 0002](decisions/0002-script-ir-contract.md) | Proposed adoption of implemented Script IR and digest policy |
 | [Work plan](work-plan/README.md) | Recommended sequence, dependencies and review boundaries |
 | [GitHub planning](work-plan/project-planning.md) | Issue/dependency map, Kanban workflow and links to source documents |
 

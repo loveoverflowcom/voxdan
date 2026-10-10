@@ -57,6 +57,13 @@ Run the repository consistency checks and their tests from the repository root:
 ```bash
 python3 scripts/check_repository.py
 python3 -m unittest discover -s scripts -p 'test_*.py'
+git diff --check
 ```
+
+For the implemented Script IR contract, use Rust 1.87 and run `cargo fmt --all -- --check`,
+`cargo clippy --workspace --all-targets --locked -- -D warnings`, `cargo test --workspace --locked`
+and `python3 scripts/reference_script_ir.py`. See [the contract](contracts/README.md) for the
+CLI, fixture-authoring and bounded mutation commands. On affected macOS temporary-path setups,
+run Python tests with `TMPDIR=/private/tmp`.
 
 For runtime changes, run the relevant stack-specific checks once the corresponding implementation and tooling exist. Include meaningful integration evidence for job retry/resume, partial regeneration, publishing, streaming, and native background playback when those behaviors change. Record any environment limitations instead of claiming an unrun check passed.

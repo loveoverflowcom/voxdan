@@ -1,0 +1,19 @@
+[package]
+name = "cantos-server"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.87"
+publish = false
+
+[dependencies]
+serde = { version = "=1.0.228", features = ["derive"] }
+serde_json = "=1.0.145"
+sha2 = "=0.10.9"
+unicode-normalization = "=0.1.24"
+
+[dev-dependencies]
+jsonschema = { version = "=0.33.0", default-features = false }
+
+[[bin]]
+name = "validate-script"
+path = "src/bin/validate-script.rs"

@@ -1,6 +1,8 @@
 # Cantos — Product Brief
 
-> Status: design and repository bootstrap. This document describes intended behavior; no capability is implemented by this scaffold.
+> Status: target product design. The [Script IR contract](../../contracts/README.md) is
+> executable and locally tested. Studio, Theatre, persistence/auth, production and native
+> listening capabilities remain planned.
 
 ## Identity and purpose
 

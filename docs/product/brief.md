@@ -1,8 +1,9 @@
 # Cantos — Product Brief
 
 > Status: target product design. The [Script IR contract](../../contracts/README.md) is
-> executable and locally tested. Studio, Theatre, persistence/auth, production and native
-> listening capabilities remain planned.
+> executable and locally tested. Local revision persistence/auth and a minimal Studio
+> save/read consumer have [bounded evidence](../evidence/script-revision-persistence.md).
+> The complete Studio journey, Theatre, production and native listening remain planned.
 
 ## Identity and purpose
 

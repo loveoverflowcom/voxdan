@@ -1,0 +1,327 @@
+//! Thin Axum adapter; all revision decisions live inward of this module.
+use axum::{
+    extract::{DefaultBodyLimit, Path, Request, State},
+    http::{header, HeaderMap, HeaderValue, StatusCode},
+    middleware::{self, Next},
+    response::{IntoResponse, Response},
+    routing::{get, post},
+    Json, Router,
+};
+use cantos_api::{
+    ApiError, ErrorCode, FieldIssue, SaveRevisionRequest, SessionRequest, SessionResponse,
+};
+use tower_http::services::ServeDir;
+
+use crate::postgres::{Store, StoreError};
+use crate::script_ir::{ReadError, ShapeRule, ValidationIssue};
+
+#[derive(Clone)]
+pub struct AppState {
+    pub store: Store,
+    pub web_origin: String,
+}
+
+pub fn router(state: AppState, dist: &str) -> Router {
+    let scripts = Router::new()
+        .route("/scripts/{script}/head", get(head))
+        .route("/scripts/{script}/revisions/{revision}", get(revision))
+        .route("/scripts/{script}/revisions", post(save))
+        .route_layer(middleware::from_fn_with_state(state.clone(), authenticated));
+    let api = scripts
+        .route("/session", post(login).delete(logout))
+        .fallback(|| async { failure(ErrorCode::NotFound, StatusCode::NOT_FOUND) })
+        .layer(DefaultBodyLimit::max(8 * 1024 * 1024))
+        .layer(middleware::from_fn_with_state(
+            state.clone(),
+            origin_and_cache,
+        ));
+    Router::new()
+        .nest("/api/v1", api)
+        .fallback_service(ServeDir::new(dist))
+        .with_state(state)
+}
+
+fn cookie_token(headers: &HeaderMap) -> Result<String, StoreError> {
+    let cookies = headers
+        .get(header::COOKIE)
+        .and_then(|h| h.to_str().ok())
+        .ok_or(StoreError::Unauthenticated)?;
+    let mut tokens = cookies
+        .split(';')
+        .filter_map(|part| part.trim().strip_prefix("cantos_session="));
+    let token = tokens.next().ok_or(StoreError::Unauthenticated)?;
+    if tokens.next().is_some() {
+        return Err(StoreError::Unauthenticated);
+    }
+    Ok(token.to_owned())
+}
+
+async fn authenticated(State(state): State<AppState>, request: Request, next: Next) -> Response {
+    let result = match cookie_token(request.headers()) {
+        Ok(token) => state.store.authenticate(&token).await,
+        Err(error) => Err(error),
+    };
+    match result {
+        Ok(_) => next.run(request).await,
+        Err(error) => error_response(error),
+    }
+}
+
+async fn origin_and_cache(State(state): State<AppState>, request: Request, next: Next) -> Response {
+    let read =
+        request.method() == axum::http::Method::GET || request.method() == axum::http::Method::HEAD;
+    let valid_origin = request
+        .headers()
+        .get(header::ORIGIN)
+        .and_then(|h| h.to_str().ok())
+        == Some(state.web_origin.as_str());
+    let mut response = if !read && !valid_origin {
+        failure(ErrorCode::Forbidden, StatusCode::FORBIDDEN)
+    } else {
+        match tokio::time::timeout(std::time::Duration::from_secs(15), next.run(request)).await {
+            Ok(response) => response,
+            Err(_) => failure(ErrorCode::Unavailable, StatusCode::SERVICE_UNAVAILABLE),
+        }
+    };
+    response
+        .headers_mut()
+        .insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
+    response.headers_mut().insert(
+        header::X_CONTENT_TYPE_OPTIONS,
+        HeaderValue::from_static("nosniff"),
+    );
+    response
+}
+
+async fn login(
+    State(state): State<AppState>,
+    body: Result<Json<SessionRequest>, axum::extract::rejection::JsonRejection>,
+) -> Response {
+    let request = match body {
+        Ok(Json(request)) => request,
+        Err(_) => return error_response(StoreError::InvalidRequest),
+    };
+    match state.store.authenticate(&request.token).await {
+        Ok(actor_id) => {
+            let mut response = Json(SessionResponse { actor_id }).into_response();
+            // Only loopback development HTTP is supported. Production requires HTTPS/Secure.
+            let cookie = format!(
+                "cantos_session={}; HttpOnly; SameSite=Strict; Path=/api/v1",
+                request.token
+            );
+            match HeaderValue::from_str(&cookie) {
+                Ok(value) => {
+                    response.headers_mut().insert(header::SET_COOKIE, value);
+                    response
+                }
+                Err(_) => error_response(StoreError::InvalidRequest),
+            }
+        }
+        Err(error) => error_response(error),
+    }
+}
+
+async fn logout(State(state): State<AppState>, headers: HeaderMap) -> Response {
+    let result = match cookie_token(&headers) {
+        Ok(token) => state.store.revoke(&token).await,
+        Err(error) => Err(error),
+    };
+    match result {
+        Ok(()) => {
+            let mut response = StatusCode::NO_CONTENT.into_response();
+            response.headers_mut().insert(
+                header::SET_COOKIE,
+                HeaderValue::from_static(
+                    "cantos_session=; HttpOnly; SameSite=Strict; Path=/api/v1; Max-Age=0",
+                ),
+            );
+            response
+        }
+        Err(error) => error_response(error),
+    }
+}
+
+async fn head(
+    State(state): State<AppState>,
+    Path(script): Path<String>,
+    headers: HeaderMap,
+) -> Response {
+    read_revision(state, script, None, headers).await
+}
+
+async fn revision(
+    State(state): State<AppState>,
+    path: Result<Path<(String, u64)>, axum::extract::rejection::PathRejection>,
+    headers: HeaderMap,
+) -> Response {
+    let (script, revision) = match path {
+        Ok(Path(path)) => path,
+        Err(_) => return error_response(StoreError::InvalidRequest),
+    };
+    read_revision(state, script, Some(revision), headers).await
+}
+
+async fn read_revision(
+    state: AppState,
+    script: String,
+    revision: Option<u64>,
+    headers: HeaderMap,
+) -> Response {
+    let token = match cookie_token(&headers) {
+        Ok(token) => token,
+        Err(error) => return error_response(error),
+    };
+    match state.store.load(&token, &script, revision).await {
+        Ok(saved) => Json(saved).into_response(),
+        Err(error) => error_response(error),
+    }
+}
+
+async fn save(
+    State(state): State<AppState>,
+    Path(script): Path<String>,
+    headers: HeaderMap,
+    body: Result<Json<SaveRevisionRequest>, axum::extract::rejection::JsonRejection>,
+) -> Response {
+    let request = match body {
+        Ok(Json(request)) => request,
+        Err(_) => return error_response(StoreError::InvalidRequest),
+    };
+    let token = match cookie_token(&headers) {
+        Ok(token) => token,
+        Err(error) => return error_response(error),
+    };
+    match state.store.save(&token, &script, request).await {
+        Ok(saved) => Json(saved).into_response(),
+        Err(error) => error_response(error),
+    }
+}
+
+fn failure(code: ErrorCode, status: StatusCode) -> Response {
+    (
+        status,
+        Json(ApiError {
+            code,
+            current_revision: None,
+            issues: vec![],
+        }),
+    )
+        .into_response()
+}
+
+fn error_response(error: StoreError) -> Response {
+    let (status, code, current_revision, issues) = match error {
+        StoreError::Unauthenticated => (
+            StatusCode::UNAUTHORIZED,
+            ErrorCode::Unauthenticated,
+            None,
+            vec![],
+        ),
+        StoreError::NotFound => (StatusCode::NOT_FOUND, ErrorCode::NotFound, None, vec![]),
+        StoreError::Forbidden => (StatusCode::FORBIDDEN, ErrorCode::Forbidden, None, vec![]),
+        StoreError::InvalidRequest => (
+            StatusCode::BAD_REQUEST,
+            ErrorCode::InvalidRequest,
+            None,
+            vec![],
+        ),
+        StoreError::EvidenceUnavailable => (
+            StatusCode::UNPROCESSABLE_ENTITY,
+            ErrorCode::EvidenceUnavailable,
+            None,
+            vec![],
+        ),
+        StoreError::StaleRevision(revision) => (
+            StatusCode::CONFLICT,
+            ErrorCode::StaleRevision,
+            Some(revision),
+            vec![],
+        ),
+        StoreError::OperationReused => (
+            StatusCode::CONFLICT,
+            ErrorCode::OperationReused,
+            None,
+            vec![],
+        ),
+        StoreError::Unavailable => (
+            StatusCode::SERVICE_UNAVAILABLE,
+            ErrorCode::Unavailable,
+            None,
+            vec![],
+        ),
+        StoreError::CorruptRevision => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            ErrorCode::CorruptRevision,
+            None,
+            vec![],
+        ),
+        StoreError::InvalidScript(error) => (
+            StatusCode::UNPROCESSABLE_ENTITY,
+            ErrorCode::InvalidScript,
+            None,
+            validation_issues(error),
+        ),
+    };
+    (
+        status,
+        Json(ApiError {
+            code,
+            current_revision,
+            issues,
+        }),
+    )
+        .into_response()
+}
+
+fn validation_issues(error: ReadError) -> Vec<FieldIssue> {
+    match error {
+        ReadError::Shape(issues) => issues
+            .into_iter()
+            .map(|issue| FieldIssue {
+                path: issue.path,
+                rule: match issue.rule {
+                    ShapeRule::IdFormat => "id_format",
+                    ShapeRule::TextLength => "text_length",
+                    ShapeRule::ArrayLength => "array_length",
+                    ShapeRule::IntensityRange => "intensity_range",
+                }
+                .into(),
+            })
+            .collect(),
+        ReadError::Semantic(issues) => issues
+            .into_iter()
+            .map(|issue| FieldIssue {
+                path: issue.path,
+                // Codes only: diagnostic payloads can contain manuscript text.
+                rule: match issue.issue {
+                    ValidationIssue::DuplicateId { .. } => "duplicate_id",
+                    ValidationIssue::NarratorCount { .. } => "narrator_count",
+                    ValidationIssue::UnknownSpeaker { .. } => "unknown_speaker",
+                    ValidationIssue::CueAnchorUnresolved { .. } => "cue_anchor_unresolved",
+                    ValidationIssue::UnknownProvenance { .. } => "unknown_provenance",
+                    ValidationIssue::DuplicateProvenanceRef { .. } => "duplicate_provenance_ref",
+                    ValidationIssue::EmptyText => "empty_text",
+                    ValidationIssue::NormalizedTextTooLong { .. } => "normalized_text_too_long",
+                    ValidationIssue::ForbiddenCharacter { .. } => "forbidden_character",
+                    ValidationIssue::PronunciationTargetMissing { .. } => {
+                        "pronunciation_target_missing"
+                    }
+                    ValidationIssue::PronunciationOverlap { .. } => "pronunciation_overlap",
+                }
+                .into(),
+            })
+            .collect(),
+        ReadError::DocumentTooLarge { .. } => vec![field_issue("DocumentTooLarge")],
+        ReadError::InvalidDocument { .. } => vec![field_issue("InvalidDocument")],
+        ReadError::MissingSchemaVersion => vec![field_issue("MissingSchemaVersion")],
+        ReadError::UnsupportedSchemaVersion { .. } => vec![field_issue("UnsupportedSchemaVersion")],
+        ReadError::NonCanonicalDocument => vec![field_issue("NonCanonicalDocument")],
+    }
+}
+
+fn field_issue(rule: &str) -> FieldIssue {
+    FieldIssue {
+        path: "$".into(),
+        rule: rule.into(),
+    }
+}

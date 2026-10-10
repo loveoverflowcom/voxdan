@@ -1,7 +1,8 @@
 # Business Rules
 
 > Status: target product contract. Script IR structure, reference and text rules have an
-> [implemented validator](../../contracts/README.md); revision persistence, authorization,
+> [implemented validator](../../contracts/README.md). Local immutable revision persistence
+> and actor/read/write checks have [bounded evidence](../evidence/script-revision-persistence.md);
 > rights eligibility, production and publication gates remain planned.
 
 ## Content and revisions

@@ -19,10 +19,11 @@ TTS, audio mixing, public playback, a general document-conversion service, real-
 ## Dependencies
 
 The project brief and architecture guidance. An executable [Script IR contract](../../contracts/README.md)
-now supplies structured-draft validation, exports and speech bytes. Inspect that module before
-selecting migrations, API routes or editor libraries. Establish Axum/PostgreSQL and an authorized
-save/retrieve consumer before expanding intake. Immutable revision persistence, actor checks,
-stale-write/retry behavior and restart evidence remain in #1.
+now supplies structured-draft validation, exports and speech bytes. The local
+[revision slice](../evidence/script-revision-persistence.md) supplies Axum/PostgreSQL and an
+authorized Leptos save/read consumer with crash/retry/concurrency evidence. Review its actual
+modules, v1 wire contract and read inventory before expanding intake. Workload measurements,
+production identity adoption and the complete authoring journey still belong to #1/010.
 
 ## Suggested sequence
 

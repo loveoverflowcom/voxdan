@@ -1,3 +1,6 @@
-//! Cantos domain modules. There is no HTTP host or persistence adapter yet.
+//! One modular backend; Script IR and revision decisions are independent of adapters.
 
+pub mod http;
+pub mod postgres;
+pub mod revisions;
 pub mod script_ir;

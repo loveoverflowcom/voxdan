@@ -4,8 +4,9 @@ This directory owns versioned interchange descriptions and representative fixtur
 `0.1.0` has a hand-authored [JSON Schema](schema/script-ir/0.1.0.schema.json), a
 [Rust reader and semantic validator](../apps/server/src/script_ir/mod.rs), and
 [Vietnamese fixtures](fixtures/script-ir/0.1.0). This implements the contract part of
-[#1](https://github.com/loveoverflowcom/cantos/issues/1). There are no HTTP endpoints or
-generated client bindings yet.
+[#1](https://github.com/loveoverflowcom/cantos/issues/1). The [Studio v1 contract](studio-v1.md)
+now serves the Axum/PostgreSQL store and Leptos consumer through shared raw Rust DTOs,
+JSON Schema and serialized fixtures. No generated Kotlin bindings are claimed.
 
 The historical [draft example](examples/episode-draft.json) stays byte-for-byte unchanged. Its
 `0.1.0-draft` version is illustrative and explicitly unsupported by the reader. The new fixtures
@@ -78,8 +79,8 @@ placement: `hòa` and `hoà` remain distinct. Source bytes are kept outside Git 
 Semantic errors accumulate in fixed traversal order: work, adaptation references, narrator count,
 characters, episode/acts/scenes/dialogues/cues, provenance IDs. Paths use stable IDs where known;
 lists without identities use indexes. Shape errors use JSON Pointers; deserialization failures
-include a line, column and cause. Shape failure stops before semantic validation. There are no
-HTTP error mappings yet. Bracketed spoken text is retained; detecting cue-like markup for human
+include a line, column and cause. Shape failure stops before semantic validation. Studio HTTP
+maps errors to stable codes/paths without exposing manuscript diagnostic payloads. Bracketed spoken text is retained; detecting cue-like markup for human
 review remains editor/importer work.
 
 ## Canonical bytes and digest c1
@@ -143,6 +144,7 @@ bytes, digest and speech bytes produced by the independent Python JSON/SHA-256 o
 regeneration uses `python3 scripts/reference_script_ir.py --write-goldens`; tests never update them.
 The mutation runner checks seven named substitutions in a disposable offline copy.
 
-See [local evidence and remaining gates](../docs/evidence/script-ir-contract.md). HTTP/OpenAPI
-contracts and generated Rust/Kotlin bindings must identify their source and generation command
-when real endpoints/consumers are added.
+See [contract evidence](../docs/evidence/script-ir-contract.md) and
+[revision evidence](../docs/evidence/script-revision-persistence.md). Studio v1 uses hand-authored
+DTOs checked against the same Schema/fixtures in both native and browser-consumer tests; it is
+not generated OpenAPI. Future generated bindings must name their source and generation command.

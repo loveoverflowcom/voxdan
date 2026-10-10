@@ -2,8 +2,9 @@
 
 Start with [#1](https://github.com/loveoverflowcom/cantos/issues/1) within [010 — Import and edit a versioned script](010-import-and-edit-script.md). Each item delivers a usable business capability; implementation details must be confirmed against the code created in earlier items.
 
-The repository has documentation/templates and an executable
-[Script IR contract](../../contracts/README.md). The end-to-end capabilities below remain
+The repository has documentation/templates, an executable
+[Script IR contract](../../contracts/README.md), and a local authenticated immutable revision
+store with a minimal Studio consumer. The end-to-end capabilities below remain
 planned. Numeric filename prefixes express the current recommended sequence, may be renumbered,
 and are not permanent task IDs.
 
@@ -22,11 +23,14 @@ and are not permanent task IDs.
 The five capability specifications map to 17 bounded implementation issues. Use the Project for
 current execution Status and issue checklists/dependencies for evidence; this queue retains
 recommended sequence and scope. Continue [#1](https://github.com/loveoverflowcom/cantos/issues/1)
-with persistence/auth and the minimal Studio consumer, building on the contract module. Preserve
-the complete canonical export and evidence references, authorize reads/writes, reject stale
-updates and make retries return the original accepted revision. Contract validation alone does
-not satisfy that issue or the 010 journey. The next slice still precedes importer/adaptation,
-casting and production work.
+with bounded read-path workload/measurement work after reviewing the
+[persistence evidence](../evidence/script-revision-persistence.md) and
+[affected read inventory](../evidence/script-revision-reads.md). This order checks the new
+authoritative path before importer/adaptation, casting and production expand it. Preserve
+complete exports, actor filters, immutable revision identity and retry semantics during that
+work. Measurements, EXPLAIN baselines and DBSP experiments have not run in this slice; DBSP is
+deferred pending workload evidence. The minimal JSON editor and development sessions do not
+satisfy the full #1/010 capability or authorize closing its issue.
 
 | Capability | Execution issues | Milestone |
 | --- | --- | --- |

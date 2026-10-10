@@ -46,8 +46,13 @@ Run `python3 scripts/check_repository.py`, `python3 -m unittest discover -s scri
 The implemented Script IR package also requires `cargo fmt --all -- --check`,
 `cargo clippy --workspace --all-targets --locked -- -D warnings`, `cargo test --workspace --locked`
 and `python3 scripts/reference_script_ir.py`. Use `python3 scripts/mutate_script_ir.py` for the
-bounded validator/encoder mutation checks. These validate the contract only; there is no Axum,
-PostgreSQL, Leptos or mobile runtime gate yet. On affected macOS temporary-path setups, use
+bounded validator/encoder mutation checks. The local revision slice additionally requires
+`python3 scripts/test_postgres.py` with PostgreSQL `initdb`, `pg_ctl` and `psql` on `PATH`,
+`cargo clippy -p cantos-studio --target wasm32-unknown-unknown --locked -- -D warnings`, and
+`NO_COLOR=true trunk build --locked` from `apps/web`. PostgreSQL checks must create a new
+disposable cluster; never substitute a production or inherited database URL. Studio runtime
+interaction/accessibility evidence is separate from the WASM build; no mobile runtime gate exists.
+On affected macOS temporary-path setups, use
 `TMPDIR=/private/tmp` for Python unit/mutation runs.
 
 Do not report an app build, mobile test, audio quality result or end-to-end production run unless it actually ran. Record limitations and required follow-ups with evidence.

@@ -170,6 +170,38 @@ impl ScriptContent {
                 language: self.adaptation.language,
             })
     }
+
+    /// External evidence references, resolved and authorized by the application shell.
+    /// This pure projection does not establish rights eligibility.
+    pub fn evidence_refs(&self) -> Vec<(&'static str, &str)> {
+        let mut refs = vec![
+            ("rights", self.work.rights_record_id.0.as_str()),
+            ("rights", self.adaptation.rights_record_id.0.as_str()),
+        ];
+        for source in &self.provenance {
+            refs.push(("source", source.source_record_id.0.as_str()));
+            refs.push(("rights", source.rights_record_id.0.as_str()));
+            if let SourceKind::Generated {
+                generation_record_id,
+            } = &source.kind
+            {
+                refs.push(("generation", generation_record_id.0.as_str()));
+            }
+        }
+        for act in &self.episode.acts {
+            for scene in &act.scenes {
+                for cue in &scene.sound_cues {
+                    if let Some(asset) = &cue.asset {
+                        refs.push(("asset", asset.id.0.as_str()));
+                        refs.push(("rights", asset.rights_record_id.0.as_str()));
+                    }
+                }
+            }
+        }
+        refs.sort_unstable();
+        refs.dedup();
+        refs
+    }
 }
 
 /// Only scheme c1 is constructible; a future scheme needs an explicit comparison API.

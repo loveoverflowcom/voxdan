@@ -1,0 +1,25 @@
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--cantos-color-surface); color: var(--cantos-color-on-surface); font: var(--cantos-type-body-size)/1.6 system-ui, sans-serif; }
+.studio-shell { min-height: 100vh; background: var(--cantos-color-surface); color: var(--cantos-color-on-surface); }
+main { max-width: 68rem; margin: auto; padding: var(--cantos-space-lg); }
+header, .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--cantos-space-sm); }
+header { justify-content: space-between; }
+h1 { font-size: var(--cantos-type-title-size); margin: 0; }
+h2 { font-size: 1.2rem; }
+label { display: block; font-weight: 600; margin-block: var(--cantos-space-sm); }
+button, input, textarea, select { font: inherit; }
+button { min-height: 2.75rem; padding: .5rem 1rem; border: 1px solid var(--cantos-color-outline); border-radius: var(--cantos-shape-control); background: var(--cantos-color-surface-container); color: var(--cantos-color-on-surface); cursor: pointer; }
+button.primary { color: var(--cantos-color-on-primary); background: var(--cantos-color-primary); border-color: var(--cantos-color-primary); }
+button[aria-disabled="true"] { cursor: progress; }
+input, textarea, select { background: var(--cantos-color-surface-container); color: var(--cantos-color-on-surface); border: 1px solid var(--cantos-color-outline); border-radius: var(--cantos-shape-field); padding: .6rem; min-width: 0; max-width: 100%; }
+input { width: min(100%, 30rem); }
+textarea { width: 100%; min-height: 23rem; resize: vertical; font-family: ui-monospace, monospace; line-height: 1.6; }
+:focus-visible { outline: 3px solid var(--cantos-color-focus); outline-offset: 3px; }
+output { display: inline-block; margin-inline-start: var(--cantos-space-sm); font-variant-numeric: tabular-nums; }
+.mode, #draft-help, #request-reason { color: var(--cantos-color-on-surface-variant); }
+.toolbar { margin-block: var(--cantos-space-sm); }
+pre { background: var(--cantos-color-surface-container); padding: var(--cantos-space-md); white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30rem; overflow: auto; }
+.identity, #status { overflow-wrap: anywhere; }
+#status { border-inline-start: 4px solid var(--cantos-color-primary); padding-inline-start: var(--cantos-space-sm); }
+@media (max-width: 36rem) { main { padding: var(--cantos-space-md); } .toolbar > button { width: 100%; } }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }

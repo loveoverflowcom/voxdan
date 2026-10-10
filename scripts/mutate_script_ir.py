@@ -62,7 +62,7 @@ MUTANTS = (
 
 def run(workspace, env):
     return subprocess.run(
-        ["cargo", "test", "--offline", "--locked", "--test", "script_ir"],
+        ["cargo", "test", "-p", "cantos-server", "--offline", "--locked", "--test", "script_ir"],
         cwd=workspace,
         env=env,
         stdout=subprocess.PIPE,
@@ -83,6 +83,9 @@ def main():
         for name in ("Cargo.toml", "Cargo.lock"):
             shutil.copy2(ROOT / name, workspace / name)
         shutil.copytree(ROOT / "apps/server", workspace / "apps/server")
+        # Cargo resolves every workspace manifest, even for a package-scoped test.
+        # Keep the new concrete Web consumer, without copying its generated bundle.
+        shutil.copytree(ROOT / "apps/web", workspace / "apps/web", ignore=shutil.ignore_patterns("dist"))
         shutil.copytree(ROOT / "contracts", workspace / "contracts")
         env = dict(os.environ, CARGO_TARGET_DIR=str(Path(temp) / "target"))
         baseline = run(workspace, env)

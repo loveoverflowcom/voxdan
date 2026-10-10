@@ -1,7 +1,9 @@
 # Architecture overview
 
 Status: target runtime design. The [Script IR domain/CLI](../../apps/server/README.md) is
-implemented and locally tested; HTTP, persistence, workers and clients remain planned. The
+implemented and locally tested. Local Axum/PostgreSQL revision persistence and a minimal Leptos
+Studio consumer have [bounded evidence](../evidence/script-revision-persistence.md); workers,
+Theatre and native clients remain planned. The
 user-selected stack and modular starting point are recorded in
 [decision 0001](../decisions/0001-modular-monolith.md).
 
@@ -39,11 +41,13 @@ Publication is an atomic metadata transition to a complete immutable manifest af
 
 ## Initial source layout
 
-The root Cargo workspace contains one `apps/server/` package, whose Script IR module serves the
-validation CLI and contract tests. `apps/web/` and `apps/mobile/` still contain guides. The
-remaining first implementation slice will establish Axum/PostgreSQL/Leptos runtime paths;
-Gradle belongs to the native listening slice. Keep shared contracts in `contracts/`; add shared
-Rust modules/packages only as their consumers appear.
+The root Cargo workspace contains `apps/server/`, `apps/web/` and `contracts/api/`. Server
+`script_ir` and `revisions` are pure rules; `postgres` owns transactions and `http` maps the
+shared wire contract to Axum. The Studio WASM consumer imports only `cantos-api`, never server
+internals. This shared DTO crate has two concrete consumers. Migration and HTTP binaries live
+in the same server package. `apps/mobile/` remains a guide; Gradle belongs to the native
+listening slice. [ADR 0003](../decisions/0003-script-revision-persistence.md) is proposed for
+production adoption, not an accepted deployment decision.
 
 ## First verification targets
 

@@ -2,6 +2,7 @@
 .env.*
 !.env.example
 /target/
+/apps/web/dist/
 **/build/
 .gradle/
 node_modules/

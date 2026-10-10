@@ -1,6 +1,9 @@
 # Cantos UI System
 
-Status: design requirements and implementation handoff; no screens or interactions have been implemented or validated.
+Status: design requirements. A minimal live Leptos Studio save/read surface consumes
+[versioned tokens](../../contracts/design/studio-tokens-0.1.0.json), with
+[bounded browser observations](../evidence/script-revision-persistence.md#browser-observations).
+The full Studio/Theatre/CMP journeys and exact reference fidelity remain unimplemented.
 
 ## Direction and reference
 
@@ -88,4 +91,7 @@ Record the viewport/device, theme, text scale, input method, build revision, obs
 | Shared states | Empty/loading/offline/failed/retry/expired access/stale render/publishing conflict | State-specific captures; preserved input and a usable recovery action. |
 | Motion | Navigation, mini-player expansion, async feedback; reduced motion | Runtime recording/profiling on supported targets; verify interruption and state clarity. |
 
-No visual, contrast, accessibility, responsiveness, or native behavior checks have been run at initialization. Desktop CMP previews alone do not verify Android or iOS.
+Initialization performed no UI checks. The revision slice adds light/dark token contrast tests
+and real Safari keyboard/focus, compact-window and 200% zoom observations for its minimal
+surface only. Instrumented exact 320 CSS px, screen-reader/IME and native platform checks remain
+separate gates; desktop observations never verify Android or iOS.

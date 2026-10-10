@@ -1,0 +1,682 @@
+//! Real boundary tests. Only the disposable-cluster runner enables these ignored tests.
+use axum::{
+    body::Body,
+    http::{Request, StatusCode},
+    Router,
+};
+use cantos_api::{RevisionResponse, SaveRevisionRequest};
+use cantos_server::{
+    http::{router, AppState},
+    postgres::{local_config, migrate, token_hash, Store, StoreError},
+    script_ir::read_script,
+};
+use http_body_util::BodyExt;
+use serde_json::{json, Value};
+use std::{
+    env, fs,
+    time::{Duration, Instant},
+};
+use tokio_postgres::{Client, Config, NoTls};
+use tower::ServiceExt;
+use uuid::Uuid;
+
+const ALICE: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+const BOB: &str = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+const ORIGIN: &str = "http://127.0.0.1:8080";
+const FIXTURE: &str =
+    include_str!("../../../contracts/fixtures/script-ir/0.1.0/accept/two-scenes.json");
+
+struct Harness {
+    admin: Client,
+    admin_config: Config,
+    store: Store,
+    app: Router,
+    database: String,
+}
+
+async fn connect(config: &Config) -> Client {
+    let (client, connection) = config.connect(NoTls).await.unwrap();
+    tokio::spawn(async move {
+        connection.await.unwrap_or_else(|error| {
+            eprintln!(
+                "test connection closed: {}",
+                error.code().map(|code| code.code()).unwrap_or("transport")
+            )
+        });
+    });
+    client
+}
+
+impl Harness {
+    async fn new(name: Option<&str>) -> Self {
+        let url = env::var("CANTOS_TEST_CLUSTER_URL").expect("use scripts/test_postgres.py");
+        let mut config = local_config(&url).unwrap();
+        assert_eq!(config.get_user(), Some("cantos_test_admin"));
+        assert_eq!(config.get_dbname(), Some("postgres"));
+        let cluster = connect(&config).await;
+        let database = name
+            .map(str::to_owned)
+            .unwrap_or_else(|| format!("cantos_test_{}", Uuid::new_v4().simple()));
+        assert!(
+            database.starts_with("cantos_test_")
+                && database
+                    .bytes()
+                    .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_')
+        );
+        cluster
+            .batch_execute(&format!("CREATE DATABASE {database}"))
+            .await
+            .unwrap();
+        config.dbname(&database);
+        migrate(&config).await.unwrap();
+        let admin = connect(&config).await;
+        admin.batch_execute("GRANT CONNECT ON DATABASE postgres TO cantos_app; GRANT USAGE ON SCHEMA public TO cantos_app; GRANT SELECT ON actors,sessions,script_members,script_evidence,script_revisions,revision_evidence,scripts TO cantos_app; GRANT INSERT ON scripts,script_revisions,revision_evidence TO cantos_app; GRANT UPDATE(head_revision) ON scripts TO cantos_app; GRANT UPDATE(revoked) ON sessions TO cantos_app; INSERT INTO actors(id) VALUES('alice'),('bob');").await.unwrap();
+        for (actor, token) in [("alice", ALICE), ("bob", BOB)] {
+            admin.execute("INSERT INTO sessions(token_hash,actor_id,expires_at) VALUES($1,$2,CURRENT_TIMESTAMP+interval '1 hour')", &[&token_hash(token),&actor]).await.unwrap();
+            for (kind, id) in read_script(FIXTURE.as_bytes()).unwrap().evidence_refs() {
+                admin.execute("INSERT INTO script_evidence(owner_id,kind,id,description) VALUES($1,$2,$3,'synthetic fixture reference; no publication clearance')", &[&actor,&kind,&id]).await.unwrap();
+            }
+            admin.execute("INSERT INTO script_evidence VALUES($1,'rights','rights-new','synthetic changed rights reference')", &[&actor]).await.unwrap();
+        }
+        let mut app_config = config.clone();
+        app_config
+            .user("cantos_app")
+            .application_name("cantos-test");
+        let store = Store::new(app_config).unwrap();
+        let app = router(
+            AppState {
+                store: store.clone(),
+                web_origin: ORIGIN.into(),
+            },
+            "apps/web/dist",
+        );
+        Self {
+            admin,
+            admin_config: config,
+            store,
+            app,
+            database,
+        }
+    }
+    async fn count(&self, script: &str) -> (i64, i64) {
+        let row = self.admin.query_one("SELECT head_revision,(SELECT count(*) FROM script_revisions WHERE script_id=$1) FROM scripts WHERE id=$1", &[&script]).await.unwrap();
+        (row.get(0), row.get(1))
+    }
+    async fn request(
+        &self,
+        method: &str,
+        path: &str,
+        token: Option<&str>,
+        body: Option<Value>,
+    ) -> (StatusCode, Value) {
+        let mut request = Request::builder()
+            .method(method)
+            .uri(format!("/api/v1{path}"))
+            .header("origin", ORIGIN)
+            .header("content-type", "application/json")
+            .header("x-actor-id", "alice");
+        if let Some(token) = token {
+            request = request.header("cookie", format!("cantos_session={token}"));
+        }
+        let response = self
+            .app
+            .clone()
+            .oneshot(
+                request
+                    .body(Body::from(
+                        body.map(|value| value.to_string()).unwrap_or_default(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.headers()["cache-control"], "no-store");
+        let status = response.status();
+        let bytes = response.into_body().collect().await.unwrap().to_bytes();
+        let value: Value = serde_json::from_slice(&bytes).unwrap();
+        validate_response(&value, status.is_success());
+        (status, value)
+    }
+}
+
+fn validate_response(value: &Value, success: bool) {
+    let schema: Value = serde_json::from_str(include_str!(
+        "../../../contracts/schema/studio/v1.schema.json"
+    ))
+    .unwrap();
+    let definition = if success { "Revision" } else { "ApiError" };
+    let schema = json!({"$ref":format!("#/$defs/{definition}"),"$defs":schema["$defs"]});
+    jsonschema::validator_for(&schema)
+        .unwrap()
+        .validate(value)
+        .unwrap();
+}
+
+fn request(base: u64) -> SaveRevisionRequest {
+    SaveRevisionRequest {
+        expected_revision: base,
+        operation_id: Uuid::new_v4().to_string(),
+        script_json: FIXTURE.into(),
+    }
+}
+
+fn changed_rights(mut request: SaveRevisionRequest) -> SaveRevisionRequest {
+    let mut value: Value = serde_json::from_str(&request.script_json).unwrap();
+    value["work"]["rights_record_id"] = json!("rights-new");
+    request.script_json = value.to_string();
+    request
+}
+
+#[tokio::test]
+#[ignore = "disposable PostgreSQL cluster required"]
+async fn migration_replay_is_checked_and_failed_ddl_rolls_back() {
+    let h = Harness::new(None).await;
+    let script = Uuid::new_v4().to_string();
+    let saved = h.store.save(ALICE, &script, request(0)).await.unwrap();
+    migrate(&h.admin_config).await.unwrap();
+    assert_eq!(h.store.load(ALICE, &script, Some(1)).await.unwrap(), saved);
+    h.admin
+        .execute(
+            "UPDATE cantos_migrations SET checksum=$1",
+            &[&vec![0u8; 32]],
+        )
+        .await
+        .unwrap();
+    assert!(matches!(
+        migrate(&h.admin_config).await,
+        Err(StoreError::CorruptRevision)
+    ));
+    let mut config = local_config(&env::var("CANTOS_TEST_CLUSTER_URL").unwrap()).unwrap();
+    let cluster = connect(&config).await;
+    let name = format!("cantos_test_{}", Uuid::new_v4().simple());
+    cluster
+        .batch_execute(&format!("CREATE DATABASE {name}"))
+        .await
+        .unwrap();
+    config.dbname(&name);
+    let admin = connect(&config).await;
+    admin
+        .batch_execute("CREATE TABLE script_revisions(collision text)")
+        .await
+        .unwrap();
+    assert!(matches!(
+        migrate(&config).await,
+        Err(StoreError::Unavailable)
+    ));
+    let row = admin
+        .query_one(
+            "SELECT to_regclass('actors')::text,to_regclass('cantos_migrations')::text",
+            &[],
+        )
+        .await
+        .unwrap();
+    assert_eq!(row.get::<_, Option<String>>(0), None);
+    assert_eq!(row.get::<_, Option<String>>(1), None);
+    admin
+        .batch_execute("DROP TABLE script_revisions")
+        .await
+        .unwrap();
+    migrate(&config).await.unwrap();
+}
+
+#[tokio::test]
+#[ignore = "disposable PostgreSQL cluster required"]
+async fn complete_exports_metadata_retries_and_pinned_history_survive_edits() {
+    let h = Harness::new(None).await;
+    let script = Uuid::new_v4().to_string();
+    let first_request = request(0);
+    let first = h
+        .store
+        .save(ALICE, &script, first_request.clone())
+        .await
+        .unwrap();
+    let fixture: RevisionResponse = serde_json::from_str(include_str!(
+        "../../../contracts/fixtures/studio/v1/revision.json"
+    ))
+    .unwrap();
+    assert_eq!(first.script_json, fixture.script_json);
+    assert_eq!(first.export_digest, fixture.export_digest);
+    assert_eq!(
+        first.script_json.as_bytes(),
+        read_script(FIXTURE.as_bytes()).unwrap().export_bytes()
+    );
+    let second = h
+        .store
+        .save(ALICE, &script, changed_rights(request(1)))
+        .await
+        .unwrap();
+    assert_eq!(first.content_digest, second.content_digest);
+    assert_ne!(first.export_digest, second.export_digest);
+    assert_ne!(first.script_json, second.script_json);
+    assert_eq!(
+        h.store
+            .save(ALICE, &script, first_request.clone())
+            .await
+            .unwrap(),
+        first
+    );
+    assert_eq!(h.store.load(ALICE, &script, Some(1)).await.unwrap(), first);
+    assert_eq!(h.store.load(ALICE, &script, None).await.unwrap(), second);
+    assert!(matches!(
+        h.store
+            .save(ALICE, &script, changed_rights(first_request.clone()))
+            .await,
+        Err(StoreError::OperationReused)
+    ));
+    let mut wrong_base = first_request;
+    wrong_base.expected_revision = 1;
+    assert!(matches!(
+        h.store.save(ALICE, &script, wrong_base).await,
+        Err(StoreError::OperationReused)
+    ));
+    assert!(matches!(
+        h.store.save(ALICE, &script, request(1)).await,
+        Err(StoreError::StaleRevision(2))
+    ));
+    assert_eq!(h.count(&script).await, (2, 2));
+    let evidence_count: i64 = h
+        .admin
+        .query_one(
+            "SELECT count(*) FROM revision_evidence WHERE script_id=$1",
+            &[&script],
+        )
+        .await
+        .unwrap()
+        .get(0);
+    assert_eq!(evidence_count, 11);
+}
+
+#[tokio::test]
+#[ignore = "disposable PostgreSQL cluster required"]
+async fn backend_denies_anonymous_wrong_owner_reader_revoked_and_expired_sessions() {
+    let h = Harness::new(None).await;
+    let script = Uuid::new_v4().to_string();
+    let saved = h.store.save(ALICE, &script, request(0)).await.unwrap();
+    let head = format!("/scripts/{script}/head");
+    let writes = format!("/scripts/{script}/revisions");
+    let (status, body) = h.request("GET", &head, None, None).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+    assert_eq!(body["code"], "unauthenticated");
+    assert_eq!(
+        h.request("POST", &writes, None, Some(json!({"invalid":"body"})))
+            .await
+            .0,
+        StatusCode::UNAUTHORIZED
+    );
+    for path in [&head, &format!("/scripts/{script}/revisions/1")] {
+        let (status, body) = h.request("GET", path, Some(BOB), None).await;
+        assert_eq!(status, StatusCode::NOT_FOUND);
+        assert_eq!(body["code"], "not_found");
+        assert!(!body.to_string().contains("Ánh đèn"));
+    }
+    assert_eq!(
+        h.request(
+            "POST",
+            &writes,
+            Some(BOB),
+            Some(serde_json::to_value(request(1)).unwrap())
+        )
+        .await
+        .0,
+        StatusCode::NOT_FOUND
+    );
+    h.admin
+        .execute(
+            "INSERT INTO script_members VALUES($1,'bob','reader')",
+            &[&script],
+        )
+        .await
+        .unwrap();
+    let (status, body) = h.request("GET", &head, Some(BOB), None).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(
+        serde_json::from_value::<RevisionResponse>(body).unwrap(),
+        saved
+    );
+    assert_eq!(
+        h.request(
+            "POST",
+            &writes,
+            Some(BOB),
+            Some(serde_json::to_value(request(1)).unwrap())
+        )
+        .await
+        .0,
+        StatusCode::FORBIDDEN
+    );
+    h.admin
+        .execute(
+            "UPDATE script_members SET role='editor' WHERE script_id=$1",
+            &[&script],
+        )
+        .await
+        .unwrap();
+    let edited = h.store.save(BOB, &script, request(1)).await.unwrap();
+    assert_eq!(edited.accepted_by, "bob");
+    h.admin
+        .execute("DELETE FROM script_members WHERE script_id=$1", &[&script])
+        .await
+        .unwrap();
+    assert_eq!(
+        h.request("GET", &head, Some(BOB), None).await.0,
+        StatusCode::NOT_FOUND
+    );
+    h.admin.execute("UPDATE sessions SET expires_at=CURRENT_TIMESTAMP-interval '1 second' WHERE actor_id='bob'",&[]).await.unwrap();
+    assert_eq!(
+        h.request("GET", &head, Some(BOB), None).await.0,
+        StatusCode::UNAUTHORIZED
+    );
+    h.admin
+        .execute(
+            "UPDATE sessions SET revoked=true WHERE actor_id='alice'",
+            &[],
+        )
+        .await
+        .unwrap();
+    assert_eq!(
+        h.request("GET", &head, Some(ALICE), None).await.0,
+        StatusCode::UNAUTHORIZED
+    );
+    assert_eq!(h.count(&script).await, (2, 2));
+}
+
+#[tokio::test]
+#[ignore = "disposable PostgreSQL cluster required"]
+async fn invalid_exports_and_foreign_evidence_leave_no_partial_script() {
+    let h = Harness::new(None).await;
+    let script = Uuid::new_v4().to_string();
+    let mut invalid = request(0);
+    invalid.script_json = "{}".into();
+    assert!(matches!(
+        h.store.save(ALICE, &script, invalid).await,
+        Err(StoreError::InvalidScript(_))
+    ));
+    h.admin.execute("INSERT INTO script_evidence VALUES('bob','rights','bob-private','synthetic foreign evidence')",&[]).await.unwrap();
+    let mut value: Value = serde_json::from_str(FIXTURE).unwrap();
+    value["work"]["rights_record_id"] = json!("bob-private");
+    let mut foreign = request(0);
+    foreign.script_json = value.to_string();
+    assert!(matches!(
+        h.store.save(ALICE, &script, foreign).await,
+        Err(StoreError::EvidenceUnavailable)
+    ));
+    let count: i64 = h
+        .admin
+        .query_one("SELECT count(*) FROM scripts WHERE id=$1", &[&script])
+        .await
+        .unwrap()
+        .get(0);
+    assert_eq!(count, 0);
+    assert!(matches!(
+        h.store.save(ALICE, &script, request(1)).await,
+        Err(StoreError::StaleRevision(0))
+    ));
+    assert_eq!(
+        h.admin
+            .query_one("SELECT count(*) FROM scripts WHERE id=$1", &[&script])
+            .await
+            .unwrap()
+            .get::<_, i64>(0),
+        0
+    );
+}
+
+async fn wait_for_two_blocked_writers(admin: &Client) {
+    let deadline = Instant::now() + Duration::from_secs(5);
+    loop {
+        let count: i64 = admin.query_one("SELECT count(*) FROM pg_stat_activity WHERE application_name='cantos-test' AND wait_event_type='Lock'",&[]).await.unwrap().get(0);
+        if count >= 2 {
+            return;
+        }
+        assert!(
+            Instant::now() < deadline,
+            "writers did not reach the locked-head barrier"
+        );
+        tokio::time::sleep(Duration::from_millis(10)).await;
+    }
+}
+
+#[tokio::test]
+#[ignore = "disposable PostgreSQL cluster required"]
+async fn concurrent_stale_saves_and_duplicate_delivery_are_atomic() {
+    let h = Harness::new(None).await;
+    let script = Uuid::new_v4().to_string();
+    h.store.save(ALICE, &script, request(0)).await.unwrap();
+    let mut blocker = connect(&h.admin_config).await;
+    let tx = blocker.transaction().await.unwrap();
+    tx.query_one("SELECT id FROM scripts WHERE id=$1 FOR UPDATE", &[&script])
+        .await
+        .unwrap();
+    let a_store = h.store.clone();
+    let a_script = script.clone();
+    let a = tokio::spawn(async move { a_store.save(ALICE, &a_script, request(1)).await });
+    let b_store = h.store.clone();
+    let b_script = script.clone();
+    let b = tokio::spawn(async move {
+        b_store
+            .save(ALICE, &b_script, changed_rights(request(1)))
+            .await
+    });
+    wait_for_two_blocked_writers(&h.admin).await;
+    tx.commit().await.unwrap();
+    let a = a.await.unwrap();
+    let b = b.await.unwrap();
+    assert!(matches!(
+        (&a, &b),
+        (Ok(_), Err(StoreError::StaleRevision(2))) | (Err(StoreError::StaleRevision(2)), Ok(_))
+    ));
+    assert_eq!(h.count(&script).await, (2, 2));
+    let duplicate = request(2);
+    let tx = blocker.transaction().await.unwrap();
+    tx.query_one("SELECT id FROM scripts WHERE id=$1 FOR UPDATE", &[&script])
+        .await
+        .unwrap();
+    let mut tasks = vec![];
+    for _ in 0..2 {
+        let store = h.store.clone();
+        let script = script.clone();
+        let request = duplicate.clone();
+        tasks.push(tokio::spawn(async move {
+            store.save(ALICE, &script, request).await.unwrap()
+        }));
+    }
+    wait_for_two_blocked_writers(&h.admin).await;
+    tx.commit().await.unwrap();
+    assert_eq!(
+        tasks.remove(0).await.unwrap(),
+        tasks.remove(0).await.unwrap()
+    );
+    assert_eq!(h.count(&script).await, (3, 3));
+}
+
+#[tokio::test]
+#[ignore = "disposable PostgreSQL cluster required"]
+async fn killed_connection_before_commit_rolls_back_and_same_key_can_retry() {
+    let h = Harness::new(None).await;
+    let script = Uuid::new_v4().to_string();
+    let first = h.store.save(ALICE, &script, request(0)).await.unwrap();
+    h.admin.batch_execute("CREATE FUNCTION crash_save() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN PERFORM pg_terminate_backend(pg_backend_pid()); RETURN NEW; END $$; CREATE TRIGGER crash_before_commit AFTER INSERT ON script_revisions FOR EACH ROW EXECUTE FUNCTION crash_save();").await.unwrap();
+    let retry = request(1);
+    assert!(matches!(
+        h.store.save(ALICE, &script, retry.clone()).await,
+        Err(StoreError::Unavailable)
+    ));
+    h.admin
+        .batch_execute(
+            "DROP TRIGGER crash_before_commit ON script_revisions; DROP FUNCTION crash_save()",
+        )
+        .await
+        .unwrap();
+    assert_eq!(h.count(&script).await, (1, 1));
+    assert_eq!(h.store.load(ALICE, &script, None).await.unwrap(), first);
+    let second = h.store.save(ALICE, &script, retry.clone()).await.unwrap();
+    assert_eq!(h.store.save(ALICE, &script, retry).await.unwrap(), second);
+    assert_eq!(h.count(&script).await, (2, 2));
+}
+
+#[tokio::test]
+#[ignore = "disposable PostgreSQL cluster required"]
+async fn app_privileges_triggers_and_load_checks_guard_immutable_history() {
+    let h = Harness::new(None).await;
+    let script = Uuid::new_v4().to_string();
+    h.store.save(ALICE, &script, request(0)).await.unwrap();
+    let mut config = h.admin_config.clone();
+    config.user("cantos_app");
+    let app = connect(&config).await;
+    for sql in [
+        "UPDATE script_revisions SET canonical_export='x'",
+        "DELETE FROM script_revisions",
+        "TRUNCATE script_revisions CASCADE",
+        "UPDATE actors SET active=false",
+        "UPDATE script_members SET role='editor'",
+        "ALTER TABLE script_revisions DISABLE TRIGGER ALL",
+    ] {
+        let error = app.batch_execute(sql).await.unwrap_err();
+        assert_eq!(error.code().unwrap().code(), "42501", "{sql}");
+    }
+    let error = h
+        .admin
+        .execute(
+            "UPDATE script_revisions SET canonical_export=canonical_export WHERE script_id=$1",
+            &[&script],
+        )
+        .await
+        .unwrap_err();
+    assert_eq!(error.code().unwrap().code(), "55000");
+    let error = h
+        .admin
+        .execute(
+            "DELETE FROM script_revisions WHERE script_id=$1",
+            &[&script],
+        )
+        .await
+        .unwrap_err();
+    assert_eq!(error.code().unwrap().code(), "55000");
+    // Privileged test-only tamper bypasses the trigger to exercise the production load barrier.
+    h.admin
+        .batch_execute("ALTER TABLE script_revisions DISABLE TRIGGER revisions_immutable")
+        .await
+        .unwrap();
+    h.admin
+        .execute(
+            "UPDATE script_revisions SET export_digest=$1 WHERE script_id=$2",
+            &[&format!("sir-e1:sha256:{}", "0".repeat(64)), &script],
+        )
+        .await
+        .unwrap();
+    h.admin
+        .batch_execute("ALTER TABLE script_revisions ENABLE TRIGGER revisions_immutable")
+        .await
+        .unwrap();
+    assert!(matches!(
+        h.store.load(ALICE, &script, None).await,
+        Err(StoreError::CorruptRevision)
+    ));
+    let (status, error) = h
+        .request("GET", &format!("/scripts/{script}/head"), Some(ALICE), None)
+        .await;
+    assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR);
+    assert_eq!(error["code"], "corrupt_revision");
+}
+
+#[tokio::test]
+#[ignore = "disposable PostgreSQL cluster required"]
+async fn restart_fixture_for_process_and_database_recovery() {
+    let h = Harness::new(Some("cantos_test_restart")).await;
+    let script = Uuid::new_v4().to_string();
+    let request = request(0);
+    let saved = h.store.save(ALICE, &script, request.clone()).await.unwrap();
+    fs::create_dir_all("../../target/revision-evidence").unwrap();
+    fs::write("../../target/revision-evidence/restart.json",json!({"database":h.database,"script":script,"token":ALICE,"request":request,"response":saved}).to_string()).unwrap();
+}
+
+#[tokio::test]
+#[ignore = "disposable PostgreSQL cluster required"]
+async fn session_exchange_origin_guard_and_malformed_inputs_are_safe() {
+    let h = Harness::new(None).await;
+    let script = Uuid::new_v4().to_string();
+    h.store.save(ALICE, &script, request(0)).await.unwrap();
+    let login = Request::builder()
+        .method("POST")
+        .uri("/api/v1/session")
+        .header("origin", ORIGIN)
+        .header("content-type", "application/json")
+        .body(Body::from(json!({"token":ALICE}).to_string()))
+        .unwrap();
+    let response = h.app.clone().oneshot(login).await.unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let cookie = response.headers()["set-cookie"].to_str().unwrap();
+    assert!(
+        cookie.contains("HttpOnly")
+            && cookie.contains("SameSite=Strict")
+            && cookie.contains("Path=/api/v1")
+    );
+    let identity: cantos_api::SessionResponse =
+        serde_json::from_slice(&response.into_body().collect().await.unwrap().to_bytes()).unwrap();
+    assert_eq!(identity.actor_id, "alice");
+    let request = Request::builder()
+        .method("POST")
+        .uri(format!("/api/v1/scripts/{script}/revisions"))
+        .header("origin", "https://attacker.invalid")
+        .header("cookie", format!("cantos_session={ALICE}"))
+        .header("content-type", "application/json")
+        .body(Body::from(
+            serde_json::to_string(&self::request(1)).unwrap(),
+        ))
+        .unwrap();
+    assert_eq!(
+        h.app.clone().oneshot(request).await.unwrap().status(),
+        StatusCode::FORBIDDEN
+    );
+    let (status, error) = h
+        .request(
+            "GET",
+            &format!("/scripts/{script}/revisions/not-a-number"),
+            Some(ALICE),
+            None,
+        )
+        .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(error["code"], "invalid_request");
+    let (status, error) = h
+        .request(
+            "POST",
+            &format!("/scripts/{script}/revisions"),
+            Some(ALICE),
+            Some(json!({"unknown":"field"})),
+        )
+        .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(error["code"], "invalid_request");
+    let mut invalid = self::request(1);
+    invalid.script_json =
+        include_str!("../../../contracts/fixtures/script-ir/0.1.0/reject/multiple-faults.json")
+            .into();
+    let (status, error) = h
+        .request(
+            "POST",
+            &format!("/scripts/{script}/revisions"),
+            Some(ALICE),
+            Some(serde_json::to_value(invalid).unwrap()),
+        )
+        .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(error["code"], "invalid_script");
+    assert!(error["issues"].as_array().unwrap().len() > 1);
+    assert_eq!(h.count(&script).await, (1, 1));
+    let logout = Request::builder()
+        .method("DELETE")
+        .uri("/api/v1/session")
+        .header("origin", ORIGIN)
+        .header("cookie", format!("cantos_session={ALICE}"))
+        .body(Body::empty())
+        .unwrap();
+    assert_eq!(
+        h.app.clone().oneshot(logout).await.unwrap().status(),
+        StatusCode::NO_CONTENT
+    );
+    assert!(matches!(
+        h.store.authenticate(ALICE).await,
+        Err(StoreError::Unauthenticated)
+    ));
+}

@@ -36,7 +36,10 @@ The [contract](../../contracts/README.md) specifies canonical content/export/spe
 tagged SHA-256 digests and the exact read/write set `{0.1.0}`. Schema compatibility and semantic
 compatibility both matter: accepting a new field must not silently discard performance meaning.
 Reject unsupported versions with an actionable error; future explicit converters must preserve
-provenance. No converter or persisted revision lifecycle is implemented here.
+provenance. No converter exists. The [local persistence slice](../evidence/script-revision-persistence.md)
+stores every accepted validated save as an immutable complete export. Acceptance here means
+storage admission, not editorial/production/publication approval. A full-export `sir-e1:sha256`
+digest covers metadata excluded from c1; revision identity and access still remain authoritative.
 
 ## TTS cache boundary
 

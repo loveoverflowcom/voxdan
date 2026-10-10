@@ -1,7 +1,64 @@
-# Web implementation guide
+# Cantos Studio Web
 
-This directory is reserved for Leptos Web. No Leptos package or dev server exists yet.
+`cantos-studio` is a minimal Leptos 0.7.8 CSR/WASM consumer of the actual local Axum/PostgreSQL
+revision API. It displays a complete JSON draft and a read-only stored export. It is not the
+planned scene/speaker editor, importer, production console or Cantos Theatre.
 
-Studio and Theatre are distinct product surfaces and permission contexts; start with one Web package if that keeps the first slice smaller. Studio prioritizes a readable script editor, casting and accountable production states. Theatre exposes published discovery and cached audio playback.
+## Build and run
 
-Use the [UI system](../../docs/design/ui-system.md), [business rules](../../docs/product/business-rules.md) and [work plan](../../docs/work-plan/README.md). Preserve editor data through failed requests; keep mini-player state across navigation. Provider credentials and private object-store access never belong in browser code.
+Requires Rust 1.87, `wasm32-unknown-unknown`, Trunk 0.21.14 and matching wasm-bindgen 0.2.100.
+From the repository root:
+
+```sh
+rustup target add wasm32-unknown-unknown --toolchain 1.87.0
+cargo clippy -p cantos-studio --target wasm32-unknown-unknown --locked -- -D warnings
+cd apps/web
+NO_COLOR=true trunk build --locked
+```
+
+Trunk fetches its matching wasm-bindgen helper on its first build. An offline build requires
+that helper on `PATH` as well as the Cargo cache; the Mac run used
+`~/Library/Caches/dev.trunkrs.trunk/wasm-bindgen-0.2.100`. Generated `dist/` is ignored.
+Serve the built files with the local Axum host, using the [isolated database runner](../server/README.md).
+The actual walkthrough used `python3 scripts/serve_studio.py` at `http://127.0.0.1:8080`.
+
+`Trunk.toml` also declares an optional 8081 development proxy to 8080. If using
+`trunk serve --locked`, explicitly set the backend's `CANTOS_WEB_ORIGIN=http://127.0.0.1:8081`.
+That proxy mode was not used as browser evidence.
+
+## Interaction and ownership
+
+Sign in on each page with an operator-issued development token. It becomes a same-origin
+HttpOnly/SameSite=Strict session cookie; the form clears the token after success. Credentials
+are not kept in local storage or build-time config. No fake backend or fallback dataset exists.
+The visible mode label identifies the live development backend.
+
+The pure `editor.rs` owns immutable save snapshots, request tickets and error transitions.
+Reads never replace nonempty local text. A stale save requires a read/compare and explicit
+"keep text, use this head as base" action. A timeout preserves the original actor, operation
+key, base and snapshot; retries reconcile that same operation before another save. Session
+denial after an ambiguous attempt does not discard it. A different actor cannot retry it.
+Editing during a request survives its acknowledgement.
+
+The component obtains the concrete HTTP adapter from Studio context; URLs and wire decoding
+stay in `api.rs`. The browser does not decide backend permissions or Script IR validity.
+`contracts/api/` is shared with Axum; no server crate enters the WASM dependency graph.
+
+Vietnamese/English resources cover every async/error state. Semantic labels, polite status,
+visible focus and keyboard-operable controls use native HTML. Guarded aria-disabled actions
+remain focusable with a reason. No animation or audio is implemented. Page-return handling
+reapplies controlled values if Safari restores WASM state but clears autocomplete-off fields.
+This is not durable draft persistence across reload/closing a tab.
+
+## Tokens and evidence
+
+`contracts/design/studio-tokens-0.1.0.json` is the versioned source of semantic light/dark
+colors and logical dimensions. Generate CSS with `python3 scripts/studio_tokens.py`; verify
+drift with `python3 scripts/studio_tokens.py --check`. System/light/dark selection changes
+only this page. System fonts retain Vietnamese diacritics; no downloaded font is bundled.
+CMP mapping is deferred until its real runtime exists.
+
+[Browser observations](../../docs/evidence/script-revision-persistence.md#browser-observations)
+separate real keyboard/read/save and inspected captures from pure reducer tests and compilation.
+VoiceOver, OS Telex/VNI composition, exact instrumented viewport coverage and native devices
+remain unverified; no complete accessibility or full Studio acceptance claim is made.

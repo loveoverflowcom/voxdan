@@ -8,8 +8,11 @@ Cantos produces performances with a cast, narration, atmosphere, music and sound
 
 This repository contains product specifications, architecture decisions, directory guides and
 project-management templates, plus an executable Rust [Script IR contract](contracts/README.md)
-and validation CLI. The Axum HTTP host, persistence/auth, Web apps, production workers and mobile
-player are **not implemented yet**. No runnable Gradle project is claimed.
+and validation CLI. A local development Axum/PostgreSQL revision store and minimal live Leptos
+Studio consumer now save and read complete immutable exports with actor permissions,
+optimistic concurrency and idempotent retries. See the [persistence evidence](docs/evidence/script-revision-persistence.md).
+Import/adaptation, production, Theatre and native mobile playback remain planned. No runnable
+Gradle project or production identity deployment is claimed.
 
 `develop` is the first and default branch. Create short-lived feature branches from it and target pull requests to `develop`.
 
@@ -37,16 +40,16 @@ Start with one modular backend. Worker execution can run separately for resource
 
 | Path | Responsibility at bootstrap |
 | --- | --- |
-| `apps/server/` | Script IR domain/reader and validation CLI; guide for the future Axum host |
-| `apps/web/` | Guide for Studio and Theatre Web |
+| `apps/server/` | Pure Script IR/revision rules, local Axum host, PostgreSQL store and migration CLI |
+| `apps/web/` | Minimal Leptos Studio CSR consumer; Theatre remains planned |
 | `apps/mobile/` | Guide for the native CMP listening app |
-| `contracts/` | Script IR JSON Schema, compatibility/validation fixtures and canonical policy |
+| `contracts/` | Script IR and Studio v1 schemas/fixtures, shared Rust wire DTOs and design tokens |
 | `docs/` | Product, architecture, design, decisions and the work queue |
 | `templates/` | Reusable feature, decision, production and publication records |
 | `.agents/skills/` | Canonical agent skills shared by Codex, Claude Code and other agents |
 | `.claude/skills/` | Per-skill symlinks so Claude Code discovers `.agents/skills/` |
 | `.github/` | Issue forms, PR template and repository checks |
-| `scripts/` | Repository checks, story initializer, independent digest oracle and bounded mutation runner |
+| `scripts/` | Repository checks, story initializer, digest oracle, mutation checks, isolated PostgreSQL runner and token generator |
 
 ## Validate the bootstrap
 
@@ -68,9 +71,23 @@ cargo run --locked --bin validate-script -- contracts/fixtures/script-ir/0.1.0/a
 
 [Contract evidence](docs/evidence/script-ir-contract.md) names the actual verification boundary.
 On macOS where temporary symlink tests encounter `/var` versus `/private/var`, use
-`TMPDIR=/private/tmp` for the Python unit/mutation runs. Database migration, full application
-and audio QA commands will be added with those implementations. [.env.example](.env.example)
-records proposed configuration names only; it does not start services.
+`TMPDIR=/private/tmp` for the Python unit/mutation runs.
+
+Verify the persistence slice against a fresh disposable PostgreSQL cluster (never an inherited
+`DATABASE_URL`), then build the browser target:
+
+```sh
+PATH="/opt/homebrew/opt/postgresql@17/bin:$PATH" python3 scripts/test_postgres.py
+rustup target add wasm32-unknown-unknown --toolchain 1.87.0
+cargo clippy -p cantos-studio --target wasm32-unknown-unknown --locked -- -D warnings
+cd apps/web
+NO_COLOR=true trunk build --locked
+```
+
+[Server](apps/server/README.md) and [Studio](apps/web/README.md) describe migration, test-role
+permissions and local serving. PostgreSQL binaries must be on `PATH`; the Homebrew path above is
+Mac-specific. [.env.example](.env.example) distinguishes implemented development configuration
+from future provider/storage configuration; no dotenv loader or audio QA runtime is provided.
 
 ## MVP completion
 

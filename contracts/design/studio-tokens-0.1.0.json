@@ -1,0 +1,66 @@
+{
+  "version": "0.1.0",
+  "themes": {
+    "light": {
+      "color.primary": "#654390",
+      "color.onPrimary": "#ffffff",
+      "color.surface": "#faf7fe",
+      "color.surfaceContainer": "#f0eaf7",
+      "color.onSurface": "#251e2e",
+      "color.onSurfaceVariant": "#554b62",
+      "color.outline": "#7b6c8c",
+      "color.focus": "#6034aa"
+    },
+    "dark": {
+      "color.primary": "#d6b7fa",
+      "color.onPrimary": "#322044",
+      "color.surface": "#19151f",
+      "color.surfaceContainer": "#292330",
+      "color.onSurface": "#f1e9f9",
+      "color.onSurfaceVariant": "#c8bad7",
+      "color.outline": "#a894bd",
+      "color.focus": "#e4c9ff"
+    }
+  },
+  "logical_dimensions": {
+    "space.sm": 8,
+    "space.md": 16,
+    "space.lg": 24,
+    "shape.control": 24,
+    "shape.field": 4,
+    "type.body.size": 16,
+    "type.title.size": 28
+  },
+  "contrast_pairs": [
+    [
+      "color.onPrimary",
+      "color.primary",
+      4.5
+    ],
+    [
+      "color.onSurface",
+      "color.surface",
+      4.5
+    ],
+    [
+      "color.onSurface",
+      "color.surfaceContainer",
+      4.5
+    ],
+    [
+      "color.onSurfaceVariant",
+      "color.surfaceContainer",
+      4.5
+    ],
+    [
+      "color.outline",
+      "color.surfaceContainer",
+      3
+    ],
+    [
+      "color.focus",
+      "color.surface",
+      3
+    ]
+  ]
+}

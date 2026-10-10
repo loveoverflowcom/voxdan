@@ -22,6 +22,8 @@ pub enum Status {
     ProposalAlreadySubmitted,
     Unavailable,
     CorruptRevision,
+    StaleProductionInputs,
+    ProductionBlocked,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -459,6 +461,8 @@ pub fn error_status(code: &ErrorCode) -> Status {
         ErrorCode::ProposalAlreadySubmitted => Status::ProposalAlreadySubmitted,
         ErrorCode::Unavailable => Status::Unavailable,
         ErrorCode::CorruptRevision => Status::CorruptRevision,
+        ErrorCode::StaleProductionInputs => Status::StaleProductionInputs,
+        ErrorCode::ProductionBlocked => Status::ProductionBlocked,
     }
 }
 

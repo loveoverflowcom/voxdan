@@ -2,6 +2,7 @@
 
 The `cantos-server` package now implements the Script IR contract, a local development Axum
 host, PostgreSQL revision persistence and a migration CLI. It remains one modular package.
+Versioned casting and immutable production-input authorization use that same authority.
 Production identity deployment, production workers and paid providers are not implemented.
 
 ## Boundaries
@@ -14,6 +15,12 @@ Production identity deployment, production workers and paid providers are not im
 - `adaptation.rs`: closed proposal admission, bounded source context, trusted evidence bindings,
   source coverage findings and complete Script IR semantic validation. Domain decisions do
   not import provider transport; the development host has no enabled generation provider.
+- `production.rs`: pure supported-control validation, per-dialogue pronunciation/performance
+  resolution, integer planning estimates, tagged input digest and current rights/approval gate.
+  Its catalog is synthetic/reference-only; no provider transport or billable dispatch exists.
+- `postgres/production.rs` and `http/production.rs`: script-scoped append-only settings,
+  declarations, candidates/approvals and thin authenticated route mapping. Current permissions,
+  accepted head and evidence are rechecked inside the same PostgreSQL transactions.
 - `postgres.rs`: current actor/session/access facts, transactions, locked heads, complete
   immutable bytes, evidence ownership links and integrity checks on every load.
 - `http.rs`: thin Axum mapping over the [Studio v1 contract](../../contracts/studio-v1.md).
@@ -29,6 +36,10 @@ Production identity deployment, production workers and paid providers are not im
   immutable extraction outcomes on the existing source records.
 - `migrations/0004_ai_adaptation.sql`: immutable run inputs, dispatch intent, observations,
   proposals, cancellation receipts and atomic acceptance links.
+- `migrations/0005_caller_adaptation.sql`: host-owned contexts and append-only submission
+  receipts; historical input decoding remains compatible.
+- `migrations/0006_production_inputs.sql`: versioned settings/rights assertions and immutable
+  candidates/approvals; no reservation, generation attempt or charge table.
 
 All validated saves are immutable accepted storage revisions. They are not production approvals.
 Metadata-only edits can retain c1 while changing e1 and revision identity; no digest deduplication
@@ -104,7 +115,8 @@ and default static directory is `apps/web/dist`; overrides are `CANTOS_WEB_ORIGI
 explicitly unsupported by this host.
 
 See [evidence and residual risks](../../docs/evidence/script-revision-persistence.md) and the
-[affected read inventory](../../docs/evidence/script-revision-reads.md). Rights eligibility,
+[affected read inventory](../../docs/evidence/script-revision-reads.md). Production-input planning
+eligibility is bounded by the reference-only contract below; legal/publication eligibility,
 stable entity identity across revisions and the full #1/010 journey remain
 separate work. Domain rules never import Narrative Forge or AI provider internals.
 
@@ -215,6 +227,51 @@ expired attempts are never redispatched. See [ADR 0006](../../docs/decisions/000
 and [current evidence](../../docs/evidence/ai-script-adaptation.md). Historical local-adapter
 checks are explicitly superseded. Actual CLI/socket/PostgreSQL proof is required; real external
 model generation and output quality remain separately NOT_RUN for this data-pipeline slice.
+
+## Casting and production-input authorization
+
+The [production v1 contract](../../contracts/production-v1.md) adds versioned casting/settings,
+script-scoped rights/budget declarations, reviewable immutable candidates and separate exact
+owner approval. `prepare_inputs` resolves one complete accepted export, required claims and
+reference-only controls; `evaluate_snapshot` computes staleness and rights/time/budget findings
+from current facts. A content digest alone cannot authorize inputs because c1 excludes rights
+and provenance. The separate `production-p1` scope pins complete revision identity/e1, catalog/
+adapter/output versions, settings, required rights versions, actor/time metadata and planning rate.
+
+Every read applies current access. Every mutation rechecks the actor/session/script scope and
+CAS/digest inside the existing locked transaction. Exact same-operation retries return the
+immutable receipt; changed payloads conflict. State reads return newest twenty summaries;
+an authorized known snapshot read checks its full frozen document against persisted historical
+revision, settings and rights receipts before reevaluating current eligibility. Frozen candidates
+survive later edits while eligibility fails closed; a blocked candidate can be inspected but
+cannot acquire an input/cost approval.
+
+The runtime app role additionally needs only:
+
+```sql
+GRANT SELECT, INSERT ON production_settings,production_rights_claims,
+  production_snapshots,production_approvals TO cantos_app;
+GRANT EXECUTE ON FUNCTION production_lock_actor(text),
+  production_lock_member(text,text) TO cantos_app;
+```
+
+No UPDATE/DELETE permission is added for these settled records or authority tables. PostgreSQL
+row locks require UPDATE privilege; the migration-owner's two narrowly scoped SECURITY DEFINER
+helpers obtain actor/member share locks without granting the runtime authority-edit permission.
+They use fixed `pg_catalog` search path, fully qualified tables, no dynamic SQL and revoked
+PUBLIC execution. Their only granted outputs are active-actor presence and current member role.
+Migration replay verifies the same recorded checksums. PostgreSQL remains authoritative;
+no additional service/read engine, accounting ledger, provider transport or worker is introduced.
+The static catalog exposes
+synthetic reference controls, always with billable dispatch unavailable. Rates and rights are
+private-planning actor assertions, not provider/legal verification. Estimates are neither
+reservations nor charges. No generation/payment/audio occurs in #5.
+
+Run the existing disposable PostgreSQL runner for production oracle/restart hooks along with
+the current suites. [Casting evidence and affected reads](../../docs/evidence/casting-production-inputs.md)
+names actual outputs, limits and DBSP deferral; [ADR 0007](../../docs/decisions/0007-casting-production-inputs.md)
+remains proposed for production adoption. Real adapter/dispatch and settlement work follows only
+in its explicitly authorized owning slice.
 
 ## WAV PCM inspection
 

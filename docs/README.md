@@ -16,12 +16,14 @@
 | [Editorial handoff evidence](evidence/editorial-handoff.md) | Compatible source/history/review port, upgrade/recovery checks and read baseline |
 | [WAV PCM inspection evidence](evidence/wav-pcm-inspection.md) | Standalone structural/checksum/sample-peak report contract, fixtures, oracles and non-claims |
 | [Script IR diff evidence](evidence/script-diff.md) | Read-only stable-ID comparison of two script versions: report contract, move semantics, oracles and non-claims |
+| [Casting/input evidence](evidence/casting-production-inputs.md) | Frozen planning scope, rights/budget/approval checks, actual tests and affected read/DBSP assessment |
 | [Mobile architecture](architecture/mobile.md) | CMP shell and native listening behavior |
 | [UI system](design/ui-system.md) | Shared semantic design requirements and validation |
 | [Decision 0001](decisions/0001-modular-monolith.md) | Initial stack and modular-backend decision |
 | [Decision 0002](decisions/0002-script-ir-contract.md) | Proposed adoption of implemented Script IR and digest policy |
 | [Decision 0003](decisions/0003-script-revision-persistence.md) | Local revision persistence and the minimal Studio consumer |
 | [Decision 0004](decisions/0004-editorial-handoff.md) | Compatible editorial handoff on the existing revision backend |
+| [Decision 0007](decisions/0007-casting-production-inputs.md) | Proposed production adoption of versioned casting and scoped input authorization |
 | [Work plan](work-plan/README.md) | Recommended sequence, dependencies and review boundaries |
 | [GitHub planning](work-plan/project-planning.md) | Issue/dependency map, Kanban workflow and links to source documents |
 

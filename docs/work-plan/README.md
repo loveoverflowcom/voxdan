@@ -1,6 +1,13 @@
 # MVP work queue
 
-Start with [#1](https://github.com/loveoverflowcom/cantos/issues/1) within [010 — Import and edit a versioned script](010-import-and-edit-script.md). Each item delivers a usable business capability; implementation details must be confirmed against the code created in earlier items.
+The bounded [#5](https://github.com/loveoverflowcom/cantos/issues/5) casting and immutable
+production-input implementation in [020](020-cast-and-generate-dialogue.md) now has
+[local verification evidence](../evidence/casting-production-inputs.md), using the source,
+adaptation and structured editor authority from 010. Recommend
+[#6](https://github.com/loveoverflowcom/cantos/issues/6) next, after #5 acceptance and review,
+for one concrete provider adapter with explicit provider, applicable rights and spend inputs.
+This queue starts no provider call or generation work. GitHub owns acceptance and execution
+status; the queue preserves recommended order and rationale.
 
 The repository has documentation/templates, an executable
 [Script IR contract](../../contracts/README.md), and a local authenticated immutable revision
@@ -109,7 +116,17 @@ Keep Rust/Axum and PostgreSQL as a modular backend with Leptos Web and CMP nativ
 The [structured Studio editor](../evidence/studio-script-editor.md) consumes that authority for
 text-first scene/dialogue/character editing, validation previews, source comparison, explicit
 review and immutable acceptance/save/reopen. Keep production identity/legal rights and actual
-host-generated quality separate from this local authoring evidence. The next recommended
-capability is 020 casting and durable dialogue generation once its own input/rights/provider
-gates are reviewed; no production work starts automatically after #4. DBSP remains deferred,
-and history/source reads continue through the existing bounded PostgreSQL paths.
+host-generated quality separate from this local authoring evidence.
+
+The [casting input evidence](../evidence/casting-production-inputs.md) and
+[production v1 contract](../../contracts/production-v1.md) bound #5 to versioned casting,
+rights/budget policy, owner approval and immutable snapshots on that same PostgreSQL authority.
+The bounded implementation is locally verified through domain/wire/schema checks, real
+PostgreSQL/HTTP restart journeys and the observed Studio freeze/approval/stale-input flow.
+The reference capability catalog establishes no real voice availability or billable eligibility.
+After #5 acceptance and review, recommend [#6](https://github.com/loveoverflowcom/cantos/issues/6)
+for a concrete, explicitly authorized provider adapter; do not start generation automatically. The
+user's host-owned policy supersedes the former local/open-source generation requirement.
+Ollama/model installation, local inference, paid TTS calls and credentials are outside #5.
+DBSP remains deferred for bounded authorized point/history reads; revisit only if measured
+query/cardinality changes meet the admission conditions in the affected read inventory.

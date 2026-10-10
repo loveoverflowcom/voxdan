@@ -1,8 +1,12 @@
 //! Same-origin HTTP transport. Session credential becomes an HttpOnly cookie.
 use cantos_api::{
-    AcceptAdaptationRequest, AdaptationReviewResponse, ApiError, ErrorCode, HistoryResponse,
-    ImportRequest, ImportResponse, ReviewRequest, ReviewResponse, RevisionResponse,
-    SaveRevisionRequest, ScriptValidationResponse, SessionRequest, SessionResponse, SourceResponse,
+    AcceptAdaptationRequest, AdaptationReviewResponse, ApiError, ApproveProductionRequest,
+    ErrorCode, FreezeProductionRequest, HistoryResponse, ImportRequest, ImportResponse,
+    ProductionApprovalResponse, ProductionCatalogResponse, ProductionPreviewResponse,
+    ProductionRightsClaimResponse, ProductionSettingsResponse, ProductionSnapshotResponse,
+    ProductionStateResponse, ReviewRequest, ReviewResponse, RevisionResponse,
+    SaveProductionRightsRequest, SaveProductionSettingsRequest, SaveRevisionRequest,
+    ScriptValidationResponse, SessionRequest, SessionResponse, SourceResponse,
     ValidateScriptRequest,
 };
 use gloo_net::http::{Request, Response};
@@ -107,6 +111,80 @@ async fn post<T: DeserializeOwned, P: Serialize>(path: &str, body: &P) -> Result
 }
 
 impl StudioHttp {
+    pub async fn production_catalog(&self) -> Result<ProductionCatalogResponse, ApiError> {
+        get("/api/v1/production/catalog").await
+    }
+
+    pub async fn production_state(
+        &self,
+        script: &str,
+    ) -> Result<ProductionStateResponse, ApiError> {
+        get(&format!("{}/production", script_path(script)?)).await
+    }
+
+    pub async fn production_preview(
+        &self,
+        script: &str,
+    ) -> Result<ProductionPreviewResponse, ApiError> {
+        get(&format!("{}/production/review", script_path(script)?)).await
+    }
+
+    pub async fn save_production_settings(
+        &self,
+        script: &str,
+        request: &SaveProductionSettingsRequest,
+    ) -> Result<ProductionSettingsResponse, ApiError> {
+        post(
+            &format!("{}/production/settings", script_path(script)?),
+            request,
+        )
+        .await
+    }
+
+    pub async fn save_production_rights(
+        &self,
+        script: &str,
+        request: &SaveProductionRightsRequest,
+    ) -> Result<ProductionRightsClaimResponse, ApiError> {
+        post(
+            &format!("{}/production/rights", script_path(script)?),
+            request,
+        )
+        .await
+    }
+
+    pub async fn freeze_production(
+        &self,
+        script: &str,
+        request: &FreezeProductionRequest,
+    ) -> Result<ProductionSnapshotResponse, ApiError> {
+        post(
+            &format!("{}/production/snapshots", script_path(script)?),
+            request,
+        )
+        .await
+    }
+
+    pub async fn production_snapshot(
+        &self,
+        script: &str,
+        snapshot: &str,
+    ) -> Result<ProductionSnapshotResponse, ApiError> {
+        get(&production_snapshot_path(script, snapshot)?).await
+    }
+
+    pub async fn approve_production(
+        &self,
+        script: &str,
+        snapshot: &str,
+        request: &ApproveProductionRequest,
+    ) -> Result<ProductionApprovalResponse, ApiError> {
+        post(
+            &format!("{}/approvals", production_snapshot_path(script, snapshot)?),
+            request,
+        )
+        .await
+    }
     pub async fn validate(
         &self,
         request: &ValidateScriptRequest,
@@ -201,6 +279,16 @@ impl StudioHttp {
     ) -> Result<RevisionResponse, ApiError> {
         post(&format!("{}/revisions", script_path(script)?), request).await
     }
+}
+
+fn production_snapshot_path(script: &str, snapshot: &str) -> Result<String, ApiError> {
+    if !crate::adaptation::is_run_id(snapshot) {
+        return Err(invalid_request());
+    }
+    Ok(format!(
+        "{}/production/snapshots/{snapshot}",
+        script_path(script)?
+    ))
 }
 
 fn invalid_request() -> ApiError {

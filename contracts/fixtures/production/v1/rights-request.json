@@ -1,0 +1,26 @@
+{
+  "operation_id": "00000000-0000-4000-8000-000000000052",
+  "expected_version": 0,
+  "claim": {
+    "record_id": "fixture_voice_narrator",
+    "subject": {
+      "kind": "voice",
+      "provider_id": "reference-only",
+      "model_id": "reference-v1",
+      "voice_id": "synthetic-narrator"
+    },
+    "scope": "production_synthesis",
+    "rights_holder": "Synthetic fixture creator",
+    "languages": [
+      "vi-VN"
+    ],
+    "territory": "private-planning",
+    "attribution": "Synthetic fixture only; no public distribution",
+    "restrictions": "private-planning-only",
+    "permitted_scope": "synthetic-private-review",
+    "status": "pending",
+    "reference": "Synthetic recorded assertion; no provider consent or legal verification",
+    "valid_from_unix": 0,
+    "valid_until_unix": null
+  }
+}

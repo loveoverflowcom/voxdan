@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run revision, import and adaptation tests in a new disposable PostgreSQL cluster.
+"""Run revision, import, adaptation and production-input tests in a new disposable cluster.
 
 Never reads DATABASE_URL or connects to an existing database. --keep retains this
 test cluster for local Studio inspection; its explicit stop command is printed.
@@ -19,6 +19,8 @@ import urllib.error
 import urllib.request
 import uuid
 import zipfile
+
+from production_oracle import production_after_restart, production_before_restart
 
 ROOT = Path(__file__).resolve().parents[1]
 EVIDENCE = ROOT / "target" / "revision-evidence"
@@ -447,6 +449,7 @@ def main():
         run(["cargo", "test", "-p", "cantos-server", "--test", "revisions_postgres", "--locked", "--offline", "--", "--ignored", "--test-threads=1"], env=env, output=EVIDENCE / "postgres-tests.log")
         run(["cargo", "test", "-p", "cantos-server", "--test", "imports_postgres", "--locked", "--offline", "--", "--ignored", "--test-threads=1"], env=env, output=EVIDENCE / "import-postgres-tests.log")
         run(["cargo", "test", "-p", "cantos-server", "--test", "adaptations_postgres", "--locked", "--offline", "--", "--ignored", "--test-threads=1"], env=env, output=EVIDENCE / "adaptation-postgres-tests.log")
+        run(["cargo", "test", "-p", "cantos-server", "--test", "production_postgres", "--locked", "--offline", "--", "--ignored", "--test-threads=1"], env=env, output=EVIDENCE / "production-postgres-tests.log")
         run(["cargo", "build", "-p", "cantos-server", "--bins", "--locked", "--offline"], env=env, output=EVIDENCE / "host-build.log")
         fixture = json.loads((EVIDENCE / "restart.json").read_text())
         editor = json.loads((EDITOR_EVIDENCE / "editor-api-journey.json").read_text())
@@ -455,7 +458,9 @@ def main():
              "GRANT INSERT ON source_records,script_evidence TO cantos_app; "
              "GRANT SELECT,INSERT ON adaptation_runs,adaptation_attempts,adaptation_observations,"
              "adaptation_proposals,adaptation_cancellations,adaptation_acceptances,adaptation_submissions TO cantos_app; "
-             "GRANT UPDATE(status,problem,dispatch_deadline,updated_at) ON adaptation_runs TO cantos_app;"], env=env)
+             "GRANT UPDATE(status,problem,dispatch_deadline,updated_at) ON adaptation_runs TO cantos_app; "
+             "GRANT SELECT,INSERT ON production_settings,production_rights_claims,production_snapshots,production_approvals TO cantos_app; "
+             "GRANT EXECUTE ON FUNCTION production_lock_actor(text),production_lock_member(text,text) TO cantos_app;"], env=env)
         app_url = f"postgresql://cantos_app@127.0.0.1:{port}/{fixture['database']}"
         env["DATABASE_URL"] = app_url
         editor_app_url = f"postgresql://cantos_app@127.0.0.1:{port}/{editor['database']}"
@@ -477,6 +482,7 @@ def main():
             assert receipts[0]["original_text"].encode() == bytes(imports[0]["original_bytes"])
             assert [block["text"] for block in receipts[1]["outcome"]["extraction"]["blocks"]] == [
                 "Mai: Ngày mai, mình có diễn tiếp không?", "Nam: Có, ở Vọng Đài."]
+            production = production_before_restart(env, http_port, fixture["token"], app_url)
             adaptation = adaptation_before_restart(env, http_port, fixture["token"], app_url)
             # Abrupt HTTP process death after a committed save (lost response replay).
             host.kill()
@@ -499,6 +505,7 @@ def main():
                 assert import_http(http_port, fixture["token"], source=receipt["id"]) == receipt
                 assert import_http(http_port, fixture["token"], source=receipt["id"], original=True) == bytes(item["original_bytes"])
             adaptation_after_restart(env, http_port, fixture["token"], app_url, adaptation)
+            production_after_restart(env, http_port, fixture["token"], app_url, production)
             editor_after = editor_recovery(editor_env, editor_http_port, editor_app_url, editor)
             assert editor_after == editor_before
             (EDITOR_EVIDENCE / "server-restart.json").write_text(json.dumps({

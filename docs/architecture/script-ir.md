@@ -47,6 +47,13 @@ review of an already reviewed revision returns its original immutable fact after
 Private source reads follow current script access and source evidence links. Storage acceptance,
 editorial review, rights clearance and production/publication approval remain distinct gates.
 
+[Production inputs v1](../../contracts/production-v1.md) keeps casting/performance/pronunciation
+outside the unchanged Script IR contract. A frozen planning candidate pins the complete
+accepted revision/export/c1/e1, reference-only resolved lines, required rights claim versions and
+budget/rate policy under `production-p1`. That scope includes evidence c1 deliberately excludes;
+current input/cost approval cannot be inferred from storage acceptance, editorial review or c1.
+The candidate produces no audio and is not a speech artifact cache fingerprint.
+
 ## TTS cache boundary
 
 A speech fingerprint must include effective spoken text, language, pronunciation, delivery/emotion controls, voice profile revision, provider/model revision, synthesis parameters and output profile. Script revision IDs alone are neither sufficient cache keys nor a reason to rerender unchanged speech. Rights/tenant authorization is checked separately before reuse.

@@ -1,0 +1,66 @@
+{
+  "operation_id": "00000000-0000-4000-8000-000000000051",
+  "expected_revision": 1,
+  "expected_settings_version": 0,
+  "settings": {
+    "bindings": [
+      {
+        "character_id": "narrator",
+        "provider_id": "reference-only",
+        "model_id": "reference-v1",
+        "voice_id": "synthetic-narrator",
+        "language": "vi-VN",
+        "voice_rights_record_id": "fixture_voice_narrator",
+        "performance": {
+          "rate_permille": 1000,
+          "pitch_semitones": 0,
+          "emotion": null,
+          "intensity_permille": null
+        },
+        "pronunciation": []
+      },
+      {
+        "character_id": "an",
+        "provider_id": "reference-only",
+        "model_id": "reference-v1",
+        "voice_id": "synthetic-character",
+        "language": "vi-VN",
+        "voice_rights_record_id": "fixture_voice_character",
+        "performance": {
+          "rate_permille": 1000,
+          "pitch_semitones": 0,
+          "emotion": null,
+          "intensity_permille": null
+        },
+        "pronunciation": []
+      },
+      {
+        "character_id": "minh",
+        "provider_id": "reference-only",
+        "model_id": "reference-v1",
+        "voice_id": "synthetic-character",
+        "language": "vi-VN",
+        "voice_rights_record_id": "fixture_voice_character",
+        "performance": {
+          "rate_permille": 1000,
+          "pitch_semitones": 0,
+          "emotion": null,
+          "intensity_permille": null
+        },
+        "pronunciation": []
+      }
+    ],
+    "budget": {
+      "currency": "USD",
+      "limit_minor": 100,
+      "rate": {
+        "reference": "synthetic planning tariff; not a provider price",
+        "version": "fixture-rate-v1",
+        "units_per_charge": 100,
+        "amount_minor": 1
+      },
+      "scope": "synthetic-private-review",
+      "territory": "private-planning"
+    }
+  }
+}

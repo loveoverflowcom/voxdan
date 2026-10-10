@@ -3,7 +3,9 @@
 > Status: target product contract. Script IR structure, reference and text rules have an
 > [implemented validator](../../contracts/README.md). Local immutable revision persistence
 > and actor/read/write checks have [bounded evidence](../evidence/script-revision-persistence.md);
-> rights eligibility, production and publication gates remain planned.
+> [Production-input planning](../evidence/casting-production-inputs.md) implements bounded
+> reference-only casting, rights/budget declarations and immutable candidate/approval checks.
+> Legal clearance, actual dispatch/cost settlement and publication gates remain separate work.
 
 ## Content and revisions
 

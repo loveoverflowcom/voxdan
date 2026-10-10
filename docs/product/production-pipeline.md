@@ -3,6 +3,8 @@
 > Status: target design. Bounded source import and caller-owned adaptation tools/review have
 > [implementation evidence](../evidence/ai-script-adaptation.md). Generation belongs to the
 > user-controlled Gemini/ChatGPT/Codex host; Cantos validates and persists submitted proposals.
+> [Casting/input authorization](../evidence/casting-production-inputs.md) implements reference-only
+> settings, script-scoped rights/budget declarations, immutable candidates and exact approvals.
 > Production workers, audio, storage/delivery and publication below remain
 > implementation requirements, not capabilities supplied by this repository.
 
@@ -37,6 +39,18 @@ Before synthesis, create a production run that references an immutable snapshot 
 - Required rights evidence, approval policy and production budget.
 
 Editing the draft while a run is active must not change that run's inputs. A creator may start a replacement run against the revised script. Preserve the relationship between revisions, runs, attempts, artifacts and releases.
+
+The bounded [#5 contract](../../contracts/production-v1.md) freezes a planning candidate before
+any run exists. It pins one complete accepted export/c1/e1, resolved reference-only controls,
+required claim versions and budget/rate policy under a separate production-input digest. A
+blocked candidate may be preserved for inspection; a separate owner approval requires current
+editorial review, rights and budget eligibility. Current head/settings/required-rights or
+permission changes and term expiry make eligibility stale without mutating the document.
+The catalog cannot dispatch or produce audio; no reservation or charge exists in this slice.
+Claims/rates remain actor assertions rather than legal/provider verification. See
+[ADR 0007](../decisions/0007-casting-production-inputs.md). The host-owned policy supersedes the
+former local/open-source inference prerequisite; later adapters need explicit provider/rights/
+spend authorization and cannot treat a planning approval as agent permission to pay.
 
 ## Cache and partial regeneration
 

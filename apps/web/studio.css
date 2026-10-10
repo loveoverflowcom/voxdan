@@ -127,3 +127,28 @@ main { max-width: 94rem; }
 /* Closed disclosure contents must not contribute native control intrinsic sizes. */
 .studio-shell details:not([open]) > :not(summary) { display: none; }
 .studio-shell, .studio-shell main { width: 100%; min-width: 0; }
+
+/* Casting keeps native controls and exact identities on the existing Lavender Stage roles. */
+.production-inputs { min-width: 0; max-width: 100%; padding-block: var(--cantos-space-md); }
+.production-reference { background: var(--cantos-color-surface-container); border-inline-start: 4px solid var(--cantos-color-primary); padding: var(--cantos-space-md); overflow-wrap: anywhere; }
+.production-layout { display: grid; grid-template-columns: minmax(0, 2fr) minmax(16rem, 1fr); gap: var(--cantos-space-lg); align-items: start; margin-block: var(--cantos-space-lg); }
+.production-settings, .production-inspector { min-width: 0; }
+.production-inspector { border-inline-start: 1px solid var(--cantos-color-outline); padding-inline-start: var(--cantos-space-md); overflow-wrap: anywhere; }
+.production-inputs fieldset { min-width: 0; min-inline-size: 0; width: 100%; max-width: 100%; padding: var(--cantos-space-md); margin: 0 0 var(--cantos-space-md); border: 1px solid var(--cantos-color-outline); border-radius: var(--cantos-shape-field); }
+.production-inputs legend { font-weight: 600; max-width: 100%; overflow-wrap: anywhere; }
+.production-inputs legend code { display: block; font-weight: 400; font-size: .75rem; color: var(--cantos-color-on-surface-variant); }
+.production-fields { display: grid; min-width: 0; max-width: 100%; grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr)); gap: var(--cantos-space-sm) var(--cantos-space-md); }
+.production-field { min-width: 0; max-width: 100%; margin-block: var(--cantos-space-sm); }
+.production-field > span { display: block; font-weight: 500; margin-block-end: calc(var(--cantos-space-sm) / 2); overflow-wrap: anywhere; }
+.production-field input, .production-field select { width: 100%; min-height: 2.75rem; }
+.production-field select { height: 2.75rem; overflow: hidden; text-overflow: ellipsis; }
+.production-pronunciation { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)) auto; gap: var(--cantos-space-sm); align-items: end; }
+.production-pronunciation button { margin-block-end: var(--cantos-space-sm); }
+.production-snapshot { padding-block: var(--cantos-space-md); border-block: 1px solid var(--cantos-color-outline); }
+.production-findings li, .production-rights-list li { padding-block: var(--cantos-space-sm); overflow-wrap: anywhere; }
+.production-findings small, .production-rights-list small { display: block; color: var(--cantos-color-on-surface-variant); }
+.production-cost dd, .production-snapshot dd { font-variant-numeric: tabular-nums; }
+.production-inspector .source-identity { grid-template-columns: minmax(0, 1fr); }
+.production-inputs pre { font-size: .875rem; }
+@media (max-width: 60rem) { .production-layout { grid-template-columns: minmax(0, 1fr); } .production-inspector { border-inline-start: 0; border-block-start: 1px solid var(--cantos-color-outline); padding-inline-start: 0; padding-block-start: var(--cantos-space-md); } }
+@media (max-width: 36rem) { .production-fields, .production-pronunciation { grid-template-columns: minmax(0, 1fr); } .production-inputs fieldset { padding: var(--cantos-space-sm); } }

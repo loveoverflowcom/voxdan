@@ -21,6 +21,14 @@ stay outside Script IR and require source comparison. The [tool schemas](adaptat
 operations over the existing authenticated HTTP service and CLI. Caller provenance is declared,
 unverified evidence; no inference integration or live model result is implied.
 
+The [production input v1 contract](production-v1.md) shares versioned casting, script-scoped
+rights/budget declarations, immutable frozen candidates and exact owner approval between Axum
+and Studio. Its [schema](schema/production/v1.schema.json) and
+[synthetic fixtures](fixtures/production/v1/README.md) describe a reference-only capability
+catalog. Current eligibility is computed from authoritative facts; freezing is preservation,
+not permission to dispatch. No voice availability, legal verification, provider price, audio,
+reservation or actual billing receipt is claimed.
+
 The historical [draft example](examples/episode-draft.json) stays byte-for-byte unchanged. Its
 `0.1.0-draft` version is illustrative and explicitly unsupported by the reader. The new fixtures
 reuse that original sample and add synthetic content. Their external record IDs are placeholders;

@@ -9,6 +9,7 @@ use crate::{
         self,
         workspace::{text, Key},
     },
+    production::ProductionInputs,
 };
 use cantos_api::{ApiError, ErrorCode, FieldIssue, ValidateScriptRequest};
 use leptos::{prelude::*, task::spawn_local};
@@ -159,6 +160,8 @@ pub fn Studio() -> impl IntoView {
     let proposal_dirty = RwSignal::new(false);
     let proposal_activity = RwSignal::new(false);
     let inspector_pending = RwSignal::new(false);
+    let production_dirty = RwSignal::new(false);
+    let production_activity = RwSignal::new(false);
     let reviewed = RwSignal::new(false);
     let actor = Signal::derive(move || state.with(|e| e.actor.clone()));
     let draft = Signal::derive(move || {
@@ -209,6 +212,8 @@ pub fn Studio() -> impl IntoView {
                 || activity.get_untracked()
                 || proposal_dirty.get_untracked()
                 || inspector_pending.get_untracked()
+                || production_dirty.get_untracked()
+                || production_activity.get_untracked()
             {
                 event.prevent_default();
                 if let Some(event) = event.dyn_ref::<web_sys::BeforeUnloadEvent>() {
@@ -261,16 +266,18 @@ pub fn Studio() -> impl IntoView {
                 <button type="button" aria-pressed=move || panel.get() == 0 on:click=move |_| panel.set(0)>{move || text(Key::Import, english.get())}</button>
                 <button type="button" aria-pressed=move || panel.get() == 1 on:click=move |_| panel.set(1)>{move || text(Key::Proposal, english.get())}</button>
                 <button type="button" aria-pressed=move || panel.get() == 2 on:click=move |_| panel.set(2)>{move || text(Key::Revisions, english.get())}</button>
+                <button type="button" aria-pressed=move || panel.get() == 3 on:click=move |_| panel.set(3)>{move || messages::production::text(messages::production::Key::Pane, english.get())}</button>
             </nav>
             <div hidden=move || panel.get() != 0><ManuscriptImport actor=actor english=english /></div>
             <div hidden=move || panel.get() != 1><ScriptAdaptation actor=actor english=english dirty=proposal_dirty activity=proposal_activity /></div>
+            <div hidden=move || panel.get() != 3><ProductionInputs editor=state english=english script_activity=activity dirty=production_dirty activity=production_activity /></div>
             <section hidden=move || panel.get() != 2 aria-labelledby="revision-title">
                 <h2 id="revision-title">{move || text(Key::Revisions, english.get())}</h2>
                 <form on:submit=move |event| {
-                    event.prevent_default(); if blocked() || activity.get_untracked() { return; }
+                    event.prevent_default(); if blocked() || activity.get_untracked() || production_activity.get_untracked() { return; }
                     let target = selection.get_untracked();
                     if state.with_untracked(|e| e.script != target) {
-                        if state.with_untracked(Editor::is_dirty) && !confirm_discard(english.get_untracked()) { return; }
+                        if (state.with_untracked(Editor::is_dirty) || production_dirty.get_untracked()) && !confirm_discard(english.get_untracked()) { return; }
                         state.update(|e| *e = e.discard_and_select(target)); issues.set(vec![]); reviewed.set(false); preview.set(ValidationPreview::default());
                     }
                     let Some(reading) = state.get_untracked().start_read() else { return; };
@@ -311,8 +318,8 @@ pub fn Studio() -> impl IntoView {
                         if activity.get_untracked() { return; }
                         if let Some((saving,intent)) = state.get_untracked().retry() { state.set(saving); dispatch_save(state,issues,api,intent); }
                     }>{move || copy().retry}</button></Show>
-                    <button type="button" aria-disabled=move || blocked() || activity.get() on:click=move |_| {
-                        if blocked() || activity.get_untracked() || (state.with_untracked(Editor::is_dirty) && !confirm_discard(english.get_untracked())) { return; }
+                    <button type="button" aria-disabled=move || blocked() || activity.get() || production_activity.get() on:click=move |_| {
+                        if blocked() || activity.get_untracked() || production_activity.get_untracked() || ((state.with_untracked(Editor::is_dirty) || production_dirty.get_untracked()) && !confirm_discard(english.get_untracked())) { return; }
                         state.update(|e| *e = e.discard_and_select(String::new())); selection.set(String::new()); reviewed.set(false); issues.set(vec![]); preview.set(ValidationPreview::default());
                     }>{move || text(Key::Discard, english.get())}</button>
                 </div>

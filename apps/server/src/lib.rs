@@ -6,6 +6,7 @@ pub mod http;
 pub mod imports;
 pub mod operator;
 pub mod postgres;
+pub mod production;
 pub mod revisions;
 pub mod script_ir;
 pub mod wav_inspection;

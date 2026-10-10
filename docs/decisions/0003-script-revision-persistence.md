@@ -87,7 +87,10 @@ usage, without changing release behavior.
 
 [Evidence](../evidence/script-revision-persistence.md) records real PG migration/rollback,
 concurrency, killed connections and HTTP/PG restart plus native Safari interaction observations.
-[Read inventory](../evidence/script-revision-reads.md) defers measurements and DBSP. Revisit the
+[Read inventory](../evidence/script-revision-reads.md) maps the implemented consumers;
+[prompt-3 measurements](../evidence/script-revision-performance.md) retain the existing PG path.
+The [conditional DBSP decision](../evidence/script-revision-dbsp-decision.md) records DEFER and
+admission criteria for a future experiment, without changing this ADR's proposed status. Revisit the
 lock strategy at measured contention, auth at production deployment, wire versions at a new
 consumer and e1 at any canonical-export policy change. Neither this proposed ADR nor a passing
 local run establishes the complete issue #1 or 010 acceptance gate.

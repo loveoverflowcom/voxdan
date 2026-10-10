@@ -29,9 +29,12 @@ recommended sequence and scope. Review the
 [#1](https://github.com/loveoverflowcom/cantos/issues/1). Prompt 3 measures the implemented
 point reads and a disposable covering-index comparison; it adds no engine or production
 schema/query change. DBSP remains deferred: there is no measured hot repeated aggregate or
-large join consumer to maintain. A conditional prompt-4 engine experiment needs that concrete
-consumer, improved PostgreSQL baseline, commit-position/freshness contract, approved adapter
-design and resource/recovery budgets first; it is not the next automatic implementation.
+large join consumer to maintain. The completed
+[conditional prompt-4 decision](../evidence/script-revision-dbsp-decision.md) records DEFER,
+the missing admission evidence and measurable reopening criteria. Reopen an engine experiment
+only for a concrete hot consumer after its simpler PostgreSQL comparison, with a reviewed
+adapter, committed-position/freshness contract and resource/recovery budgets. This is not the
+next automatic implementation.
 Continue the bounded importer/editor work in 010 while preserving complete exports, actor
 filters, immutable revision identity and retry semantics. Revisit read optimization when that
 work changes cardinality, evidence fan-out or introduces an actual list/join/aggregate. The

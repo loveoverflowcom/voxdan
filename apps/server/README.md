@@ -17,6 +17,8 @@ Production identity deployment, production workers and paid providers are not im
 - `postgres.rs`: current actor/session/access facts, transactions, locked heads, complete
   immutable bytes, evidence ownership links and integrity checks on every load.
 - `http.rs`: thin Axum mapping over the [Studio v1 contract](../../contracts/studio-v1.md).
+- `wav_inspection/`: pure, bounded RIFF/WAVE integer PCM inspection over bytes. No HTTP, SQL,
+  Script IR, provider or file-system dependency; `inspect-wav` is its only shell.
 - `migrations/0001_script_revisions.sql`: atomic schema, deferred head FK, operation uniqueness
   and immutable revision/link triggers. Migration replay verifies its SHA-256 checksum.
 - `migrations/0002_editorial_handoff.sql`: preserved sources, immutable editorial reviews and
@@ -211,3 +213,26 @@ expired attempts are never redispatched. See [ADR 0006](../../docs/decisions/000
 and [current evidence](../../docs/evidence/ai-script-adaptation.md). Historical local-adapter
 checks are explicitly superseded. Actual CLI/socket/PostgreSQL proof is required; real external
 model generation and output quality remain separately NOT_RUN for this data-pipeline slice.
+
+## WAV PCM inspection
+
+`inspect-wav` reads one local file and prints a JSON report of its RIFF/WAVE structure: the chunk
+table, declared `fmt ` fields, SHA-256 of the file and of the `data` payload, every structural
+error and, for structurally valid integer PCM only, frame count, duration and per-channel sample
+peak. It never converts, uploads or calls a provider, and it writes nothing.
+
+```sh
+cargo run --locked --bin inspect-wav -- path/to/file.wav
+cargo run --locked --bin inspect-wav -- path/to/long-master.wav --max-bytes 2147483648
+cargo build --locked --bin inspect-wav
+python3 scripts/reference_wav_inspection.py
+```
+
+Exit `0` means the structure is valid and `1` that it is invalid; both print the report. Exit `2`
+covers usage errors, unreadable or non-regular input and inputs above `--max-bytes` (default
+1 GiB); they print only a message on stderr. "Valid" is a structural statement. The report lists
+loudness, true peak, clipping, listening quality and publication readiness as `not_assessed`;
+it records no QC result and approves nothing. The oracle script compares the CLI with Python's
+`wave`/hashlib (and ffprobe when installed) on seeded synthetic files in a temporary directory.
+The [inspection evidence](../../docs/evidence/wav-pcm-inspection.md) defines every field, error
+code, limit and residual risk.

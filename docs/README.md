@@ -14,6 +14,7 @@
 | [Script IR evidence](evidence/script-ir-contract.md) | Executed contract checks and unrun application gates |
 | [Final revision sequence review](evidence/script-revision-final-review.md) | Independent findings, fixes, final local checks and remaining runtime limits |
 | [Editorial handoff evidence](evidence/editorial-handoff.md) | Compatible source/history/review port, upgrade/recovery checks and read baseline |
+| [WAV PCM inspection evidence](evidence/wav-pcm-inspection.md) | Standalone structural/checksum/sample-peak report contract, fixtures, oracles and non-claims |
 | [Mobile architecture](architecture/mobile.md) | CMP shell and native listening behavior |
 | [UI system](design/ui-system.md) | Shared semantic design requirements and validation |
 | [Decision 0001](decisions/0001-modular-monolith.md) | Initial stack and modular-backend decision |

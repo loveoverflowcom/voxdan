@@ -22,15 +22,21 @@ and are not permanent task IDs.
 
 The five capability specifications map to 17 bounded implementation issues. Use the Project for
 current execution Status and issue checklists/dependencies for evidence; this queue retains
-recommended sequence and scope. Continue [#1](https://github.com/loveoverflowcom/cantos/issues/1)
-with bounded read-path workload/measurement work after reviewing the
-[persistence evidence](../evidence/script-revision-persistence.md) and
-[affected read inventory](../evidence/script-revision-reads.md). This order checks the new
-authoritative path before importer/adaptation, casting and production expand it. Preserve
-complete exports, actor filters, immutable revision identity and retry semantics during that
-work. Measurements, EXPLAIN baselines and DBSP experiments have not run in this slice; DBSP is
-deferred pending workload evidence. The minimal JSON editor and development sessions do not
-satisfy the full #1/010 capability or authorize closing its issue.
+recommended sequence and scope. Review the
+[persistence evidence](../evidence/script-revision-persistence.md),
+[affected read inventory](../evidence/script-revision-reads.md) and
+[bounded read benchmark](../evidence/script-revision-performance.md) before continuing
+[#1](https://github.com/loveoverflowcom/cantos/issues/1). Prompt 3 measures the implemented
+point reads and a disposable covering-index comparison; it adds no engine or production
+schema/query change. DBSP remains deferred: there is no measured hot repeated aggregate or
+large join consumer to maintain. A conditional prompt-4 engine experiment needs that concrete
+consumer, improved PostgreSQL baseline, commit-position/freshness contract, approved adapter
+design and resource/recovery budgets first; it is not the next automatic implementation.
+Continue the bounded importer/editor work in 010 while preserving complete exports, actor
+filters, immutable revision identity and retry semantics. Revisit read optimization when that
+work changes cardinality, evidence fan-out or introduces an actual list/join/aggregate. The
+minimal JSON editor and development sessions do not satisfy the full #1/010 capability or
+authorize closing its issue. GitHub execution status is unchanged by this local evidence.
 
 | Capability | Execution issues | Milestone |
 | --- | --- | --- |

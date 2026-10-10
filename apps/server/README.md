@@ -38,6 +38,13 @@ tests and then kills/restarts HTTP and PostgreSQL processes. It stops the cluste
 The Rust integration tests are deliberately ignored by ordinary `cargo test`; that result
 alone is not database evidence. The runner needs permission to allocate PostgreSQL shared memory.
 
+For repeatable read measurements, run `scripts/benchmark_revision_reads.py` from the root
+with the same PostgreSQL binaries on `PATH`. Its [protocol](../../docs/evidence/script-revision-benchmark-protocol.md)
+defines safe synthetic scale/skew, actual HTTP serving, full PostgreSQL oracle comparisons,
+permission isolation, EXPLAIN plans and write/storage accounting. Candidate indexes exist only
+inside disposable comparison databases, not in the production migration. Resource sampling
+also needs access to `ps`/`sysctl`; a denied/missing tool is a blocker, not a zero-cost result.
+
 For a synthetic live Studio walkthrough, build Web using [its guide](../web/README.md), then:
 
 ```sh

@@ -1,10 +1,12 @@
 # Script revision affected-read inventory
 
-Scope: prompt 2, local development persistence slice based on
+Initial inventory: prompt 2, local development persistence slice based on
 `ea8e1d98a31301b0d63dfa75d8e56450397b581d`. Inventory follows the
 [PostgreSQL read-performance skill](../../.agents/skills/cantos-engineering/references/postgresql-read-performance.md).
-It is source inspection and correctness evidence, not a latency benchmark. Prompt 3 has not
-been opened or executed.
+The table records implemented semantics. Prompt 3 adds the
+[bounded measurement protocol](script-revision-benchmark-protocol.md) and
+[completed measurements/DBSP decision](script-revision-performance.md); measured evidence is
+kept separately from the prompt-2 historical NOT_RUN record below.
 
 ## Actual serving reads
 
@@ -42,6 +44,9 @@ DB/pool/deadline failures fail typed 503. Killed transaction rollback and verifi
 are fault-injected; exact response replay across real HTTP/PG restart is integration-tested.
 
 ## Measurement boundary and DBSP decision
+
+The following is the **prompt-2** boundary. Prompt-3 measurements follow the linked protocol;
+they do not retroactively change which checks ran in prompt 2.
 
 Decision: **defer**. Current implemented reads are indexed point lookups, without a repeated
 join/aggregate read model or measured traffic. Adding an engine/CDC/state/fallback service now

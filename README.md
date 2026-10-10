@@ -89,6 +89,18 @@ permissions and local serving. PostgreSQL binaries must be on `PATH`; the Homebr
 Mac-specific. [.env.example](.env.example) distinguishes implemented development configuration
 from future provider/storage configuration; no dotenv loader or audio QA runtime is provided.
 
+Measure the implemented revision reads against synthetic data in a fresh disposable cluster:
+
+```sh
+PATH="/opt/homebrew/opt/postgresql@17/bin:$PATH" python3 scripts/benchmark_revision_reads.py --scripts 100
+PATH="/opt/homebrew/opt/postgresql@17/bin:$PATH" python3 scripts/benchmark_revision_reads.py --scripts 5000
+```
+
+The [benchmark protocol](docs/evidence/script-revision-benchmark-protocol.md) records the
+chosen local budgets, snapshot isolation between comparisons and shared-buffer cold-start
+limitations. The harness stops its HTTP/PostgreSQL processes and retains raw synthetic
+samples/plans locally under ignored `target/read-benchmarks/`. It never accepts an existing DB URL.
+
 ## MVP completion
 
 The MVP must demonstrate an authorized script imported into Studio, reviewed adaptation and casting, resumable production, partial regeneration, mixed audio passing QC, approved publication, Theatre Web playback and native Android/iOS listening with background controls, offline playback and synchronized progress. See the [work plan](docs/work-plan/README.md) for individual acceptance gates.

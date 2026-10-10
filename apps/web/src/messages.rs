@@ -4,6 +4,7 @@ use crate::editor::Status;
 mod adaptation;
 pub use adaptation::*;
 pub mod authoring;
+pub mod production;
 pub mod workspace;
 
 #[derive(Clone, Copy)]
@@ -95,6 +96,10 @@ pub fn status(status: Status, english: bool) -> &'static str {
         (Status::Unavailable,true) => "Outcome unavailable. Text and snapshot preserved; retry after connection recovers.",
         (Status::CorruptRevision,false) => "Không kiểm chứng được bản đã lưu. Văn bản được giữ; cần kiểm tra backend.",
         (Status::CorruptRevision,true) => "Stored revision integrity check failed. Text preserved; inspect the backend.",
+        (Status::StaleProductionInputs, false) => "Đầu vào sản xuất đã đổi. Đọc lại thiết lập và quyền, kiểm tra rồi đóng băng snapshot mới; các giá trị hiện tại được giữ.",
+        (Status::StaleProductionInputs, true) => "Production inputs changed. Reload settings and rights, review, then freeze a new snapshot; current values are preserved.",
+        (Status::ProductionBlocked, false) => "Phê duyệt bị chặn bởi quyền, ngân sách hoặc rà soát kịch bản. Xem các điều kiện và kiểm tra lại snapshot.",
+        (Status::ProductionBlocked, true) => "Approval blocked by permissions, budget or script review. Inspect the findings and check the snapshot again.",
     }
 }
 
@@ -215,6 +220,10 @@ pub fn import_status(value: &crate::import::ImportStatus, english: bool) -> &'st
     use crate::import::ImportStatus;
     use cantos_api::ErrorCode;
     match (value, english) {
+        (ImportStatus::Error(ErrorCode::StaleProductionInputs), true) => "Production input scope changed; import selection is preserved.",
+        (ImportStatus::Error(ErrorCode::StaleProductionInputs), false) => "Phạm vi đầu vào sản xuất đã đổi; tệp nhập được giữ.",
+        (ImportStatus::Error(ErrorCode::ProductionBlocked), true) => "Production inputs are blocked; import selection is preserved.",
+        (ImportStatus::Error(ErrorCode::ProductionBlocked), false) => "Đầu vào sản xuất đang bị chặn; tệp nhập được giữ.",
         (ImportStatus::Idle, true) => "Choose a manuscript to import, or open a stored source by its ID.",
         (ImportStatus::Idle, false) => "Chọn bản thảo để nhập hoặc mở nguồn đã lưu bằng ID.",
         (ImportStatus::ReadingFile, true) => "Reading the selected file…",

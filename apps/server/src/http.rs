@@ -18,6 +18,7 @@ use crate::postgres::{Store, StoreError};
 
 mod adaptations;
 mod imports;
+mod production;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -36,6 +37,7 @@ pub fn router(state: AppState, dist: &str) -> Router {
         .route("/validation", post(validate_script))
         .merge(imports::routes())
         .merge(adaptations::routes())
+        .merge(production::routes())
         .route_layer(middleware::from_fn_with_state(state.clone(), authenticated));
     let api = scripts
         .route("/session", post(login).delete(logout))
@@ -352,6 +354,18 @@ fn error_response(error: StoreError) -> Response {
             ErrorCode::ProposalAlreadySubmitted,
             None,
             vec![],
+        ),
+        StoreError::StaleProductionInputs => (
+            StatusCode::CONFLICT,
+            ErrorCode::StaleProductionInputs,
+            None,
+            vec![],
+        ),
+        StoreError::ProductionBlocked(issues) => (
+            StatusCode::CONFLICT,
+            ErrorCode::ProductionBlocked,
+            None,
+            issues,
         ),
         StoreError::Unavailable => (
             StatusCode::SERVICE_UNAVAILABLE,

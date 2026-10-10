@@ -4,6 +4,7 @@ pub mod editor;
 pub mod import;
 pub mod inspector;
 pub mod messages;
+pub mod production;
 
 #[cfg(target_arch = "wasm32")]
 pub mod api;

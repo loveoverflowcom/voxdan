@@ -20,7 +20,11 @@ The bounded adaptation implementation exports immutable source/revision context 
 and supports explicit Studio review/acceptance. Gemini / ChatGPT / Codex generation belongs to
 the user-controlled host; Cantos performs no inference. [Adaptation evidence](docs/evidence/ai-script-adaptation.md)
 separates actual tool/storage tests from synthetic content and unrun model quality. The [structured Studio editor](docs/evidence/studio-script-editor.md) adds scene/dialogue/character authoring,
-validation previews, source comparison and revision history on that same authority. Production,
+validation previews, source comparison and revision history on that same authority.
+[Casting and production inputs](docs/evidence/casting-production-inputs.md) add versioned
+reference-only voice controls, script-scoped rights/budget declarations, immutable candidates
+and exact owner approval on the same backend. Reference capabilities and rates are planning
+fixtures; no TTS/LLM call, reservation, actual charge or audio is produced. Production execution,
 Theatre and native mobile playback remain planned. No runnable Gradle project or production
 identity deployment is claimed. A standalone, read-only [WAV PCM inspection CLI](docs/evidence/wav-pcm-inspection.md)
 reports structure, checksums and sample peak as JSON; it is groundwork for audio QC, not mixing,
@@ -54,8 +58,8 @@ Start with one modular backend. Worker execution can run separately for resource
 
 | Path | Responsibility at bootstrap |
 | --- | --- |
-| `apps/server/` | Pure Script IR/revision rules, local Axum host, PostgreSQL store and migration CLI |
-| `apps/web/` | Structured Leptos Studio CSR editor; Theatre remains planned |
+| `apps/server/` | Pure Script IR/revision/production-input rules, local Axum host, PostgreSQL store and migration CLI |
+| `apps/web/` | Structured Leptos Studio CSR editor and casting/input review; Theatre remains planned |
 | `apps/mobile/` | Guide for the native CMP listening app |
 | `contracts/` | Script IR and Studio v1 schemas/fixtures, shared Rust wire DTOs and design tokens |
 | `docs/` | Product, architecture, design, decisions and the work queue |

@@ -6,6 +6,8 @@ mod imports;
 pub use imports::*;
 mod adaptations;
 pub use adaptations::*;
+mod production;
+pub use production::*;
 
 /// Structural/semantic preview only. Acceptance independently checks access and evidence.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -105,6 +107,8 @@ pub enum ErrorCode {
     ProposalAlreadySubmitted,
     Unavailable,
     CorruptRevision,
+    StaleProductionInputs,
+    ProductionBlocked,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]

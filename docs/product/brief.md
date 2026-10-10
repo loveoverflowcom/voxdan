@@ -3,7 +3,9 @@
 > Status: target product design. The [Script IR contract](../../contracts/README.md) is
 > executable and locally tested. Local revision persistence/auth and a minimal Studio
 > save/read consumer have [bounded evidence](../evidence/script-revision-persistence.md).
-> The complete Studio journey, Theatre, production and native listening remain planned.
+> [Casting/input authorization](../evidence/casting-production-inputs.md) adds reference-only
+> settings, rights/budget declarations and immutable candidates with exact approval. The complete
+> Studio journey, Theatre, audio production and native listening remain planned.
 
 ## Identity and purpose
 

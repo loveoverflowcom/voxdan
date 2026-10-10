@@ -5,7 +5,8 @@ revision API. Its text-first workspace has scene/act/character navigation, nativ
 narration, emotion, pronunciation and cue controls, and a source/validation/change inspector.
 Import, proposal review and accepted-revision editing keep their state mounted when switching
 workspace sections. Advanced complete JSON is optional; unsupported documents stay available
-there without projection or silent field deletion. Production and Cantos Theatre remain planned. Cantos
+there without projection or silent field deletion. Casting and immutable production-input
+review use that same authority; audio production and Cantos Theatre remain planned. Cantos
 provides a data/tool pipeline: generation belongs to the user's chosen Gemini, ChatGPT or Codex
 host under their control. Cantos has no AI API client or generation runtime. Fixture and live host
 evidence are separately recorded in the
@@ -125,4 +126,32 @@ the compared head as the next base; there is no automatic merge.
 Native fields buffer typing, use browser text undo and preserve composition. Pane changes,
 structural actions and structural undo wait for buffered input. Escape restores an uncommitted
 field; explicit removal confirms and returns focus on cancel. Source and validation are never
-inserted into spoken text. No casting, voice preview, TTS, mixing or listener control is provided.
+inserted into spoken text. The casting section plans inputs; no voice audio preview, TTS,
+mixing or listener control is provided.
+
+## Casting and production-input review
+
+The [production v1 contract](../../contracts/production-v1.md) provides a static reference-only
+capability catalog and authenticated settings, rights, preview, freeze, exact snapshot and owner
+approval routes. Studio binds existing accepted script characters to synthetic reference voice/
+model controls with versioned performance/pronunciation and an explicit private-planning budget.
+It displays recorded claim status/term/scope, estimate and typed blockers. Missing rates remain
+unknown; a caller-recorded estimate never appears as a reservation or settled charge.
+
+Freeze preserves the exact accepted revision, complete settings, required rights versions and
+resolved inputs. A blocked candidate can be inspected, but only an eligible exact owner-reviewed
+candidate can receive separate production-input approval. Historical bytes stay immutable;
+accepted script/settings/required-rights edits, expiry/revocation and current permission changes
+reevaluate eligibility. Browser typing alone changes no backend record. The reference catalog
+always reports billable dispatch unavailable, including for an approved planning candidate.
+
+The pure `production.rs` state and `production/browser.rs` adapter remain consumers of shared
+DTOs and the existing Studio context; server modules do not enter WASM. Explicit mutations
+retain their actor/operation/payload for reconciliation after an uncertain response. Native
+fields and localized finding/status labels use the Studio's shared focus/theme/token behavior.
+[Casting evidence](../../docs/evidence/casting-production-inputs.md) separates reducer/build
+checks from actual browser interaction and inspected viewport/zoom captures.
+
+Recorded rights assertions are not legal verification. This interface creates no real provider
+account, terms acceptance, payment, generation request or audio; no cloning/real-person voice is
+implied by synthetic labels. The former local generation prerequisite is superseded.

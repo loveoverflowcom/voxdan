@@ -2,8 +2,9 @@
 
 Status: target runtime design. The [Script IR domain/CLI](../../apps/server/README.md) is
 implemented and locally tested. Local Axum/PostgreSQL revision persistence and a minimal Leptos
-Studio consumer have [bounded evidence](../evidence/script-revision-persistence.md); workers,
-Theatre and native clients remain planned. The
+Studio consumer have [bounded evidence](../evidence/script-revision-persistence.md).
+[Casting/input planning](../evidence/casting-production-inputs.md) reuses that authority;
+workers, Theatre and native clients remain planned. The
 user-selected stack and modular starting point are recorded in
 [decision 0001](../decisions/0001-modular-monolith.md).
 
@@ -46,6 +47,11 @@ The root Cargo workspace contains `apps/server/`, `apps/web/` and `contracts/api
 transactions and `http` maps the shared wire contract to Axum. Adaptation tools export frozen context and admit caller-created proposals over the same HTTP
 service and a thin CLI. Generation belongs to the user-controlled AI host; the domain and
 store perform no inference. Proposals never move a revision head until explicit acceptance.
+The pure `production` module resolves reference-only casting/pronunciation/performance, computes
+integer planning estimates and exact frozen input identity, then reevaluates current claims and
+approval. PostgreSQL production adapters append settings/claims/candidates/approvals on the same
+identity/evidence/revision authority; the HTTP layer and Studio share raw DTOs. No generation,
+accounting engine, provider transport, service or DBSP read model is introduced by #5.
 The Studio WASM consumer imports only `cantos-api`, never server
 internals. This shared DTO crate has two concrete consumers. Migration and HTTP binaries live
 in the same server package. `apps/mobile/` remains a guide; Gradle belongs to the native

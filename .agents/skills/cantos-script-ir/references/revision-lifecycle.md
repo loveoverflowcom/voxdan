@@ -173,6 +173,12 @@ claim as `integration-tested` only after it ran against PostgreSQL.
 The diff is keyed by stable ID. A text or position diff reports a moved line as delete + insert,
 which is the false invalidation this design exists to prevent.
 
+**Implemented subset.** `script_ir::diff_scripts` and the read-only `diff-script` CLI
+([evidence](../../../../docs/evidence/script-diff.md)) compare two admitted scripts of one episode and
+report a flat, versioned list of added, removed, modified and moved entities with field aspects. It
+takes two files, not revision rows, and it does not compute `respoken` or drive invalidation; the
+`RevisionDiff` below stays the proposed shape for the revision store.
+
 ```rust
 // Illustrative and proposed. A line absent from every map is unchanged; no "changed nothing" state.
 pub struct RevisionDiff {

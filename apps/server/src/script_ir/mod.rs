@@ -1,13 +1,17 @@
 //! Versioned Script IR: a pure validator and immutable validated content.
 
 mod canonical;
+mod diff;
 mod model;
 mod validation;
 mod wire;
 
+pub use diff::{
+    diff_scripts, ScopeDifference, ScopeLevel, ScopeMismatch, ScriptDiff, DIFF_REPORT_VERSION,
+};
 pub use model::{ContentDigest, ScriptContent, SpokenLine};
 pub use validation::{Diagnostic, ValidationIssue};
-pub use wire::{ReadError, ShapeDiagnostic, ShapeRule, WRITE_VERSION};
+pub use wire::{ReadError, ShapeDiagnostic, ShapeRule, MAX_DOCUMENT_BYTES, WRITE_VERSION};
 
 /// Admit an untrusted structured draft, normalizing derived text once.
 /// This does not grant rights, save a revision, approve or start production.

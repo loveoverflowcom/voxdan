@@ -23,7 +23,9 @@ separates actual tool/storage tests from synthetic content and unrun model quali
 Theatre and native mobile playback remain planned. No runnable Gradle project or production
 identity deployment is claimed. A standalone, read-only [WAV PCM inspection CLI](docs/evidence/wav-pcm-inspection.md)
 reports structure, checksums and sample peak as JSON; it is groundwork for audio QC, not mixing,
-loudness measurement or QC approval.
+loudness measurement or QC approval. A read-only [Script IR diff CLI](docs/evidence/script-diff.md)
+compares two versions of one episode by stable ID and reports edited, moved, added and removed
+lines, cues and characters plus provenance and rights changes; it is a review aid, not a reuse decision.
 
 `develop` is the first and default branch. Create short-lived feature branches from it and target pull requests to `develop`.
 
@@ -80,6 +82,7 @@ python3 scripts/reference_script_ir.py
 cargo run --locked --bin validate-script -- contracts/fixtures/script-ir/0.1.0/accept/two-scenes.json
 cargo build --locked --bin inspect-wav
 python3 scripts/reference_wav_inspection.py
+cargo run --locked --bin diff-script -- contracts/fixtures/script-ir/0.1.0/accept/two-scenes.json contracts/fixtures/script-ir/0.1.0/accept/provenance.json
 ```
 
 [Contract evidence](docs/evidence/script-ir-contract.md) names the actual verification boundary.

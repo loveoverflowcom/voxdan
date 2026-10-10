@@ -17,6 +17,8 @@ Production identity deployment, production workers and paid providers are not im
 - `postgres.rs`: current actor/session/access facts, transactions, locked heads, complete
   immutable bytes, evidence ownership links and integrity checks on every load.
 - `http.rs`: thin Axum mapping over the [Studio v1 contract](../../contracts/studio-v1.md).
+- `script_ir/diff/`: pure stable-ID comparison of two admitted scripts of one episode; `diff-script`
+  is its only shell. No HTTP, SQL, UI, provider or file-system dependency.
 - `wav_inspection/`: pure, bounded RIFF/WAVE integer PCM inspection over bytes. No HTTP, SQL,
   Script IR, provider or file-system dependency; `inspect-wav` is its only shell.
 - `migrations/0001_script_revisions.sql`: atomic schema, deferred head FK, operation uniqueness
@@ -236,3 +238,27 @@ it records no QC result and approves nothing. The oracle script compares the CLI
 `wave`/hashlib (and ffprobe when installed) on seeded synthetic files in a temporary directory.
 The [inspection evidence](../../docs/evidence/wav-pcm-inspection.md) defines every field, error
 code, limit and residual risk.
+
+## Script IR diff
+
+`diff-script` compares two Script IR files of one work, adaptation and episode by stable ID and
+prints a versioned JSON report (`cantos-script-diff-1`). It lists added, removed, modified and
+moved acts, scenes, dialogue, cues, characters and provenance sources, each field change with its
+aspect (text, speaker, delivery, pronunciation, order, cue, rights, provenance and so on), and
+keeps reporting provenance and rights changes when the content digests are equal. A moved line is
+one `moved`, never a deletion plus an addition. It only reads: both inputs go through the same
+admission as `validate-script`, each is refused above 2 MiB, nothing is written, and no provider
+or revision store is involved.
+
+```sh
+cargo run --locked --bin diff-script -- before.json after.json
+cargo run --locked --bin diff-script -- contracts/fixtures/script-ir/0.1.0/accept/two-scenes.json contracts/fixtures/script-ir/0.1.0/accept/provenance.json
+```
+
+Exit `0` means a report was printed, whether or not the versions differ (`identical`,
+`summary` and `changes` say). Exit `1` means an input was rejected by Script IR admission or the
+two are not versions of the same work, adaptation and episode. Exit `2` covers usage errors and
+unreadable, non-regular or oversized input. Failures print only a message on stderr. The report is
+a review aid and decides nothing about audio reuse; the
+[diff evidence](../../docs/evidence/script-diff.md) defines every field, move rule, limit and
+residual risk.

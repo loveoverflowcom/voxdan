@@ -71,6 +71,8 @@ DOCX extraction may lose meaningful structure; compare the imported result again
 
 Defer extra import formats, direct Narrative Forge integration, and collaborative editing. Promote any loss of source content or version identity as a correctness fix before casting work.
 
+Review aid, no linked issue: a standalone [`diff-script` CLI](../evidence/script-diff.md) compares two Script IR files of one episode by stable ID so a reviewer can see edited, moved, added and removed lines, cues and characters and provenance/rights changes. It reads two files, so it does not satisfy the save/reopen, revision-history or editor criteria above; the editor in #4 may adopt, wrap or replace it.
+
 ## GitHub execution
 
 [#1](https://github.com/loveoverflowcom/cantos/issues/1), [#2](https://github.com/loveoverflowcom/cantos/issues/2), [#3](https://github.com/loveoverflowcom/cantos/issues/3), [#4](https://github.com/loveoverflowcom/cantos/issues/4). See the [issue/dependency map](project-planning.md) and [Kanban](https://github.com/users/loveoverflowcom/projects/6/views/1) for the recommended sequence and live execution state.

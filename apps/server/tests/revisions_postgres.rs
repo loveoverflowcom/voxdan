@@ -487,7 +487,7 @@ async fn source_bytes_operator_credentials_and_review_rollback_cross_real_bounda
 
 #[tokio::test]
 #[ignore = "disposable PostgreSQL cluster required"]
-async fn migration_two_upgrades_existing_revision_bytes_and_rolls_back_failed_extension() {
+async fn additive_migrations_upgrade_existing_revision_bytes_and_roll_back_failed_extension() {
     let config = local_config(&env::var("CANTOS_TEST_CLUSTER_URL").unwrap()).unwrap();
     let cluster = connect(&config).await;
     let name = format!("cantos_test_{}", Uuid::new_v4().simple());
@@ -564,7 +564,7 @@ async fn migration_two_upgrades_existing_revision_bytes_and_rolls_back_failed_ex
             .await
             .unwrap()
             .get::<_, i64>(0),
-        2
+        3
     );
 }
 

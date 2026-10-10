@@ -1,6 +1,7 @@
 //! Same-origin HTTP transport. Session credential becomes an HttpOnly cookie.
 use cantos_api::{
-    ApiError, ErrorCode, RevisionResponse, SaveRevisionRequest, SessionRequest, SessionResponse,
+    ApiError, ErrorCode, ImportRequest, ImportResponse, RevisionResponse, SaveRevisionRequest,
+    SessionRequest, SessionResponse,
 };
 use gloo_net::http::{Request, Response};
 
@@ -29,6 +30,27 @@ async fn decode<T: serde::de::DeserializeOwned>(response: Response) -> Result<T,
 }
 
 impl StudioHttp {
+    pub async fn import(&self, request: &ImportRequest) -> Result<ImportResponse, ApiError> {
+        let request = Request::post("/api/v1/imports")
+            .json(request)
+            .map_err(|_| unavailable())?;
+        decode(request.send().await.map_err(|_| unavailable())?).await
+    }
+
+    pub async fn read_import(&self, id: &str) -> Result<ImportResponse, ApiError> {
+        let path = import_path(id)?;
+        decode(
+            Request::get(&path)
+                .send()
+                .await
+                .map_err(|_| unavailable())?,
+        )
+        .await
+    }
+
+    pub fn original_import_path(&self, id: &str) -> Result<String, ApiError> {
+        Ok(format!("{}/original", import_path(id)?))
+    }
     pub async fn login(&self, token: String) -> Result<SessionResponse, ApiError> {
         let request = Request::post("/api/v1/session")
             .json(&SessionRequest { token })
@@ -69,4 +91,15 @@ impl StudioHttp {
             .map_err(|_| unavailable())?;
         decode(request.send().await.map_err(|_| unavailable())?).await
     }
+}
+
+fn import_path(id: &str) -> Result<String, ApiError> {
+    if !crate::import::is_import_source_id(id) {
+        return Err(ApiError {
+            code: ErrorCode::InvalidRequest,
+            current_revision: None,
+            issues: vec![],
+        });
+    }
+    Ok(format!("/api/v1/imports/{id}"))
 }

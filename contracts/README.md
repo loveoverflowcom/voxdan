@@ -8,6 +8,12 @@ This directory owns versioned interchange descriptions and representative fixtur
 now serves the Axum/PostgreSQL store and Leptos consumer through shared raw Rust DTOs,
 JSON Schema and serialized fixtures. No generated Kotlin bindings are claimed.
 
+The [manuscript import v1 contract](manuscript-v1.md) adds a private, immutable source intake
+receipt for TXT, Markdown, DOCX and validated Script IR. It uses the existing source registry,
+separates exact original bytes from normalized extraction, and never saves a script revision or
+grants publication permission automatically. Its hand-authored Schema and independent literal
+wire examples are checked by the shared consumer and backend contract tests.
+
 The historical [draft example](examples/episode-draft.json) stays byte-for-byte unchanged. Its
 `0.1.0-draft` version is illustrative and explicitly unsupported by the reader. The new fixtures
 reuse that original sample and add synthetic content. Their external record IDs are placeholders;

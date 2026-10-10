@@ -13,7 +13,9 @@ Studio consumer now save and read complete immutable exports with actor permissi
 optimistic concurrency and idempotent retries. See the [persistence evidence](docs/evidence/script-revision-persistence.md).
 The compatible [editorial handoff](docs/evidence/editorial-handoff.md) adds private preserved
 sources, bounded history, owner review records and operator credential tools on that backend.
-Import/adaptation, production, Theatre and native mobile playback remain planned. No runnable
+Bounded manuscript import preserves TXT, Markdown, DOCX and Script IR originals with a minimal
+Studio comparison flow; see the [import evidence](docs/evidence/manuscript-import.md).
+AI adaptation, full authoring, production, Theatre and native mobile playback remain planned. No runnable
 Gradle project or production identity deployment is claimed.
 
 `develop` is the first and default branch. Create short-lived feature branches from it and target pull requests to `develop`.

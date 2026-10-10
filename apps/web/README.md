@@ -1,8 +1,9 @@
 # Cantos Studio Web
 
 `cantos-studio` is a minimal Leptos 0.7.8 CSR/WASM consumer of the actual local Axum/PostgreSQL
-revision API. It displays a complete JSON draft and a read-only stored export. It is not the
-planned scene/speaker editor, importer, production console or Cantos Theatre.
+revision API. It displays a complete JSON draft and a read-only stored export, plus bounded
+manuscript import and source/extraction comparison. The scene/speaker editor, adaptation,
+production console and Cantos Theatre remain planned.
 
 ## Build and run
 
@@ -49,6 +50,14 @@ visible focus and keyboard-operable controls use native HTML. Guarded aria-disab
 remain focusable with a reason. No animation or audio is implemented. Page-return handling
 reapplies controlled values if Safari restores WASM state but clears autocomplete-off fields.
 This is not durable draft persistence across reload/closing a tab.
+
+The import section selects a file and explicit format, records its source and permission
+evidence, then saves original bytes and the parse outcome. The receipt ID reopens the saved
+source; original download returns the byte-exact upload. Failures retain the immutable request
+for a same-operation retry by the same actor. A changed selection is a new operation.
+Prose labels and scene suggestions remain review findings, unknown speakers remain visible,
+and publication permission stays unverified. The UI renders manuscript markup as inert text.
+It never assigns voices, calls AI or silently submits an imported source as an accepted script.
 
 ## Tokens and evidence
 

@@ -1,4 +1,5 @@
 pub mod editor;
+pub mod import;
 pub mod messages;
 
 #[cfg(target_arch = "wasm32")]

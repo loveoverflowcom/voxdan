@@ -16,6 +16,8 @@ use tower_http::services::ServeDir;
 use crate::postgres::{Store, StoreError};
 use crate::script_ir::{ReadError, ShapeRule, ValidationIssue};
 
+mod imports;
+
 #[derive(Clone)]
 pub struct AppState {
     pub store: Store,
@@ -30,6 +32,7 @@ pub fn router(state: AppState, dist: &str) -> Router {
         .route("/scripts/{script}/history", get(history))
         .route("/scripts/{script}/reviews", post(review))
         .route("/scripts/{script}/sources/{source}", get(source))
+        .merge(imports::routes())
         .route_layer(middleware::from_fn_with_state(state.clone(), authenticated));
     let api = scripts
         .route("/session", post(login).delete(logout))
@@ -300,6 +303,12 @@ fn error_response(error: StoreError) -> Response {
             ErrorCode::InvalidRequest,
             None,
             vec![],
+        ),
+        StoreError::InvalidRequestFields(issues) => (
+            StatusCode::BAD_REQUEST,
+            ErrorCode::InvalidRequest,
+            None,
+            issues,
         ),
         StoreError::EvidenceUnavailable => (
             StatusCode::UNPROCESSABLE_ENTITY,

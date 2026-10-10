@@ -7,7 +7,7 @@ use uuid::Uuid;
 use super::{authenticate, normalized_uuid, Store, StoreError};
 use crate::imports::{extract, MAX_SOURCE_BYTES};
 
-const IMPORT_COLUMNS: &str = "id,reference,imported_by,import_operation_id,import_digest,original_bytes,original_text,sha256,import_metadata::text AS import_metadata,import_outcome::text AS import_outcome,to_char(recorded_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"') AS recorded_at";
+pub(super) const IMPORT_COLUMNS: &str = "id,reference,imported_by,import_operation_id,import_digest,original_bytes,original_text,sha256,import_metadata::text AS import_metadata,import_outcome::text AS import_outcome,to_char(recorded_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"') AS recorded_at";
 
 fn receipt_digest(
     metadata: &ImportMetadata,
@@ -88,7 +88,7 @@ fn original_text(bytes: &[u8]) -> Option<String> {
         .map(str::to_owned)
 }
 
-fn decode_import(row: &Row) -> Result<(ImportResponse, Vec<u8>), StoreError> {
+pub(super) fn decode_import(row: &Row) -> Result<(ImportResponse, Vec<u8>), StoreError> {
     let bytes: Vec<u8> = row
         .try_get("original_bytes")
         .map_err(|_| StoreError::CorruptRevision)?;

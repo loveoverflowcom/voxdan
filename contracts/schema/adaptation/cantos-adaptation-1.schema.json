@@ -1,0 +1,236 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "contract_version": {
+      "const": "cantos-adaptation-1"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000
+    },
+    "characters": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          "personality": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048
+          }
+        },
+        "required": [
+          "name",
+          "personality"
+        ]
+      },
+      "minItems": 0,
+      "maxItems": 128
+    },
+    "scenes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "speaker": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 512
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "text": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 16384
+                },
+                "source_blocks": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 255
+                  },
+                  "minItems": 1,
+                  "maxItems": 256
+                },
+                "delivery": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "emotion": {
+                      "enum": [
+                        "neutral",
+                        "calm",
+                        "hopeful",
+                        "warm",
+                        "sad",
+                        "angry"
+                      ]
+                    },
+                    "intensity_permille": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 1000
+                    }
+                  },
+                  "required": [
+                    "emotion",
+                    "intensity_permille"
+                  ]
+                },
+                "prosody_note": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2048
+                }
+              },
+              "required": [
+                "speaker",
+                "text",
+                "source_blocks",
+                "delivery"
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 1000
+          },
+          "cues": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "ambience",
+                    "music",
+                    "sfx"
+                  ]
+                },
+                "description": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2048
+                },
+                "line_index": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 999
+                },
+                "edge": {
+                  "enum": [
+                    "start",
+                    "end"
+                  ]
+                },
+                "source_blocks": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 255
+                  },
+                  "minItems": 1,
+                  "maxItems": 256
+                }
+              },
+              "required": [
+                "kind",
+                "description",
+                "line_index",
+                "edge",
+                "source_blocks"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 1000
+          },
+          "pacing_note": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048
+          }
+        },
+        "required": [
+          "title",
+          "lines",
+          "cues"
+        ]
+      },
+      "minItems": 1,
+      "maxItems": 64
+    },
+    "omitted_blocks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "block": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048
+          }
+        },
+        "required": [
+          "block",
+          "reason"
+        ]
+      },
+      "minItems": 0,
+      "maxItems": 256
+    },
+    "review_notes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 2048
+      },
+      "minItems": 0,
+      "maxItems": 128
+    }
+  },
+  "required": [
+    "contract_version",
+    "title",
+    "characters",
+    "scenes",
+    "omitted_blocks",
+    "review_notes"
+  ],
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cantos.local/contracts/adaptation/cantos-adaptation-1",
+  "title": "Cantos adaptation proposal 1"
+}

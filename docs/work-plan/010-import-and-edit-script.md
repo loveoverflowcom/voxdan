@@ -35,11 +35,18 @@ Adaptation should consume those immutable records and uncertainty rather than re
 overwrite an accepted source. The complete adaptation/edit/revision journey remains the 010
 capability review boundary.
 
+The [bounded adaptation consumer](../evidence/ai-script-adaptation.md) adds authenticated
+context/read/submit/review tools, durable declared provenance/receipts and explicit Studio
+compare/edit-JSON/accept flow. The user-controlled Gemini/ChatGPT/Codex host generates content;
+Cantos performs no inference. The #3 gate is the actual tool/storage/validation journey,
+separate from unrun model quality. The former local-model prerequisite is superseded, not passed.
+Full scene and character editing is #4; this slice does not complete the whole capability review.
+
 ## Suggested sequence
 
 1. Add representative manuscript and structured-script fixtures, including multiple speakers and scenes.
 2. Implement import, source preview, and the minimum persistence/API boundaries for saved versions.
-3. Add one real adaptation integration behind a narrow boundary and review its structured output before saving.
+3. Export source-bound context and admit caller-created adaptation through real authenticated tools; review structured output before saving.
 4. Implement editing, speaker resolution, and validation in Studio; demonstrate a saved version reopening correctly.
 
 ## Acceptance criteria

@@ -1,7 +1,7 @@
 //! Same-origin HTTP transport. Session credential becomes an HttpOnly cookie.
 use cantos_api::{
-    ApiError, ErrorCode, ImportRequest, ImportResponse, RevisionResponse, SaveRevisionRequest,
-    SessionRequest, SessionResponse,
+    AcceptAdaptationRequest, AdaptationReviewResponse, ApiError, ErrorCode, ImportRequest,
+    ImportResponse, RevisionResponse, SaveRevisionRequest, SessionRequest, SessionResponse,
 };
 use gloo_net::http::{Request, Response};
 
@@ -30,6 +30,47 @@ async fn decode<T: serde::de::DeserializeOwned>(response: Response) -> Result<T,
 }
 
 impl StudioHttp {
+    pub async fn read_adaptation(&self, id: &str) -> Result<AdaptationReviewResponse, ApiError> {
+        decode(
+            Request::get(&format!("{}/review", adaptation_path(id)?))
+                .send()
+                .await
+                .map_err(|_| unavailable())?,
+        )
+        .await
+    }
+
+    pub async fn accept_adaptation(
+        &self,
+        id: &str,
+        request: &AcceptAdaptationRequest,
+    ) -> Result<RevisionResponse, ApiError> {
+        let request = Request::post(&format!("{}/accept", adaptation_path(id)?))
+            .json(request)
+            .map_err(|_| unavailable())?;
+        decode(request.send().await.map_err(|_| unavailable())?).await
+    }
+
+    pub async fn read_revision(
+        &self,
+        script: &str,
+        revision: u64,
+    ) -> Result<RevisionResponse, ApiError> {
+        if !crate::adaptation::is_run_id(script) || revision == 0 {
+            return Err(ApiError {
+                code: ErrorCode::InvalidRequest,
+                current_revision: None,
+                issues: vec![],
+            });
+        }
+        decode(
+            Request::get(&format!("/api/v1/scripts/{script}/revisions/{revision}"))
+                .send()
+                .await
+                .map_err(|_| unavailable())?,
+        )
+        .await
+    }
     pub async fn import(&self, request: &ImportRequest) -> Result<ImportResponse, ApiError> {
         let request = Request::post("/api/v1/imports")
             .json(request)
@@ -91,6 +132,17 @@ impl StudioHttp {
             .map_err(|_| unavailable())?;
         decode(request.send().await.map_err(|_| unavailable())?).await
     }
+}
+
+fn adaptation_path(id: &str) -> Result<String, ApiError> {
+    if !crate::adaptation::is_run_id(id) {
+        return Err(ApiError {
+            code: ErrorCode::InvalidRequest,
+            current_revision: None,
+            issues: vec![],
+        });
+    }
+    Ok(format!("/api/v1/adaptations/{id}"))
 }
 
 fn import_path(id: &str) -> Result<String, ApiError> {

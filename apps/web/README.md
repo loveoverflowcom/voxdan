@@ -2,8 +2,12 @@
 
 `cantos-studio` is a minimal Leptos 0.7.8 CSR/WASM consumer of the actual local Axum/PostgreSQL
 revision API. It displays a complete JSON draft and a read-only stored export, plus bounded
-manuscript import and source/extraction comparison. The scene/speaker editor, adaptation,
-production console and Cantos Theatre remain planned.
+manuscript import and source/extraction comparison, plus a bounded host-submitted proposal review.
+The full scene/speaker editor, production console and Cantos Theatre remain planned. Cantos
+provides a data/tool pipeline: generation belongs to the user's chosen Gemini, ChatGPT or Codex
+host under their control. Cantos has no AI API client or generation runtime. Fixture and live host
+evidence are separately recorded in the
+[adaptation evidence](../../docs/evidence/ai-script-adaptation.md).
 
 ## Build and run
 
@@ -57,7 +61,31 @@ source; original download returns the byte-exact upload. Failures retain the imm
 for a same-operation retry by the same actor. A changed selection is a new operation.
 Prose labels and scene suggestions remain review findings, unknown speakers remain visible,
 and publication permission stays unverified. The UI renders manuscript markup as inert text.
-It never assigns voices, calls AI or silently submits an imported source as an accepted script.
+It never assigns voices or silently submits an imported source as an accepted script.
+
+Adaptation tools prepare a context pinned to the imported source ID/checksum, extraction version,
+target script and input revision, with a recorded source export permission claim. The host generates
+under the user's control and submits a bounded structured result through the tools. Studio opens
+the context or proposal ID through `GET /api/v1/adaptations/{id}/review`; it never requests AI
+generation. Historical proposals remain readable through the same tagged response.
+
+The review shows preserved source text, paged extraction and warnings, the pinned input revision,
+coverage claims and unsupported pacing/prosody beside editable proposal JSON. Caller-declared host,
+provider, model, settings, usage and cost are explicitly unverified; absent values stay unknown.
+A valid submitted result remains a proposal. Its creator acknowledges review of the current text
+and explicitly accepts a validated immutable revision through the existing guarded acceptance path.
+The exact accepted revision can be reopened read-only. Ordinary editor text stays separate.
+Unresolved acceptance retains the original actor, operation ID, base and JSON snapshot for exact
+retry; later typing and IME composition survive responses. A changed base requires a new context.
+Rights claims do not establish legal eligibility, production approval or publication permission.
+
+Historical model evidence can be shown for preserved run metadata. The compatibility fingerprint
+field records prior evidence; it does not configure a current runtime or prove a successful run.
+
+An uncertain mutation retains its exact actor/operation/snapshot for reconciliation. A different
+actor, stale response or changed input cannot silently replace the visible proposal or accepted
+receipt. Revision conflicts require a new reviewed run against the current base. Full scene and
+character authoring belongs to issue #4.
 
 ## Tokens and evidence
 

@@ -17,6 +17,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     let config =
         local_config(&env::var("DATABASE_URL")?).map_err(|_| "invalid local PostgreSQL config")?;
+    // Caller-owned generation enters through authenticated context/submission tools.
     let store = Store::new(config).map_err(|_| "database pool unavailable")?;
     let state = AppState {
         store,

@@ -55,10 +55,20 @@ Production identity, rights eligibility and full authoring acceptance remain sep
 
 The [bounded manuscript import](../evidence/manuscript-import.md) extends that same source
 boundary with preserved original bytes, extraction outcomes and a minimal Studio comparison.
-Use [AI adaptation #3](https://github.com/loveoverflowcom/cantos/issues/3) as the next bounded
-consumer of immutable source IDs/checksums, ordered blocks, uncertainty and recorded rights
-claims, followed by the full editor in #4. Keep #1's production identity and complete authoring
-gates visible; import evidence does not accept the entire 010 capability.
+The [AI adaptation #3](https://github.com/loveoverflowcom/cantos/issues/3) consumer preserves
+immutable source IDs/checksums, ordered blocks, uncertainty and recorded rights claims.
+Prioritize the full editor in #4 next. Keep #1's production identity and complete authoring
+gates visible; import/adaptation evidence does not accept the entire 010 capability.
+
+The [bounded adaptation implementation](../evidence/ai-script-adaptation.md) uses that source
+and revision authority for immutable context, caller-submitted proposals, declared provenance,
+receipts and explicit acceptance. The user-controlled Gemini/ChatGPT/Codex host owns generation;
+Cantos owns the authenticated tool pipeline and validation. #3 acceptance requires real tool
+transport and PostgreSQL journey evidence; actual model output quality is separately NOT_RUN.
+The former local-model gate is superseded, not passed. Its evidence now records the actual
+tool/storage journey. #4 should consume the same proposal/revision authority for full
+scene/speaker authoring, preserving provenance and concurrency rather than adding another
+draft store. GitHub issues/PRs retain delivery and execution status.
 
 | Capability | Execution issues | Milestone |
 | --- | --- | --- |

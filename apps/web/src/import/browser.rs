@@ -259,20 +259,25 @@ fn SourcePreview(record: ImportResponse, english: RwSignal<bool>) -> impl IntoVi
 }
 
 #[component]
-fn ExtractionPreview(extraction: Extraction, english: RwSignal<bool>) -> impl IntoView {
+pub(crate) fn ExtractionPreview(
+    extraction: Extraction,
+    english: RwSignal<bool>,
+    #[prop(default = "import")] namespace: &'static str,
+) -> impl IntoView {
     let total = extraction.blocks.len();
     let page = RwSignal::new(0usize);
     let extraction = StoredValue::new(extraction);
     let copy = move || messages::import_copy(english.get());
+    let range_id = StoredValue::new(format!("{namespace}-block-range"));
     view! {
         <p class="identity">{move || copy().extractor}<output>{extraction.with_value(|extraction| extraction.extractor_version.clone())}</output></p>
         <div class="toolbar">
-            <button type="button" aria-describedby="import-block-range" aria-disabled=move || page.get() == 0 on:click=move |_| page.update(|page| *page = page.saturating_sub(1))>{move || copy().previous_blocks}</button>
-            <button type="button" aria-describedby="import-block-range" aria-disabled=move || page_bounds(page.get(), total).end == total on:click=move |_| {
+            <button type="button" aria-describedby=move || range_id.get_value() aria-disabled=move || page.get() == 0 on:click=move |_| page.update(|page| *page = page.saturating_sub(1))>{move || copy().previous_blocks}</button>
+            <button type="button" aria-describedby=move || range_id.get_value() aria-disabled=move || page_bounds(page.get(), total).end == total on:click=move |_| {
                 if page_bounds(page.get_untracked(), total).end < total { page.update(|page| *page += 1); }
             }>{move || copy().next_blocks}</button>
         </div>
-        <p id="import-block-range" role="status" aria-live="polite">{move || messages::import_block_range(page.get(), total, english.get())}</p>
+        <p id=move || range_id.get_value() role="status" aria-live="polite">{move || messages::import_block_range(page.get(), total, english.get())}</p>
         <h4>{move || copy().warnings}</h4>
         <Show when=move || extraction.with_value(|extraction| !extraction.warnings.iter().any(|warning| warning_on_page(warning.block, page.get(), total)))><p>{move || copy().no_warnings}</p></Show>
         <ul class="import-warnings">

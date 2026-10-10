@@ -1,6 +1,9 @@
 //! Typed resource catalog; vi-VN and en are exhaustive, with no view literals.
 use crate::editor::Status;
 
+mod adaptation;
+pub use adaptation::*;
+
 #[derive(Clone, Copy)]
 pub struct Copy {
     pub theme: &'static str,
@@ -84,6 +87,8 @@ pub fn status(status: Status, english: bool) -> &'static str {
         (Status::StaleRevision,true) => "A newer revision exists. Your text is preserved; read the head, compare, then choose a new base.",
         (Status::OperationReused,false) => "Operation ID đã dùng với snapshot khác. Văn bản được giữ; cần bắt đầu lần lưu mới.",
         (Status::OperationReused,true) => "Operation ID was used with another snapshot. Text preserved; start a new save.",
+        (Status::ProposalAlreadySubmitted,false) => "Context này đã có đề xuất hợp lệ. Mở lại đề xuất đã lưu để xem và chấp nhận; không tự thay thế kết quả.",
+        (Status::ProposalAlreadySubmitted,true) => "This context already has a valid proposal. Open the saved proposal for review and acceptance; it is not silently replaced.",
         (Status::Unavailable,false) => "Chưa xác định được kết quả. Văn bản và snapshot được giữ; thử lại khi kết nối phục hồi.",
         (Status::Unavailable,true) => "Outcome unavailable. Text and snapshot preserved; retry after connection recovers.",
         (Status::CorruptRevision,false) => "Không kiểm chứng được bản đã lưu. Văn bản được giữ; cần kiểm tra backend.",
@@ -114,6 +119,7 @@ mod tests {
             Status::EvidenceUnavailable,
             Status::StaleRevision,
             Status::OperationReused,
+            Status::ProposalAlreadySubmitted,
             Status::Unavailable,
             Status::CorruptRevision,
         ] {
@@ -243,6 +249,7 @@ pub fn import_status(value: &crate::import::ImportStatus, english: bool) -> &'st
         (ImportStatus::Error(ErrorCode::EvidenceUnavailable), false) => "Tài khoản này chưa có bằng chứng nguồn cần thiết. Tệp được giữ nguyên; kiểm tra thông tin nguồn và tài khoản.",
         (ImportStatus::Error(ErrorCode::StaleRevision), true) => "The referenced revision changed. File preserved; reopen the current source before another request.",
         (ImportStatus::Error(ErrorCode::StaleRevision), false) => "Bản sửa đổi được tham chiếu đã thay đổi. Tệp được giữ nguyên; mở lại nguồn hiện tại trước khi gửi yêu cầu mới.",
+        (ImportStatus::Error(ErrorCode::ProposalAlreadySubmitted), english) => status(Status::ProposalAlreadySubmitted, english),
     }
 }
 
@@ -388,6 +395,7 @@ mod import_tests {
             ErrorCode::EvidenceUnavailable,
             ErrorCode::StaleRevision,
             ErrorCode::OperationReused,
+            ErrorCode::ProposalAlreadySubmitted,
             ErrorCode::Unavailable,
             ErrorCode::CorruptRevision,
         ] {

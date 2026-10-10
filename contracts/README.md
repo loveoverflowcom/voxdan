@@ -14,6 +14,13 @@ separates exact original bytes from normalized extraction, and never saves a scr
 grants publication permission automatically. Its hand-authored Schema and independent literal
 wire examples are checked by the shared consumer and backend contract tests.
 
+The [adaptation v1 contract](adaptation-v1.md) adds private revision-pinned runs, a closed
+provider proposal format and explicit reviewed acceptance. Server-created IDs/evidence and the
+existing Script IR reader form the admission boundary. Proposal citation coverage and findings
+stay outside Script IR and require source comparison. The [tool schemas](adaptation-tools-v1.json) expose source-bound context/read/submit/review
+operations over the existing authenticated HTTP service and CLI. Caller provenance is declared,
+unverified evidence; no inference integration or live model result is implied.
+
 The historical [draft example](examples/episode-draft.json) stays byte-for-byte unchanged. Its
 `0.1.0-draft` version is illustrative and explicitly unsupported by the reader. The new fixtures
 reuse that original sample and add synthetic content. Their external record IDs are placeholders;
@@ -52,8 +59,9 @@ contract, not approval of an application or publication gate.
 - Work `source_ref` and adaptation `provenance_refs` resolve to provenance entries; duplicate
   adaptation references fail. Every entry carries an external preserved `source_record_id` and
   `rights_record_id`. Generated provenance also requires `generation_record_id` for the recorded
-  attempt. The adaptation's declared provenance applies to the whole episode; per-span source
-  mapping and source coverage audit remain future importer work.
+  attempt. The adaptation's declared provenance applies to the whole episode. Adaptation runs
+  separately record source-block citation coverage and review findings; those model claims do
+  not prove faithful meaning or reliable omission detection.
 - Work, adaptation and a selected cue asset require rights record references. Cue `asset.id`
   identifies an immutable asset record; an absent asset is an editorial intent. No URLs, media
   bytes, casting, rights status, revision numbers or workflow status belong in the IR. Backend

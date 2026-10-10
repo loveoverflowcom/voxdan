@@ -1,4 +1,5 @@
 use crate::{
+    adaptation::ScriptAdaptation,
     api::{StudioContext, StudioHttp},
     editor::{Editor, Intent, Status},
     import::ManuscriptImport,
@@ -117,6 +118,7 @@ pub fn Studio() -> impl IntoView {
             </form>
             <p>{move || copy().actor}<output>{move || state.with(|editor| if editor.actor.is_empty() { copy().unknown.to_owned() } else { editor.actor.clone() })}</output></p>
             <ManuscriptImport actor=Signal::derive(move || state.with(|editor| editor.actor.clone())) english=english />
+            <ScriptAdaptation actor=Signal::derive(move || state.with(|editor| editor.actor.clone())) english=english />
             <section aria-labelledby="draft-label">
                 <label for="script-id">{move || copy().script}</label>
                 <input id="script-id" autocomplete="off" spellcheck="false" disabled=blocked

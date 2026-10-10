@@ -4,6 +4,8 @@ use serde::{Deserialize, Serialize};
 
 mod imports;
 pub use imports::*;
+mod adaptations;
+pub use adaptations::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -87,6 +89,7 @@ pub enum ErrorCode {
     EvidenceUnavailable,
     StaleRevision,
     OperationReused,
+    ProposalAlreadySubmitted,
     Unavailable,
     CorruptRevision,
 }

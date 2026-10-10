@@ -77,3 +77,5 @@ jobs:
         run: cargo +1.87.0 test -p cantos-server --test revisions_postgres --locked -- --ignored --test-threads=1
       - name: Test manuscript intake, isolation, byte preservation and retries
         run: cargo +1.87.0 test -p cantos-server --test imports_postgres --locked -- --ignored --test-threads=1
+      - name: Test adaptation attempts, proposal isolation and atomic acceptance
+        run: cargo +1.87.0 test -p cantos-server --test adaptations_postgres --locked -- --ignored --test-threads=1

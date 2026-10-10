@@ -10,13 +10,16 @@ use uuid::Uuid;
 use crate::revisions::{decide_save, permits, Access, Action, PriorOperation, SaveDecision};
 use crate::script_ir::{read_canonical_script, read_script, ReadError, WRITE_VERSION};
 
-const MIGRATIONS: [(i32, &str); 3] = [
+const MIGRATIONS: [(i32, &str); 5] = [
     (1, include_str!("../migrations/0001_script_revisions.sql")),
     (2, include_str!("../migrations/0002_editorial_handoff.sql")),
     (3, include_str!("../migrations/0003_manuscript_import.sql")),
+    (4, include_str!("../migrations/0004_ai_adaptation.sql")),
+    (5, include_str!("../migrations/0005_caller_adaptation.sql")),
 ];
 const REVISION_COLUMNS: &str = "script_id, revision, expected_revision, accepted_by, canonical_export, content_digest, export_digest, to_char(accepted_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"') AS accepted_at";
 
+mod adaptations;
 mod editorial;
 mod imports;
 
@@ -31,6 +34,7 @@ pub enum StoreError {
     EvidenceUnavailable,
     StaleRevision(u64),
     OperationReused,
+    ProposalAlreadySubmitted,
     Unavailable,
     CorruptRevision,
 }
@@ -149,85 +153,99 @@ impl Store {
         request: SaveRevisionRequest,
     ) -> Result<RevisionResponse, StoreError> {
         let script = normalized_uuid(script)?;
-        let operation = normalized_uuid(&request.operation_id)?;
-        let expected = checked_number(request.expected_revision)?;
+        normalized_uuid(&request.operation_id)?;
+        checked_number(request.expected_revision)?;
         // Pure admission happens before starting a transaction; rejection writes nothing.
         let content =
             read_script(request.script_json.as_bytes()).map_err(StoreError::InvalidScript)?;
-        let export = content.export_bytes();
-        let digest = content.content_digest().to_string();
-        let export_hash = export_digest(&export);
         let mut client = self.connection().await?;
         let tx = client.transaction().await?;
         let actor = authenticate(&tx, token).await?;
-        // Concurrent first saves contend on the unique ID, then the same locked head.
-        // A failed/stale/unauthorized first save rolls this provisional script back too.
-        tx.execute(
-            "INSERT INTO scripts(id,owner_id) VALUES($1,$2) ON CONFLICT DO NOTHING",
-            &[&script, &actor],
-        )
-        .await?;
-        let (owner, head) = authorize(&tx, &actor, &script, Action::Write, true).await?;
-        let query = format!("SELECT {REVISION_COLUMNS} FROM script_revisions WHERE script_id=$1 AND accepted_by=$2 AND operation_id=$3");
-        let prior = tx.query_opt(&query, &[&script, &actor, &operation]).await?;
-        let prior_export: Option<Vec<u8>> = prior.as_ref().map(|row| row.get("canonical_export"));
-        let prior_summary = prior
-            .as_ref()
-            .zip(prior_export.as_deref())
-            .map(|(row, bytes)| PriorOperation {
-                revision: row.get::<_, i64>("revision") as u64,
-                expected_revision: row.get::<_, i64>("expected_revision") as u64,
-                export: bytes,
-            });
-        let revision = match decide_save(head, request.expected_revision, &export, prior_summary) {
-            SaveDecision::Replay { .. } => {
-                let row = prior.as_ref().ok_or(StoreError::CorruptRevision)?;
-                let result = decode_revision(row)?;
-                tx.commit().await?;
-                return Ok(result);
-            }
-            SaveDecision::Append { revision } => revision,
-            SaveDecision::Stale { current_revision } => {
-                return Err(StoreError::StaleRevision(current_revision))
-            }
-            SaveDecision::OperationReused => return Err(StoreError::OperationReused),
-            SaveDecision::RevisionLimit => return Err(StoreError::InvalidRequest),
-        };
-        for (kind, id) in content.evidence_refs() {
-            if tx
-                .query_opt(
-                    "SELECT id FROM script_evidence WHERE owner_id=$1 AND kind=$2 AND id=$3",
-                    &[&owner, &kind, &id],
-                )
-                .await?
-                .is_none()
-            {
-                return Err(StoreError::EvidenceUnavailable);
-            }
-        }
-        let revision_number = checked_number(revision)?;
-        tx.execute("INSERT INTO script_revisions(script_id,revision,expected_revision,operation_id,accepted_by,schema_version,canonical_export,content_digest,export_digest) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)",
-            &[&script,&revision_number,&expected,&operation,&actor,&WRITE_VERSION,&export,&digest,&export_hash]).await?;
-        for (kind, id) in content.evidence_refs() {
-            tx.execute("INSERT INTO revision_evidence(script_id,revision,owner_id,kind,evidence_id) VALUES($1,$2,$3,$4,$5)", &[&script,&revision_number,&owner,&kind,&id]).await?;
-        }
-        let changed = tx
-            .execute(
-                "UPDATE scripts SET head_revision=$1 WHERE id=$2 AND head_revision=$3",
-                &[&revision_number, &script, &expected],
-            )
-            .await?;
-        if changed != 1 {
-            return Err(StoreError::StaleRevision(head));
-        }
-        let query = format!(
-            "SELECT {REVISION_COLUMNS} FROM script_revisions WHERE script_id=$1 AND revision=$2"
-        );
-        let result = decode_revision(&tx.query_one(&query, &[&script, &revision_number]).await?)?;
+        let result = save_in_transaction(&tx, &actor, &script, &request, &content).await?;
+        authenticate(&tx, token).await?;
         tx.commit().await?;
         // A dropped response after this commit is reconciled by the same operation key.
         Ok(result)
     }
+}
+
+/// Shared storage-acceptance path. The caller commits this together with its own receipt.
+async fn save_in_transaction(
+    tx: &deadpool_postgres::Transaction<'_>,
+    actor: &str,
+    script: &str,
+    request: &SaveRevisionRequest,
+    content: &crate::script_ir::ScriptContent,
+) -> Result<RevisionResponse, StoreError> {
+    let operation = normalized_uuid(&request.operation_id)?;
+    let expected = checked_number(request.expected_revision)?;
+    let export = content.export_bytes();
+    let digest = content.content_digest().to_string();
+    let export_hash = export_digest(&export);
+    // Concurrent first saves contend on the unique ID, then the same locked head.
+    // A failed/stale/unauthorized first save rolls this provisional script back too.
+    tx.execute(
+        "INSERT INTO scripts(id,owner_id) VALUES($1,$2) ON CONFLICT DO NOTHING",
+        &[&script, &actor],
+    )
+    .await?;
+    let (owner, head) = authorize(tx, actor, script, Action::Write, true).await?;
+    let query = format!("SELECT {REVISION_COLUMNS} FROM script_revisions WHERE script_id=$1 AND accepted_by=$2 AND operation_id=$3");
+    let prior = tx.query_opt(&query, &[&script, &actor, &operation]).await?;
+    let prior_export: Option<Vec<u8>> = prior.as_ref().map(|row| row.get("canonical_export"));
+    let prior_summary = prior
+        .as_ref()
+        .zip(prior_export.as_deref())
+        .map(|(row, bytes)| PriorOperation {
+            revision: row.get::<_, i64>("revision") as u64,
+            expected_revision: row.get::<_, i64>("expected_revision") as u64,
+            export: bytes,
+        });
+    let revision = match decide_save(head, request.expected_revision, &export, prior_summary) {
+        SaveDecision::Replay { .. } => {
+            let row = prior.as_ref().ok_or(StoreError::CorruptRevision)?;
+            let result = decode_revision(row)?;
+            return Ok(result);
+        }
+        SaveDecision::Append { revision } => revision,
+        SaveDecision::Stale { current_revision } => {
+            return Err(StoreError::StaleRevision(current_revision))
+        }
+        SaveDecision::OperationReused => return Err(StoreError::OperationReused),
+        SaveDecision::RevisionLimit => return Err(StoreError::InvalidRequest),
+    };
+    for (kind, id) in content.evidence_refs() {
+        if tx
+            .query_opt(
+                "SELECT id FROM script_evidence WHERE owner_id=$1 AND kind=$2 AND id=$3",
+                &[&owner, &kind, &id],
+            )
+            .await?
+            .is_none()
+        {
+            return Err(StoreError::EvidenceUnavailable);
+        }
+    }
+    let revision_number = checked_number(revision)?;
+    tx.execute("INSERT INTO script_revisions(script_id,revision,expected_revision,operation_id,accepted_by,schema_version,canonical_export,content_digest,export_digest) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)",
+            &[&script,&revision_number,&expected,&operation,&actor,&WRITE_VERSION,&export,&digest,&export_hash]).await?;
+    for (kind, id) in content.evidence_refs() {
+        tx.execute("INSERT INTO revision_evidence(script_id,revision,owner_id,kind,evidence_id) VALUES($1,$2,$3,$4,$5)", &[&script,&revision_number,&owner,&kind,&id]).await?;
+    }
+    let changed = tx
+        .execute(
+            "UPDATE scripts SET head_revision=$1 WHERE id=$2 AND head_revision=$3",
+            &[&revision_number, &script, &expected],
+        )
+        .await?;
+    if changed != 1 {
+        return Err(StoreError::StaleRevision(head));
+    }
+    let query = format!(
+        "SELECT {REVISION_COLUMNS} FROM script_revisions WHERE script_id=$1 AND revision=$2"
+    );
+    let result = decode_revision(&tx.query_one(&query, &[&script, &revision_number]).await?)?;
+    Ok(result)
 }
 
 fn checked_number(number: u64) -> Result<i64, StoreError> {
@@ -250,7 +268,7 @@ async fn authenticate(
     if token.len() != 64 || !token.bytes().all(|byte| byte.is_ascii_hexdigit()) {
         return Err(StoreError::Unauthenticated);
     }
-    let row = tx.query_opt("SELECT a.id FROM sessions s JOIN actors a ON a.id=s.actor_id WHERE s.token_hash=$1 AND NOT s.revoked AND s.expires_at>CURRENT_TIMESTAMP AND a.active FOR SHARE OF s", &[&token_hash(token)]).await?;
+    let row = tx.query_opt("SELECT a.id FROM sessions s JOIN actors a ON a.id=s.actor_id WHERE s.token_hash=$1 AND NOT s.revoked AND s.expires_at>clock_timestamp() AND a.active FOR SHARE OF s", &[&token_hash(token)]).await?;
     row.map(|row| row.get(0)).ok_or(StoreError::Unauthenticated)
 }
 

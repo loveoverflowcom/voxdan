@@ -7,7 +7,7 @@
 
 ## Discover, never assume
 
-Cantos is a documentation bootstrap. Before citing or running a command, establish separately:
+Cantos has implemented Script IR, revision and Studio slices. Before citing or running a command, establish separately:
 
 | Fact | Adequate source |
 |---|---|

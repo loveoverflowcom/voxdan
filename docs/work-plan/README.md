@@ -47,6 +47,12 @@ disposable-runner isolation and cleanup, and Studio save-target status. Its fina
 include real PostgreSQL recovery and a bounded Safari walkthrough. Continue 010 with these
 guards; the review does not complete its importer/editor acceptance or reopen DBSP integration.
 
+The compatible [editorial handoff](../evidence/editorial-handoff.md) retains that backend and
+Studio while adding preserved source text, owner review records, bounded history and local
+operator provisioning. Continue 010's importer/source-preview/editor consumer on these existing
+boundaries; expose the handoff operations through a reviewed UI when that journey needs them.
+Production identity, rights eligibility and full authoring acceptance remain separate gates.
+
 | Capability | Execution issues | Milestone |
 | --- | --- | --- |
 | [010](010-import-and-edit-script.md) | [#1](https://github.com/loveoverflowcom/cantos/issues/1), [#2](https://github.com/loveoverflowcom/cantos/issues/2), [#3](https://github.com/loveoverflowcom/cantos/issues/3), [#4](https://github.com/loveoverflowcom/cantos/issues/4) | [010 — Import and edit a versioned script](https://github.com/loveoverflowcom/cantos/milestone/1) |

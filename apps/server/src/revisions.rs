@@ -12,12 +12,17 @@ pub enum Access {
 pub enum Action {
     Read,
     Write,
+    Review,
 }
 
 pub fn permits(access: Access, action: Action) -> bool {
     match (access, action) {
-        (Access::Owner | Access::Editor, _) | (Access::Reader, Action::Read) => true,
-        (Access::Reader, Action::Write) | (Access::None, _) => false,
+        (Access::Owner, _)
+        | (Access::Editor, Action::Read | Action::Write)
+        | (Access::Reader, Action::Read) => true,
+        (Access::Editor | Access::Reader, Action::Review)
+        | (Access::Reader, Action::Write)
+        | (Access::None, _) => false,
     }
 }
 
@@ -34,6 +39,39 @@ pub struct PriorOperation<'a> {
     pub revision: u64,
     pub expected_revision: u64,
     pub export: &'a [u8],
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum ReviewDecision {
+    Create,
+    Replay,
+    Stale { current_revision: u64 },
+    OperationReused,
+}
+
+/// A recorded review stays pinned; a new review must name the current head.
+pub fn decide_review(
+    head: u64,
+    revision: u64,
+    prior_revision: Option<u64>,
+    already_reviewed: bool,
+) -> ReviewDecision {
+    if let Some(prior) = prior_revision {
+        return if prior == revision {
+            ReviewDecision::Replay
+        } else {
+            ReviewDecision::OperationReused
+        };
+    }
+    if already_reviewed {
+        return ReviewDecision::Replay;
+    }
+    if revision != head {
+        return ReviewDecision::Stale {
+            current_revision: head,
+        };
+    }
+    ReviewDecision::Create
 }
 
 /// Retry identity includes the base AND the entire normalized export, including evidence.
@@ -66,7 +104,10 @@ pub fn decide_save(
 
 #[cfg(test)]
 mod tests {
-    use super::{decide_save, permits, Access, Action, PriorOperation, SaveDecision};
+    use super::{
+        decide_review, decide_save, permits, Access, Action, PriorOperation, ReviewDecision,
+        SaveDecision,
+    };
 
     #[test]
     fn permission_table_is_closed_and_fail_closed() {
@@ -78,7 +119,25 @@ mod tests {
         ] {
             assert_eq!(permits(access, Action::Read), read);
             assert_eq!(permits(access, Action::Write), write);
+            assert_eq!(permits(access, Action::Review), access == Access::Owner);
         }
+    }
+
+    #[test]
+    fn review_replay_precedes_staleness_but_never_rebinds_an_operation() {
+        assert_eq!(decide_review(3, 1, Some(1), true), ReviewDecision::Replay);
+        assert_eq!(decide_review(3, 1, None, true), ReviewDecision::Replay);
+        assert_eq!(
+            decide_review(3, 2, Some(1), false),
+            ReviewDecision::OperationReused
+        );
+        assert_eq!(
+            decide_review(3, 1, None, false),
+            ReviewDecision::Stale {
+                current_revision: 3
+            }
+        );
+        assert_eq!(decide_review(3, 3, None, false), ReviewDecision::Create);
     }
 
     #[test]

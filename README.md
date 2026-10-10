@@ -11,6 +11,8 @@ project-management templates, plus an executable Rust [Script IR contract](contr
 and validation CLI. A local development Axum/PostgreSQL revision store and minimal live Leptos
 Studio consumer now save and read complete immutable exports with actor permissions,
 optimistic concurrency and idempotent retries. See the [persistence evidence](docs/evidence/script-revision-persistence.md).
+The compatible [editorial handoff](docs/evidence/editorial-handoff.md) adds private preserved
+sources, bounded history, owner review records and operator credential tools on that backend.
 Import/adaptation, production, Theatre and native mobile playback remain planned. No runnable
 Gradle project or production identity deployment is claimed.
 

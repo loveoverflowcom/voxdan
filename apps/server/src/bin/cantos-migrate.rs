@@ -8,6 +8,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     migrate(&config)
         .await
         .map_err(|_| "migration failed; no partial transaction accepted")?;
-    println!("Migration 0001 applied or checksum verified");
+    println!("Migrations applied or checksums verified");
     Ok(())
 }

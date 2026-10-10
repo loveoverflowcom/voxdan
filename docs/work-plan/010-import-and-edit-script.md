@@ -24,6 +24,10 @@ now supplies structured-draft validation, exports and speech bytes. The local
 authorized Leptos save/read consumer with crash/retry/concurrency evidence. Review its actual
 modules, v1 wire contract and read inventory before expanding intake. Workload measurements,
 production identity adoption and the complete authoring journey still belong to #1/010.
+The [compatible handoff](../evidence/editorial-handoff.md) additionally supplies private preserved
+source reads, bounded revision history, owner review records and local credential/evidence
+tools. Build importer/source-preview/editor consumers on that shared backend; these extensions
+do not implement all input formats or the complete review journey.
 
 ## Suggested sequence
 

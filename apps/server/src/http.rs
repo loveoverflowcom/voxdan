@@ -1,6 +1,6 @@
 //! Thin Axum adapter; all revision decisions live inward of this module.
 use axum::{
-    extract::{DefaultBodyLimit, Path, Request, State},
+    extract::{DefaultBodyLimit, Path, Query, Request, State},
     http::{header, HeaderMap, HeaderValue, StatusCode},
     middleware::{self, Next},
     response::{IntoResponse, Response},
@@ -8,7 +8,8 @@ use axum::{
     Json, Router,
 };
 use cantos_api::{
-    ApiError, ErrorCode, FieldIssue, SaveRevisionRequest, SessionRequest, SessionResponse,
+    ApiError, ErrorCode, FieldIssue, ReviewRequest, SaveRevisionRequest, SessionRequest,
+    SessionResponse,
 };
 use tower_http::services::ServeDir;
 
@@ -26,6 +27,9 @@ pub fn router(state: AppState, dist: &str) -> Router {
         .route("/scripts/{script}/head", get(head))
         .route("/scripts/{script}/revisions/{revision}", get(revision))
         .route("/scripts/{script}/revisions", post(save))
+        .route("/scripts/{script}/history", get(history))
+        .route("/scripts/{script}/reviews", post(review))
+        .route("/scripts/{script}/sources/{source}", get(source))
         .route_layer(middleware::from_fn_with_state(state.clone(), authenticated));
     let api = scripts
         .route("/session", post(login).delete(logout))
@@ -207,6 +211,78 @@ fn failure(code: ErrorCode, status: StatusCode) -> Response {
         }),
     )
         .into_response()
+}
+
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct HistoryQuery {
+    #[serde(default)]
+    after_revision: u64,
+    #[serde(default = "history_limit")]
+    limit: u64,
+}
+
+fn history_limit() -> u64 {
+    20
+}
+
+async fn history(
+    State(state): State<AppState>,
+    Path(script): Path<String>,
+    headers: HeaderMap,
+    query: Result<Query<HistoryQuery>, axum::extract::rejection::QueryRejection>,
+) -> Response {
+    let query = match query {
+        Ok(Query(query)) => query,
+        Err(_) => return error_response(StoreError::InvalidRequest),
+    };
+    let token = match cookie_token(&headers) {
+        Ok(token) => token,
+        Err(error) => return error_response(error),
+    };
+    match state
+        .store
+        .history(&token, &script, query.after_revision, query.limit)
+        .await
+    {
+        Ok(history) => Json(history).into_response(),
+        Err(error) => error_response(error),
+    }
+}
+
+async fn review(
+    State(state): State<AppState>,
+    Path(script): Path<String>,
+    headers: HeaderMap,
+    body: Result<Json<ReviewRequest>, axum::extract::rejection::JsonRejection>,
+) -> Response {
+    let request = match body {
+        Ok(Json(request)) => request,
+        Err(_) => return error_response(StoreError::InvalidRequest),
+    };
+    let token = match cookie_token(&headers) {
+        Ok(token) => token,
+        Err(error) => return error_response(error),
+    };
+    match state.store.review(&token, &script, request).await {
+        Ok(review) => Json(review).into_response(),
+        Err(error) => error_response(error),
+    }
+}
+
+async fn source(
+    State(state): State<AppState>,
+    Path((script, source)): Path<(String, String)>,
+    headers: HeaderMap,
+) -> Response {
+    let token = match cookie_token(&headers) {
+        Ok(token) => token,
+        Err(error) => return error_response(error),
+    };
+    match state.store.source(&token, &script, &source).await {
+        Ok(source) => Json(source).into_response(),
+        Err(error) => error_response(error),
+    }
 }
 
 fn error_response(error: StoreError) -> Response {

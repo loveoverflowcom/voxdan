@@ -25,10 +25,11 @@ and [report](../cantos-engineering/SKILL.md#9-completion-report) without redefin
 
 ## Ground rules
 
-- **Nothing is implemented.** No Script IR module, JSON Schema, validator, migration or fixture
-  corpus exists. [`episode-draft.json`](../../../contracts/examples/episode-draft.json) is an
-  illustrative `0.1.0-draft` sample, not a contract. Every type, path and command below is a
-  proposal; inspect manifests, `contracts/` and existing tests before naming one as real.
+- **Implemented slice.** [Script IR 0.1.0](../../../contracts/README.md), its schema/validator,
+  immutable PostgreSQL revisions and a minimal Studio exist. Import/adaptation and production
+  remain planned. [`episode-draft.json`](../../../contracts/examples/episode-draft.json) is a
+  historical `0.1.0-draft` sample rejected by the reader. Inspect current code/tests before
+  treating the proposed types and examples below as implemented.
 - **Docs win for product behavior.** When this skill and an owning document disagree, follow the
   document, report the conflict and fix the stale side when it is in scope.
 - **The IR is a pure domain value.** It imports no Axum, SQL client, Leptos, Compose, provider
@@ -86,7 +87,7 @@ Drafts admit the incomplete states an editor needs, each as a named variant; sub
 them into the strict types or returns every reason it cannot:
 
 ```rust
-// Illustrative and proposed: no Script IR module exists yet.
+// Illustrative proposed draft API; inspect the implemented strict reader separately.
 pub enum SpeakerRef {
     Resolved(CharacterId),
     Unresolved { label: String }, // e.g. an AI-proposed "Bà cụ" not yet in the cast

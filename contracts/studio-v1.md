@@ -86,3 +86,41 @@ These are resource guardrails, not measured latency targets or production sizing
 Version 1 admits Script IR 0.1.0 only. Any changed wire semantics needs a compatibility decision
 and shared fixture updates; no persisted older version conversion exists. See
 [persistence evidence](../docs/evidence/script-revision-persistence.md).
+
+## Editorial handoff extensions
+
+These additive v1 routes use the same cookie, Origin guard, no-store responses and error shape.
+Existing save/read DTOs and Script IR c1/e1 remain unchanged. New raw DTOs, Schema definitions
+and fixtures live alongside the original contract.
+
+| Route under /api/v1 | Request / result |
+| --- | --- |
+| GET /scripts/{UUID}/history | Optional `after_revision` (default 0) and `limit` (default 20, range 1–50) → History |
+| POST /scripts/{UUID}/reviews | ReviewRequest `{operation_id, revision}` → Review; owner only |
+| GET /scripts/{UUID}/sources/{SOURCE_ID} | Source with exact UTF-8 text/hash, only if linked from the script's immutable history |
+
+History contains ascending `revisions` summaries (script/revision, accepted actor/time, c1/e1),
+`reviews` for those same revisions, and nullable `next_after`. Open a manuscript through the
+existing pinned revision route; history omits its body. Each page checks current access and
+holds the script's share lock while reading and integrity-checking its rows. New revisions
+between pages appear after the previous cursor; pages are not a frozen full-history snapshot.
+An empty/last page has `next_after: null`. Invalid bounds or unknown query fields return 400.
+No cache or incremental read model bypasses authorization.
+
+A new review must name the locked current head, with a canonical UUID operation key. A retry
+with the same actor/key/revision returns the first review even if the head advances; changing
+its revision returns `operation_reused`. A new key for an already reviewed revision also
+returns its first review and records that receipt. An old unreviewed revision returns
+`stale_revision`. Review and receipt commit atomically. Editors/readers cannot review; readers
+and editors can inspect history/sources while their current script access permits it.
+Review has `id`, script/revision, original operation ID, reviewed actor/time and the pinned
+revision's c1/e1. Review is editorial evidence, not production or publication approval.
+
+Source has `id`, `reference`, `original_text`, `sha256` and `recorded_at`. Original text is
+bounded to 1 MiB UTF-8 bytes, preserved without normalization and hash-checked on read. It is
+available only through a currently authorized script and its source evidence links. Missing,
+unlinked and inaccessible sources return 404. A registry-only legacy source remains valid
+for existing save/read semantics but returns 404 here until explicitly preserved by an operator.
+Source text is never embedded into a publication manifest or public route. Rights assertions,
+generation and selected asset references still require their existing registry ownership checks
+and downstream eligibility gates.

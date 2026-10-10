@@ -41,6 +41,12 @@ stores every accepted validated save as an immutable complete export. Acceptance
 storage admission, not editorial/production/publication approval. A full-export `sir-e1:sha256`
 digest covers metadata excluded from c1; revision identity and access still remain authoritative.
 
+The [editorial handoff extension](../decisions/0004-editorial-handoff.md) separately preserves
+source text and records explicit owner reviews. New reviews require the current head; repeated
+review of an already reviewed revision returns its original immutable fact after later edits.
+Private source reads follow current script access and source evidence links. Storage acceptance,
+editorial review, rights clearance and production/publication approval remain distinct gates.
+
 ## TTS cache boundary
 
 A speech fingerprint must include effective spoken text, language, pronunciation, delivery/emotion controls, voice profile revision, provider/model revision, synthesis parameters and output profile. Script revision IDs alone are neither sufficient cache keys nor a reason to rerender unchanged speech. Rights/tenant authorization is checked separately before reuse.

@@ -18,6 +18,14 @@ fn studio_wire_fixtures_match_schema_and_independent_complete_export() {
             "ApiError",
             include_str!("../../../contracts/fixtures/studio/v1/stale-revision.json"),
         ),
+        (
+            "History",
+            include_str!("../../../contracts/fixtures/studio/v1/history.json"),
+        ),
+        (
+            "Review",
+            include_str!("../../../contracts/fixtures/studio/v1/review.json"),
+        ),
     ] {
         let schema = json!({"$ref":format!("#/$defs/{name}"),"$defs":schema["$defs"]});
         jsonschema::validator_for(&schema)

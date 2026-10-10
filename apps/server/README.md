@@ -14,6 +14,8 @@ Production identity deployment, production workers and paid providers are not im
 - `http.rs`: thin Axum mapping over the [Studio v1 contract](../../contracts/studio-v1.md).
 - `migrations/0001_script_revisions.sql`: atomic schema, deferred head FK, operation uniqueness
   and immutable revision/link triggers. Migration replay verifies its SHA-256 checksum.
+- `migrations/0002_editorial_handoff.sql`: preserved sources, immutable editorial reviews and
+  their operation receipts, added without rewriting migration 0001 or existing revisions.
 
 All validated saves are immutable accepted storage revisions. They are not production approvals.
 Metadata-only edits can retain c1 while changing e1 and revision identity; no digest deduplication
@@ -71,9 +73,11 @@ GRANT SELECT ON actors,sessions,scripts,script_members,script_evidence,
 GRANT INSERT ON scripts,script_revisions,revision_evidence TO cantos_app;
 GRANT UPDATE(head_revision) ON scripts TO cantos_app;
 GRANT UPDATE(revoked) ON sessions TO cantos_app;
+GRANT SELECT ON source_records,script_reviews,script_review_operations TO cantos_app;
+GRANT INSERT ON script_reviews,script_review_operations TO cantos_app;
 ```
 
-The migration does not create deployment roles or mint credentials. Never give its DDL owner
+Migrations do not create deployment roles or mint credentials. Never give the DDL owner
 to the HTTP host. PostgreSQL superusers can bypass constraints/triggers; they are outside the
 application threat boundary. The local runner's trust authentication and predictable tokens
 are disposable test fixtures, not deployment guidance.
@@ -88,3 +92,37 @@ See [evidence and residual risks](../../docs/evidence/script-revision-persistenc
 [affected read inventory](../../docs/evidence/script-revision-reads.md). Rights eligibility,
 stable entity identity across revisions, source import and the full #1/010 journey remain
 separate work. Domain rules never import Narrative Forge or AI provider internals.
+
+## Editorial handoff and operator tools
+
+Use the migration/operator database role for these commands, only against a local development
+instance. The HTTP app role above cannot provision actors, evidence or source records.
+
+```sh
+cargo run --locked --bin cantos-migrate
+cargo run --locked --bin cantos-operator -- create-creator
+cargo run --locked --bin cantos-operator -- issue-token ACTOR_ID 1
+cargo run --locked --bin cantos-operator -- revoke-tokens ACTOR_ID
+cargo run --locked --bin cantos-operator -- register-evidence OWNER_ID rights RIGHTS_ID 'pending creator assertion'
+cargo run --locked --bin cantos-operator -- record-source OWNER_ID SOURCE_ID 'preserved source reference' /path/to/source.txt
+```
+
+Issuance accepts 1–720 hours, prints the new 64-hex credential once, and stores only its SHA-256.
+Keep the credential in a local secret store; use the existing Studio session exchange to sign
+in. Rotation means issue a replacement and revoke existing credentials explicitly. Revocation
+of all tokens for an actor includes the replacement if issued before `revoke-tokens`.
+The source command preserves UTF-8 text bytes (including NFD/CRLF), bounded to 1 MiB, and records
+an immutable source registry link plus SHA-256 in one transaction. Register the remaining
+rights/generation/asset references explicitly; registration is not rights clearance. Source
+correction requires a new ID. Existing registry descriptions are not overwritten.
+
+[Studio API extensions](../../contracts/studio-v1.md#editorial-handoff-extensions) supply
+currently authorized history summaries, linked private sources and owner editorial review.
+Reviewing an already reviewed revision returns its first review, even after the head changes.
+Reviewing an older unreviewed revision conflicts. Reviews bind immutable revision identity and
+c1/e1; they do not approve production or publication. Existing Studio controls consume the
+original save/read contract; the new handoff operations have no browser controls yet.
+
+The [handoff evidence](../../docs/evidence/editorial-handoff.md) records the migration upgrade,
+operator CLI, preservation, permission, corruption and rollback checks. Run the existing
+PostgreSQL suite to include these cases; its ignored tests now cover both migrations.

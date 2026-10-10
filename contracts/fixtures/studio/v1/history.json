@@ -1,0 +1,25 @@
+{
+  "revisions": [
+    {
+      "script_id": "ad04abb5-bba0-4240-b211-3ed2aa179999",
+      "revision": 1,
+      "accepted_by": "alice",
+      "accepted_at": "2026-10-10T00:00:00.000000Z",
+      "content_digest": "sir-c1:sha256:a651c9e765d7ae1e768c3c68d1d3f361ba0cfe3d7fd7827c898a547e7e0f2d86",
+      "export_digest": "sir-e1:sha256:4873857d25942c5c158bfaf30e53662d4f1fe9b8b95db72ecb2639b2ddf4ebf0"
+    }
+  ],
+  "reviews": [
+    {
+      "id": "00000000-0000-4000-8000-000000000002",
+      "script_id": "ad04abb5-bba0-4240-b211-3ed2aa179999",
+      "revision": 1,
+      "operation_id": "00000000-0000-4000-8000-000000000003",
+      "reviewed_by": "alice",
+      "reviewed_at": "2026-10-10T00:00:00.000000Z",
+      "content_digest": "sir-c1:sha256:a651c9e765d7ae1e768c3c68d1d3f361ba0cfe3d7fd7827c898a547e7e0f2d86",
+      "export_digest": "sir-e1:sha256:4873857d25942c5c158bfaf30e53662d4f1fe9b8b95db72ecb2639b2ddf4ebf0"
+    }
+  ],
+  "next_after": null
+}

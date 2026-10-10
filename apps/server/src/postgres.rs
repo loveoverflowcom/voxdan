@@ -10,8 +10,13 @@ use uuid::Uuid;
 use crate::revisions::{decide_save, permits, Access, Action, PriorOperation, SaveDecision};
 use crate::script_ir::{read_canonical_script, read_script, ReadError, WRITE_VERSION};
 
-const MIGRATION: &str = include_str!("../migrations/0001_script_revisions.sql");
+const MIGRATIONS: [(i32, &str); 2] = [
+    (1, include_str!("../migrations/0001_script_revisions.sql")),
+    (2, include_str!("../migrations/0002_editorial_handoff.sql")),
+];
 const REVISION_COLUMNS: &str = "script_id, revision, expected_revision, accepted_by, canonical_export, content_digest, export_digest, to_char(accepted_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"') AS accepted_at";
+
+mod editorial;
 
 #[derive(Debug)]
 pub enum StoreError {
@@ -320,20 +325,25 @@ pub async fn migrate(config: &Config) -> Result<(), StoreError> {
     });
     let tx = client.transaction().await?;
     tx.batch_execute("SELECT pg_advisory_xact_lock(1128353364); CREATE TABLE IF NOT EXISTS cantos_migrations(version integer PRIMARY KEY, checksum bytea NOT NULL); REVOKE ALL ON cantos_migrations FROM PUBLIC;").await?;
-    let checksum = token_hash(MIGRATION);
-    match tx
-        .query_opt(
-            "SELECT checksum FROM cantos_migrations WHERE version=1",
-            &[],
-        )
-        .await?
-    {
-        Some(row) if row.get::<_, Vec<u8>>(0) == checksum => (),
-        Some(_) => return Err(StoreError::CorruptRevision),
-        None => {
-            tx.batch_execute(MIGRATION).await?;
-            tx.execute("INSERT INTO cantos_migrations VALUES(1,$1)", &[&checksum])
+    for (version, migration) in MIGRATIONS {
+        let checksum = token_hash(migration);
+        match tx
+            .query_opt(
+                "SELECT checksum FROM cantos_migrations WHERE version=$1",
+                &[&version],
+            )
+            .await?
+        {
+            Some(row) if row.get::<_, Vec<u8>>(0) == checksum => (),
+            Some(_) => return Err(StoreError::CorruptRevision),
+            None => {
+                tx.batch_execute(migration).await?;
+                tx.execute(
+                    "INSERT INTO cantos_migrations VALUES($1,$2)",
+                    &[&version, &checksum],
+                )
                 .await?;
+            }
         }
     }
     tx.commit().await?;

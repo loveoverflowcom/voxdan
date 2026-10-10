@@ -1,8 +1,10 @@
+use cantos_api::AdaptationConfig;
+use cantos_server::adaptation::provider::OllamaProvider;
 use cantos_server::{
     http::{router, AppState},
     postgres::{local_config, Store},
 };
-use std::{env, net::SocketAddr};
+use std::{env, net::SocketAddr, sync::Arc};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -17,7 +19,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     let config =
         local_config(&env::var("DATABASE_URL")?).map_err(|_| "invalid local PostgreSQL config")?;
-    let store = Store::new(config).map_err(|_| "database pool unavailable")?;
+    let mut store = Store::new(config).map_err(|_| "database pool unavailable")?;
+    if let Ok(model) = env::var("CANTOS_ADAPTATION_MODEL") {
+        let endpoint = env::var("CANTOS_ADAPTATION_ENDPOINT")
+            .unwrap_or_else(|_| "http://127.0.0.1:11434".into());
+        let provider = OllamaProvider::connect(
+            &endpoint,
+            &model,
+            AdaptationConfig {
+                temperature_milli: 200,
+                seed: 0,
+                num_context: 8192,
+                num_predict: 4096,
+                timeout_seconds: 120,
+            },
+        )
+        .await
+        .map_err(|_| "local adaptation runtime could not verify cloud-disabled execution and pinned local model")?;
+        store = store.with_adaptation_provider(Arc::new(provider));
+    }
     let state = AppState {
         store,
         web_origin: env::var("CANTOS_WEB_ORIGIN").unwrap_or_else(|_| format!("http://{address}")),

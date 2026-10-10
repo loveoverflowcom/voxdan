@@ -2,8 +2,10 @@
 
 `cantos-studio` is a minimal Leptos 0.7.8 CSR/WASM consumer of the actual local Axum/PostgreSQL
 revision API. It displays a complete JSON draft and a read-only stored export, plus bounded
-manuscript import and source/extraction comparison. The scene/speaker editor, adaptation,
-production console and Cantos Theatre remain planned.
+manuscript import and source/extraction comparison, plus a bounded AI proposal review flow.
+The full scene/speaker editor, production console and Cantos Theatre remain planned. The
+adapter's live model gate is separately recorded in the
+[adaptation evidence](../../docs/evidence/ai-script-adaptation.md).
 
 ## Build and run
 
@@ -57,7 +59,21 @@ source; original download returns the byte-exact upload. Failures retain the imm
 for a same-operation retry by the same actor. A changed selection is a new operation.
 Prose labels and scene suggestions remain review findings, unknown speakers remain visible,
 and publication permission stays unverified. The UI renders manuscript markup as inert text.
-It never assigns voices, calls AI or silently submits an imported source as an accepted script.
+It never assigns voices or silently submits an imported source as an accepted script.
+
+The adaptation section pins an imported source, target script UUID and base revision. It shows
+the configured server-side localhost provider and requires explicit source/adaptation permission
+authorization. Run IDs reopen private proposals; source blocks, conversion warnings, coverage
+claims and unsupported pacing/prosody remain inspectable beside the editable JSON candidate.
+Provider success remains a proposal. A creator explicitly acknowledges the findings and accepts
+the validated candidate, then reopens the pinned immutable revision. The ordinary editor's local
+draft is separate. Unknown cost displays as unavailable; provider configuration and an HTTP
+fixture result never prove a real model run.
+
+An uncertain mutation retains its exact actor/operation/snapshot for reconciliation. A different
+actor, stale response or changed input cannot silently replace the visible proposal or accepted
+receipt. Revision conflicts require a new reviewed run against the current base. Full scene and
+character authoring belongs to issue #4.
 
 ## Tokens and evidence
 

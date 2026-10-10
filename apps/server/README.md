@@ -11,6 +11,9 @@ Production identity deployment, production workers and paid providers are not im
 - `revisions.rs`: pure access table and append/replay/stale/key-reuse decisions.
 - `imports.rs`: bounded deterministic TXT, Markdown, DOCX and Script IR extraction.
   Unknown speakers remain unresolved; prose labels and scene cues require review.
+- `adaptation.rs`: closed proposal admission, bounded source context, trusted evidence bindings,
+  source coverage findings and complete Script IR semantic validation. Its provider adapter
+  supports opt-in localhost Ollama; domain decisions do not import provider transport.
 - `postgres.rs`: current actor/session/access facts, transactions, locked heads, complete
   immutable bytes, evidence ownership links and integrity checks on every load.
 - `http.rs`: thin Axum mapping over the [Studio v1 contract](../../contracts/studio-v1.md).
@@ -20,6 +23,8 @@ Production identity deployment, production workers and paid providers are not im
   their operation receipts, added without rewriting migration 0001 or existing revisions.
 - `migrations/0003_manuscript_import.sql`: exact original binary bytes, import metadata and
   immutable extraction outcomes on the existing source records.
+- `migrations/0004_ai_adaptation.sql`: immutable run inputs, dispatch intent, observations,
+  proposals, cancellation receipts and atomic acceptance links.
 
 All validated saves are immutable accepted storage revisions. They are not production approvals.
 Metadata-only edits can retain c1 while changing e1 and revision identity; no digest deduplication
@@ -151,3 +156,60 @@ Larger sources, a storage adapter and production identity require their own revi
 DOCX formatting, embedded content and omitted annotations are visible conversion limitations;
 tracked changes and suspected legacy Vietnamese encodings require an explicit future choice.
 See [import evidence](../../docs/evidence/manuscript-import.md) for executed checks and limitations.
+
+## AI adaptation proposals
+
+The [adaptation contract](../../contracts/adaptation-v1.md) extends the same authenticated
+development host. Enable its provider only by explicitly exporting `CANTOS_ADAPTATION_MODEL`
+with an already installed, authorized exact Ollama model tag. The optional
+`CANTOS_ADAPTATION_ENDPOINT` defaults to `http://127.0.0.1:11434`; only numeric loopback HTTP
+with an explicit port is admitted. There is no credential, hosted destination, model pull,
+redirect, proxy or automatic HTTP retry path. The provider-info endpoint describes configuration;
+it does not establish successful AI inference or a passed live gate. Enabling the adapter requires
+bounded status/model probes proving cloud features are disabled and local GGUF identity is
+available. Remote models and local aliases of cloud models fail closed. Older daemons without
+the required verification fields are blocked. The same model metadata fingerprint is checked
+again before source dispatch. Use an approved, stable daemon; no persistent configuration is
+changed by Cantos.
+
+The host freezes temperature 0.2, seed 0, context 8192, output limit 4096 and timeout 120 seconds.
+The source cap is 24 KiB/256 blocks, output 256 KiB and total proposed nodes 1000. A conservative
+context guard additionally budgets one possible token per UTF-8 byte plus framing and output
+reserve. Many longer chapters will require future reviewed chunking; this adapter rejects them
+instead of silently truncating. Verified local weight/model metadata is fingerprinted and
+frozen with each run; changed identity fails before dispatch. This is a trusted local runtime
+check, not cryptographic attestation of a hostile localhost service or production model pinning.
+The byte admission guard does not prove the rendered template/tokenizer fits the actual model;
+runtime truncation behavior belongs to the separate live acceptance record.
+
+Starting a run requires a parsed owned import with nonblank rights holder, permission evidence
+and intended scope, plus an explicit source/adaptation-use authorization for the configured
+local destination. The start command pins the exact provider metadata the creator reviewed;
+changed configuration fails before run creation. These are preserved creator assertions,
+not legal adjudication. Unknown
+publication permission remains visible. Queued runs have no dispatched attempt. A current
+authorized refresh can resume queued work with matching provider configuration; each run can
+dispatch at most once. The host bounds calls/tasks to one local slot; multiple-host resource
+coordination is outside this development runtime.
+
+The dispatch intent commits before network I/O. Timeout or expired running state is ambiguous,
+with no automatic repeat. Cancellation prevents a late proposal from becoming selectable but
+retains its observed usage. Run inputs, proposals and observations cannot be edited. A creator
+compares the pinned source, corrections and findings before accepting a valid export; acceptance
+and the revision receipt commit together through the existing save rules. A stale base conflicts.
+Exact start/accept retries reuse their first identity and outcome. Source bytes and accepted
+history survive rejected output, failed calls and interrupted acceptance.
+
+The runtime role also needs:
+
+```sql
+GRANT SELECT, INSERT ON adaptation_runs,adaptation_attempts,adaptation_observations,
+  adaptation_proposals,adaptation_cancellations,adaptation_acceptances TO cantos_app;
+GRANT UPDATE(status,problem,dispatch_deadline,updated_at) ON adaptation_runs TO cantos_app;
+```
+
+Migration 0004 is additive; deploy it with the current host and these restricted grants. The
+source/revision tables receive no new UPDATE/DELETE privileges. See
+[ADR 0006](../../docs/decisions/0006-ai-script-adaptation.md) and
+[evidence](../../docs/evidence/ai-script-adaptation.md). A localhost HTTP double tests transport
+and recovery but supplies no AI inference. Live model acceptance remains a separate gate.

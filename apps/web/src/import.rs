@@ -321,6 +321,8 @@ pub fn optional_metadata(text: String) -> Option<String> {
 #[cfg(target_arch = "wasm32")]
 mod browser;
 #[cfg(target_arch = "wasm32")]
+pub(crate) use browser::ExtractionPreview;
+#[cfg(target_arch = "wasm32")]
 pub use browser::ManuscriptImport;
 
 #[cfg(test)]

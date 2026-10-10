@@ -1,5 +1,7 @@
 //! One modular backend; Script IR and revision decisions are independent of adapters.
 
+pub mod adaptation;
+mod diagnostics;
 pub mod http;
 pub mod imports;
 pub mod operator;

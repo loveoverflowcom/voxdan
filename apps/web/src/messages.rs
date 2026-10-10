@@ -1,6 +1,9 @@
 //! Typed resource catalog; vi-VN and en are exhaustive, with no view literals.
 use crate::editor::Status;
 
+mod adaptation;
+pub use adaptation::*;
+
 #[derive(Clone, Copy)]
 pub struct Copy {
     pub theme: &'static str,

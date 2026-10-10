@@ -1,3 +1,4 @@
+pub mod adaptation;
 pub mod editor;
 pub mod import;
 pub mod messages;

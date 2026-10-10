@@ -1,0 +1,66 @@
+{
+  "contract_version": "cantos-adaptation-1",
+  "title": "Ngọn đèn bên sông",
+  "characters": [
+    {
+      "name": "An",
+      "personality": "Chưa xác định; cần tác giả xem lại."
+    }
+  ],
+  "scenes": [
+    {
+      "title": "Bến sông",
+      "lines": [
+        {
+          "speaker": "Người dẫn chuyện",
+          "text": "Đêm xuống bên bến sông.",
+          "source_blocks": [
+            0
+          ],
+          "delivery": {
+            "emotion": "calm",
+            "intensity_permille": 300
+          }
+        },
+        {
+          "speaker": "An",
+          "text": "Tôi sẽ chờ ở đây.",
+          "source_blocks": [
+            1
+          ],
+          "delivery": {
+            "emotion": "hopeful",
+            "intensity_permille": 500
+          }
+        },
+        {
+          "speaker": null,
+          "text": "Có ai nghe thấy không?",
+          "source_blocks": [
+            2
+          ],
+          "delivery": {
+            "emotion": "neutral",
+            "intensity_permille": 300
+          }
+        }
+      ],
+      "cues": [
+        {
+          "kind": "ambience",
+          "description": "Tiếng nước nhẹ bên bến sông.",
+          "line_index": 0,
+          "edge": "start",
+          "source_blocks": [
+            0
+          ]
+        }
+      ],
+      "pacing_note": "Nhịp chậm; chưa có ánh xạ điều khiển sản xuất."
+    }
+  ],
+  "omitted_blocks": [],
+  "review_notes": [
+    "Người nói ở khối 2 chưa được xác định."
+  ]
+}

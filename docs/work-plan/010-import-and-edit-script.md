@@ -35,6 +35,11 @@ Adaptation should consume those immutable records and uncertainty rather than re
 overwrite an accepted source. The complete adaptation/edit/revision journey remains the 010
 capability review boundary.
 
+The [bounded adaptation consumer](../evidence/ai-script-adaptation.md) adds a localhost provider
+boundary, durable proposal/attempt records and explicit Studio compare/edit-JSON/accept flow.
+Live provider evidence remains a separately required #3 gate. Full scene and character editing
+is #4; neither implementation nor deterministic fixtures alone complete the capability review.
+
 ## Suggested sequence
 
 1. Add representative manuscript and structured-script fixtures, including multiple speakers and scenes.

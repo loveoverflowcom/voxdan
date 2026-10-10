@@ -60,6 +60,13 @@ consumer of immutable source IDs/checksums, ordered blocks, uncertainty and reco
 claims, followed by the full editor in #4. Keep #1's production identity and complete authoring
 gates visible; import evidence does not accept the entire 010 capability.
 
+The [bounded adaptation implementation](../evidence/ai-script-adaptation.md) uses that source
+and revision authority for private run inputs, provider attempts, validated proposals and
+explicit acceptance. Its live model acceptance prerequisite remains a gate for #3; contract
+double and PostgreSQL evidence cannot replace it. Once that gate is accepted, #4 should consume
+the same proposal/revision API for full scene/speaker authoring, preserving provenance and
+concurrency rather than adding another draft authority.
+
 | Capability | Execution issues | Milestone |
 | --- | --- | --- |
 | [010](010-import-and-edit-script.md) | [#1](https://github.com/loveoverflowcom/cantos/issues/1), [#2](https://github.com/loveoverflowcom/cantos/issues/2), [#3](https://github.com/loveoverflowcom/cantos/issues/3), [#4](https://github.com/loveoverflowcom/cantos/issues/4) | [010 — Import and edit a versioned script](https://github.com/loveoverflowcom/cantos/milestone/1) |

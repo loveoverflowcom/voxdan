@@ -602,3 +602,92 @@ fn normalization_cannot_create_a_value_that_exceeds_the_export_schema() {
         ])
     );
 }
+
+#[test]
+fn normalization_cannot_create_an_export_larger_than_the_reader_and_storage_limit() {
+    let mut raw = load("accept/two-scenes.json");
+    let lines = raw["episode"]["acts"][0]["scenes"][0]["dialogues"]
+        .as_array_mut()
+        .unwrap();
+    for number in 0..110 {
+        lines.push(json!({
+            "id": format!("expansion-{number}"), "speaker_id": "narrator",
+            "text": "\u{0344}".repeat(5000),
+            "delivery": {"emotion": "neutral", "intensity_permille": 300}
+        }));
+    }
+    let bytes = serde_json::to_vec(&raw).unwrap();
+    assert!(bytes.len() < 2 * 1024 * 1024);
+    assert_eq!(
+        read_script(&bytes).err(),
+        Some(ReadError::DocumentTooLarge {
+            max_bytes: 2 * 1024 * 1024
+        })
+    );
+}
+
+#[test]
+fn intensity_admission_uses_exact_decimal_value_instead_of_binary_float_rounding() {
+    let mut raw = load("accept/two-scenes.json");
+    raw["episode"]["acts"][0]["scenes"][0]["dialogues"][0]["delivery"]["intensity_permille"] =
+        json!(300);
+    let source = raw.to_string();
+    for (number, expected) in [
+        ("300.0", Some(300)),
+        ("3e2", Some(300)),
+        ("300000e-3", Some(300)),
+        ("-0.0", Some(0)),
+        ("0e999999999999999999999", Some(0)),
+        ("300.0000000000000001", None),
+        ("1000.0000000000000001", None),
+        ("1e-9999", None),
+        ("-1e-9999", None),
+        ("-1", None),
+    ] {
+        let bytes = source.replacen(
+            "\"intensity_permille\":300",
+            &format!("\"intensity_permille\":{number}"),
+            1,
+        );
+        let result = read_script(bytes.as_bytes());
+        match expected {
+            Some(expected) => {
+                let exported: Value =
+                    serde_json::from_slice(&result.unwrap().export_bytes()).unwrap();
+                assert_eq!(
+                    exported["episode"]["acts"][0]["scenes"][0]["dialogues"][0]["delivery"]
+                        ["intensity_permille"],
+                    expected,
+                    "{number}"
+                );
+            }
+            None => assert!(
+                matches!(result, Err(ReadError::InvalidDocument { .. })),
+                "fraction or negative admitted: {number}"
+            ),
+        }
+    }
+}
+
+#[test]
+fn repeated_pronunciation_matches_keep_exact_diagnostics_at_the_array_bound() {
+    let mut raw = load("accept/two-scenes.json");
+    let line = &mut raw["episode"]["acts"][0]["scenes"][0]["dialogues"][0];
+    line["text"] = json!("a".repeat(10_000));
+    line["pronunciation_overrides"] =
+        json!(vec![json!({"surface": "a", "replacement": "x"}); 10_000]);
+    let result = read_script(&serde_json::to_vec(&raw).unwrap());
+    let Err(ReadError::Semantic(issues)) = result else {
+        panic!("repeated targets must be rejected");
+    };
+    assert_eq!(issues.len(), 9999);
+    for (number, issue) in issues.iter().enumerate() {
+        assert_eq!(issue.path, format!("episode/act:act-01/scene:scene-01/dialogue:dialogue-01/pronunciation_overrides/{}/surface", number + 1));
+        assert_eq!(
+            issue.issue,
+            cantos_server::script_ir::ValidationIssue::PronunciationOverlap {
+                surface: "a".into()
+            }
+        );
+    }
+}

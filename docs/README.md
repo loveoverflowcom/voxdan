@@ -12,6 +12,7 @@
 | [Architecture overview](architecture/overview.md) | Planned boundaries, deployment and data ownership |
 | [Script IR](architecture/script-ir.md) | Versioned interchange and reuse without project coupling |
 | [Script IR evidence](evidence/script-ir-contract.md) | Executed contract checks and unrun application gates |
+| [Final revision sequence review](evidence/script-revision-final-review.md) | Independent findings, fixes, final local checks and remaining runtime limits |
 | [Mobile architecture](architecture/mobile.md) | CMP shell and native listening behavior |
 | [UI system](design/ui-system.md) | Shared semantic design requirements and validation |
 | [Decision 0001](decisions/0001-modular-monolith.md) | Initial stack and modular-backend decision |

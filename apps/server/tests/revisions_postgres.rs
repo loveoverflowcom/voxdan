@@ -391,6 +391,36 @@ async fn invalid_exports_and_foreign_evidence_leave_no_partial_script() {
         h.store.save(ALICE, &script, invalid).await,
         Err(StoreError::InvalidScript(_))
     ));
+    // Every input field fits its scalar bound, but NFC doubles the whole export past 2 MiB.
+    // This must be a typed admission failure, rather than a SQL CHECK failure mapped to 503.
+    let mut value: Value = serde_json::from_str(FIXTURE).unwrap();
+    let lines = value["episode"]["acts"][0]["scenes"][0]["dialogues"]
+        .as_array_mut()
+        .unwrap();
+    for number in 0..110 {
+        lines.push(
+            json!({"id":format!("expansion-{number}"),"speaker_id":"narrator",
+            "text":"\u{0344}".repeat(5000),
+            "delivery":{"emotion":"neutral","intensity_permille":300}}),
+        );
+    }
+    let mut expanded = request(0);
+    expanded.script_json = value.to_string();
+    assert!(expanded.script_json.len() < 2 * 1024 * 1024);
+    let (status, error) = h
+        .request(
+            "POST",
+            &format!("/scripts/{script}/revisions"),
+            Some(ALICE),
+            Some(serde_json::to_value(expanded).unwrap()),
+        )
+        .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(error["code"], "invalid_script");
+    assert_eq!(
+        error["issues"],
+        json!([{"path":"$","rule":"DocumentTooLarge"}])
+    );
     h.admin.execute("INSERT INTO script_evidence VALUES('bob','rights','bob-private','synthetic foreign evidence')",&[]).await.unwrap();
     let mut value: Value = serde_json::from_str(FIXTURE).unwrap();
     value["work"]["rights_record_id"] = json!("bob-private");

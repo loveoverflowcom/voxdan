@@ -41,6 +41,12 @@ work changes cardinality, evidence fan-out or introduces an actual list/join/agg
 minimal JSON editor and development sessions do not satisfy the full #1/010 capability or
 authorize closing its issue. GitHub execution status is unchanged by this local evidence.
 
+The independent [final sequence review](../evidence/script-revision-final-review.md) fixes
+exact numeric admission, normalization/export bounds, pronunciation validation memory,
+disposable-runner isolation and cleanup, and Studio save-target status. Its final local checks
+include real PostgreSQL recovery and a bounded Safari walkthrough. Continue 010 with these
+guards; the review does not complete its importer/editor acceptance or reopen DBSP integration.
+
 | Capability | Execution issues | Milestone |
 | --- | --- | --- |
 | [010](010-import-and-edit-script.md) | [#1](https://github.com/loveoverflowcom/cantos/issues/1), [#2](https://github.com/loveoverflowcom/cantos/issues/2), [#3](https://github.com/loveoverflowcom/cantos/issues/3), [#4](https://github.com/loveoverflowcom/cantos/issues/4) | [010 — Import and edit a versioned script](https://github.com/loveoverflowcom/cantos/milestone/1) |

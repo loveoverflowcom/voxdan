@@ -56,12 +56,17 @@ contract, not approval of an application or publication gate.
 Language tags are the bounded initial set `vi`, `vi-VN`, `en`, `en-US`; this does not promise
 provider support. Delivery uses a closed emotion vocabulary and integer `intensity_permille`
 from 0 to 1000. JSON Schema also admits integer-valued spellings such as `300.0`/`3e2`; Rust
-normalizes them to an integer before canonical encoding. Fractional values fail. Pronunciation
+normalizes them to an integer before canonical encoding using the exact decimal token, without
+binary-float rounding. Fractional values (including tiny nonzero exponents) fail. Schema tools
+that use binary floats may accept a rounded value; the byte reader remains authoritative for
+that numeric boundary. Pronunciation
 overrides are provider-neutral `{surface, replacement}` respellings of every left-to-right,
 non-overlapping occurrence. Targets must occur in normalized text, and targets from different
 overrides must not overlap. Phoneme alphabets, offsets and provider markup are not interpreted.
 
-The reader limits input to 2 MiB before decoding. Arrays are bounded at 10,000 entries; text at
+The reader limits input to 2 MiB before decoding and complete normalized exports to the same
+bound before returning content. NFC expansion cannot create an unreadable or unstorable export.
+Arrays are bounded at 10,000 entries; text at
 10,000 Unicode scalar values both before and after normalization. These are parser/storage
 bounds, not user-facing grapheme or provider request limits. JSON Schema cannot enforce the
 byte limit or reject duplicate JSON object keys after another parser has discarded them; the
@@ -142,7 +147,7 @@ The CLI returns 0 plus the digest on success, 1 for rejected content and 2 for u
 `cases.json` records literal rejection oracles. Accepted `.expected.json` files hold content
 bytes, digest and speech bytes produced by the independent Python JSON/SHA-256 oracle. Deliberate
 regeneration uses `python3 scripts/reference_script_ir.py --write-goldens`; tests never update them.
-The mutation runner checks seven named substitutions in a disposable offline copy.
+The mutation runner checks nine named substitutions in a disposable offline copy.
 
 See [contract evidence](../docs/evidence/script-ir-contract.md) and
 [revision evidence](../docs/evidence/script-revision-persistence.md). Studio v1 uses hand-authored

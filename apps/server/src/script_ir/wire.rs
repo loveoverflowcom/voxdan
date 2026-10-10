@@ -163,16 +163,43 @@ fn asset_selection<'de, D: serde::Deserializer<'de>>(
 
 // JSON Schema's integer includes 300.0 and 3e2; normalize those wire spellings to u16.
 fn integer_intensity<'de, D: serde::Deserializer<'de>>(decoder: D) -> Result<u16, D::Error> {
-    let number = serde_json::Number::deserialize(decoder)?;
-    if let Some(number) = number.as_u64() {
-        return u16::try_from(number).map_err(serde::de::Error::custom);
+    let number = Box::<serde_json::value::RawValue>::deserialize(decoder)?;
+    exact_unsigned_integer(number.get())
+        .ok_or_else(|| serde::de::Error::custom("expected an unsigned integer"))
+}
+
+// Work on the JSON number token: binary floats can round fractions to integers or zero.
+// JSON syntax was checked by RawValue; only exact integrality and the u16 bound live here.
+fn exact_unsigned_integer(number: &str) -> Option<u16> {
+    if !number.starts_with(|ch: char| ch.is_ascii_digit() || ch == '-') {
+        return None;
     }
-    if let Some(number) = number.as_f64() {
-        if number.fract() == 0.0 && (0.0..=f64::from(u16::MAX)).contains(&number) {
-            return Ok(number as u16);
-        }
+    let unsigned = number.strip_prefix('-').unwrap_or(number);
+    let (coefficient, exponent) = unsigned.split_once(['e', 'E']).unwrap_or((unsigned, "0"));
+    let fraction_digits = coefficient
+        .split_once('.')
+        .map_or(0, |(_, fraction)| fraction.len());
+    let digits = coefficient.replace('.', "");
+    let significant = digits.trim_start_matches('0');
+    if significant.is_empty() {
+        return Some(0);
     }
-    Err(serde::de::Error::custom("expected an unsigned integer"))
+    if number.starts_with('-') {
+        return None;
+    }
+    let trimmed = significant.trim_end_matches('0');
+    let scale = exponent
+        .parse::<i64>()
+        .ok()?
+        .checked_sub(fraction_digits as i64)?
+        .checked_add((significant.len() - trimmed.len()) as i64)?;
+    if !(0..=5).contains(&scale) || trimmed.len() > 5 - scale as usize {
+        return None;
+    }
+    trimmed
+        .parse::<u16>()
+        .ok()?
+        .checked_mul(10u16.checked_pow(scale as u32)?)
 }
 
 #[derive(Clone, Deserialize)]

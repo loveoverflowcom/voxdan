@@ -119,9 +119,7 @@ pub fn Studio() -> impl IntoView {
                 <label for="script-id">{move || copy().script}</label>
                 <input id="script-id" autocomplete="off" spellcheck="false" disabled=blocked
                     prop:value=move || state.with(|editor| editor.script.clone())
-                    on:input=move |event| state.update(|editor| {
-                        editor.script = event_target_value(&event); editor.base = 0; editor.remote = None;
-                    }) />
+                    on:input=move |event| state.update(|editor| *editor = editor.select_script(event_target_value(&event))) />
                 <div class="toolbar">
                     <button type="button" aria-disabled=blocked on:click=move |_| {
                         if let Some(reading) = state.get_untracked().start_read() {

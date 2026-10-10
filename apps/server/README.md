@@ -32,8 +32,10 @@ cargo test --workspace --locked
 PATH="/opt/homebrew/opt/postgresql@17/bin:$PATH" python3 scripts/test_postgres.py
 ```
 
-The runner ignores inherited `DATABASE_URL`, initializes a fresh loopback-only cluster in
-ignored `target/revision-evidence/`, creates a non-superuser app role, runs nine real PostgreSQL
+The runner removes inherited `DATABASE_URL`, `PG*` and `CANTOS_*` configuration, disables psql
+startup files, and refuses optimized Python (`-O`) before starting processes. It initializes a
+fresh loopback-only cluster in ignored `target/revision-evidence/`, creates a non-superuser app
+role, runs nine real PostgreSQL
 tests and then kills/restarts HTTP and PostgreSQL processes. It stops the cluster by default.
 The Rust integration tests are deliberately ignored by ordinary `cargo test`; that result
 alone is not database evidence. The runner needs permission to allocate PostgreSQL shared memory.

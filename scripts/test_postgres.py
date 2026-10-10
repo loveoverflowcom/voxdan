@@ -36,6 +36,13 @@ def free_port():
         return sock.getsockname()[1]
 
 
+def isolated_environment():
+    # libpq hostaddr/service/options can override an explicit local URL. Host configuration
+    # must also belong to this run rather than exposing an inherited static directory.
+    return {key: value for key, value in os.environ.items()
+            if not key.startswith(("PG", "CANTOS_")) and key != "DATABASE_URL"}
+
+
 def http(port, fixture, method="GET"):
     path = "head" if method == "GET" else "revisions"
     request = urllib.request.Request(
@@ -51,23 +58,31 @@ def http(port, fixture, method="GET"):
 
 
 def start_host(env, port, log, fixture):
-    host_env = dict(env, CANTOS_ENV="development", CANTOS_BIND_ADDRESS=f"127.0.0.1:{port}")
+    host_env = dict(env, CANTOS_ENV="development", CANTOS_BIND_ADDRESS=f"127.0.0.1:{port}",
+                    CANTOS_WEB_ORIGIN=f"http://127.0.0.1:{port}",
+                    CANTOS_WEB_DIST=str(EVIDENCE / "no-static-assets"))
     host = subprocess.Popen([str(ROOT / "target/debug/cantos-server")], cwd=ROOT, env=host_env, stdout=log, stderr=log)
-    deadline = time.monotonic() + 10
-    while time.monotonic() < deadline:
-        if host.poll() is not None:
-            raise RuntimeError("host exited before readiness; inspect host.log")
-        try:
-            assert http(port, fixture) == fixture["response"]
-            return host
-        except (OSError, urllib.error.URLError):
-            time.sleep(0.05)
-    host.kill()
-    host.wait(timeout=5)
-    raise RuntimeError("host readiness timed out")
+    try:
+        deadline = time.monotonic() + 10
+        while time.monotonic() < deadline:
+            if host.poll() is not None:
+                raise RuntimeError("host exited before readiness; inspect host.log")
+            try:
+                assert http(port, fixture) == fixture["response"]
+                return host
+            except (OSError, urllib.error.URLError):
+                time.sleep(0.05)
+        raise RuntimeError("host readiness timed out")
+    except BaseException:
+        # Until return the caller cannot clean this process up, including assertion/interrupt.
+        host.kill()
+        host.wait(timeout=5)
+        raise
 
 
 def main():
+    if not __debug__:
+        raise RuntimeError("PostgreSQL assertions are required; run Python without -O")
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--keep", action="store_true")
     args = parser.parse_args()
@@ -79,18 +94,16 @@ def main():
     cluster.mkdir()
     data = cluster / "pgdata"
     port = free_port()
-    env = dict(os.environ)
-    # Ignore any inherited application/production URL.
-    env.pop("DATABASE_URL", None)
+    env = isolated_environment()
     url = f"postgresql://cantos_test_admin@127.0.0.1:{port}/postgres"
     env["CANTOS_TEST_CLUSTER_URL"] = url
     started = False
     host = None
     try:
-        run(["initdb", "-D", str(data), "--username=cantos_test_admin", "--auth=trust", "--no-locale", "--encoding=UTF8"], output=cluster / "initdb.log")
-        run(["pg_ctl", "-D", str(data), "-l", str(cluster / "postgres.log"), "-o", f"-h 127.0.0.1 -p {port} -k /tmp", "-w", "start"])
+        run(["initdb", "-D", str(data), "--username=cantos_test_admin", "--auth=trust", "--no-locale", "--encoding=UTF8"], env=env, output=cluster / "initdb.log")
+        run(["pg_ctl", "-D", str(data), "-l", str(cluster / "postgres.log"), "-o", f"-h 127.0.0.1 -p {port} -k /tmp", "-w", "start"], env=env)
         started = True
-        run(["psql", url, "-v", "ON_ERROR_STOP=1", "-c", "CREATE ROLE cantos_app LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE; SELECT version();"])
+        run(["psql", "-X", url, "-v", "ON_ERROR_STOP=1", "-c", "CREATE ROLE cantos_app LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE; SELECT version();"], env=env)
         run(["cargo", "test", "-p", "cantos-server", "--test", "revisions_postgres", "--locked", "--offline", "--", "--ignored", "--test-threads=1"], env=env, output=EVIDENCE / "postgres-tests.log")
         fixture = json.loads((EVIDENCE / "restart.json").read_text())
         app_url = f"postgresql://cantos_app@127.0.0.1:{port}/{fixture['database']}"
@@ -103,7 +116,7 @@ def main():
             host.kill()
             host.wait(timeout=5)
             host = None
-            run(["pg_ctl", "-D", str(data), "-l", str(cluster / "postgres.log"), "-m", "fast", "-w", "restart"])
+            run(["pg_ctl", "-D", str(data), "-l", str(cluster / "postgres.log"), "-m", "fast", "-w", "restart"], env=env)
             migration_env = dict(env, DATABASE_URL=f"postgresql://cantos_test_admin@127.0.0.1:{port}/{fixture['database']}")
             run([str(ROOT / "target/debug/cantos-migrate")], env=migration_env)
             host = start_host(env, http_port, log, fixture)
@@ -116,7 +129,7 @@ def main():
             host.kill()
             host.wait(timeout=5)
         if started and not args.keep:
-            run(["pg_ctl", "-D", str(data), "-m", "fast", "-w", "stop"])
+            run(["pg_ctl", "-D", str(data), "-m", "fast", "-w", "stop"], env=env)
         if args.keep and started:
             print(f"Retained test cluster. Stop with: pg_ctl -D {data} -m fast -w stop")
 

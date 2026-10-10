@@ -103,7 +103,9 @@ impl Validator {
             );
         }
         self.text(&mut raw.text, format!("{path}/text"));
-        let mut occupied = Vec::new();
+        // One boolean per normalized UTF-8 byte bounds memory by the dialogue length.
+        // Retaining every repeated match across invalid overrides multiplies that memory.
+        let mut occupied = vec![false; raw.text.len()];
         for (i, pronunciation) in raw.pronunciation_overrides.iter_mut().enumerate() {
             let pp = format!("{path}/pronunciation_overrides/{i}");
             self.text(&mut pronunciation.surface, format!("{pp}/surface"));
@@ -111,22 +113,22 @@ impl Validator {
             if pronunciation.surface.is_empty() {
                 continue;
             }
-            let spans: Vec<_> = raw
-                .text
-                .match_indices(&pronunciation.surface)
-                .map(|(start, text)| (start, start + text.len()))
-                .collect();
-            if spans.is_empty() {
+            let mut found = false;
+            let mut overlap = false;
+            for (start, text) in raw.text.match_indices(&pronunciation.surface) {
+                found = true;
+                let span = &mut occupied[start..start + text.len()];
+                overlap |= span.iter().any(|used| *used);
+                span.fill(true);
+            }
+            if !found {
                 self.issue(
                     format!("{pp}/surface"),
                     ValidationIssue::PronunciationTargetMissing {
                         surface: pronunciation.surface.clone(),
                     },
                 );
-            } else if spans
-                .iter()
-                .any(|(start, end)| occupied.iter().any(|(a, b)| start < b && a < end))
-            {
+            } else if overlap {
                 self.issue(
                     format!("{pp}/surface"),
                     ValidationIssue::PronunciationOverlap {
@@ -134,7 +136,6 @@ impl Validator {
                     },
                 );
             }
-            occupied.extend(spans);
         }
         raw.pronunciation_overrides
             .sort_by(|a, b| a.surface.cmp(&b.surface));

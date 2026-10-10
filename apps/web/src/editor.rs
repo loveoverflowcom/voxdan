@@ -62,6 +62,22 @@ impl Default for Editor {
 }
 
 impl Editor {
+    pub fn select_script(&self, script: String) -> Self {
+        if self.busy || self.pending.is_some() || self.script == script {
+            return self.clone();
+        }
+        let mut next = self.clone();
+        next.script = script;
+        next.base = 0;
+        next.remote = None;
+        next.status = if next.draft.is_empty() {
+            Status::Idle
+        } else {
+            Status::Dirty
+        };
+        next
+    }
+
     pub fn edit(&self, text: String) -> Self {
         let mut next = self.clone();
         next.draft = text;
@@ -249,6 +265,26 @@ mod tests {
         assert_eq!(saved.status, Status::Saved);
         assert_eq!(saved.edit("new text".into()).status, Status::Dirty);
         assert_eq!(saved.edit("new text".into()).base, 1);
+    }
+
+    #[test]
+    fn changing_the_save_target_clears_the_saved_claim_and_preserves_the_draft() {
+        let initial = Editor {
+            actor: "alice".into(),
+            script: "script".into(),
+            draft: "original".into(),
+            ..Editor::default()
+        };
+        let (saving, intent) = initial.start_save("op".into()).unwrap();
+        let saved = saving.saved(&intent, response(1));
+        let selected = saved.select_script("other".into());
+        assert_eq!(selected.script, "other");
+        assert_eq!(selected.draft, "original");
+        assert_eq!(selected.base, 0);
+        assert!(selected.remote.is_none());
+        assert_eq!(selected.status, Status::Dirty);
+        assert_eq!(saved.select_script("script".into()).base, 1);
+        assert_eq!(saving.select_script("other".into()).script, "script");
     }
 
     #[test]

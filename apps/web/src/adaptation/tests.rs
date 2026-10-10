@@ -219,6 +219,7 @@ fn caller_and_legacy_reads_share_pinned_source_review_and_acceptance_only() {
         let state = open(response);
         assert_eq!(state.status, ReviewStatus::RunOpened);
         assert_eq!(state.draft, proposal().script_json);
+        assert_eq!(state.baseline, proposal().script_json);
         assert_eq!(state.source.as_deref(), Some(&source()));
         assert!(state.start_accept("accept".into()).is_none());
         assert!(state
@@ -377,12 +378,219 @@ fn acceptance_retry_reuses_exact_actor_operation_base_and_json_after_later_typin
     assert_eq!(retried.request.script_json, proposal().script_json);
     let accepted = retrying.accepted_result(&retried, accepted_revision());
     assert_eq!(accepted.draft, "Later browser edit");
+    assert!(accepted.draft_changed);
+    assert_eq!(accepted.baseline, retried.request.script_json);
     assert_eq!(accepted.accepted.as_deref(), Some(&accepted_revision()));
     assert!(accepted.pending.is_none());
     assert_eq!(
         response_status(accepted.stored.as_ref().unwrap()),
         AdaptationStatus::Accepted
     );
+}
+
+#[test]
+fn reviewed_local_edits_become_clean_after_their_acceptance_is_acknowledged() {
+    let reviewed = opened()
+        .edit_draft("An: Ngày mai, mình vẫn diễn tiếp nhé.".into())
+        .review_findings(true);
+    assert!(reviewed.draft_changed);
+    let (sending, intent) = reviewed.start_accept("accept-edits".into()).unwrap();
+    let accepted = sending.accepted_result(&intent, accepted_revision());
+    assert_eq!(accepted.draft, reviewed.draft);
+    assert_eq!(accepted.baseline, intent.request.script_json);
+    assert!(!accepted.draft_changed);
+    assert_eq!(accepted.status, ReviewStatus::Accepted);
+    assert!(accepted.pending.is_none());
+    assert_eq!(accepted.accepted.as_deref(), Some(&accepted_revision()));
+    assert_eq!(accepted.select_run(SCRIPT.into()).run_id, SCRIPT);
+}
+
+#[test]
+fn accepted_runs_open_the_accepted_script_instead_of_the_original_proposal() {
+    for mut response in [caller(), legacy()] {
+        match &mut response {
+            AdaptationReviewResponse::Caller { context } => {
+                context.status = AdaptationStatus::Accepted;
+                context.accepted_revision = Some(accepted_revision());
+            }
+            AdaptationReviewResponse::Legacy { run, .. } => {
+                run.status = AdaptationStatus::Accepted;
+                run.accepted_revision = Some(accepted_revision());
+            }
+        }
+        let opened = open(response);
+        assert_eq!(opened.draft, accepted_revision().script_json);
+        assert_eq!(opened.baseline, accepted_revision().script_json);
+        assert!(!opened.draft_changed);
+        assert_eq!(opened.status, ReviewStatus::Accepted);
+        assert_eq!(opened.accepted.as_deref(), Some(&accepted_revision()));
+    }
+}
+
+#[test]
+fn undoing_an_edit_after_acceptance_restores_the_acknowledged_local_snapshot() {
+    let reviewed = opened()
+        .edit_draft("An: Mình sẽ diễn tiếp.".into())
+        .review_findings(true);
+    let (sending, intent) = reviewed.start_accept("accept-edits".into()).unwrap();
+    let accepted = sending.accepted_result(&intent, accepted_revision());
+    let undone = accepted
+        .edit_draft("An: Mình đang đổi ý.".into())
+        .edit_draft(intent.request.script_json.clone());
+    assert_eq!(undone.draft, intent.request.script_json);
+    assert_eq!(undone.baseline, intent.request.script_json);
+    assert!(!undone.draft_changed);
+    assert!(!undone.reviewed_findings);
+    assert_eq!(undone.accepted, accepted.accepted);
+}
+
+#[test]
+fn returning_to_the_original_proposal_during_acceptance_remains_an_unsaved_edit() {
+    let reviewed = opened()
+        .edit_draft("An: Mình đã sửa lời này.".into())
+        .review_findings(true);
+    let (sending, intent) = reviewed.start_accept("accept-edits".into()).unwrap();
+    let edited = sending.edit_draft(proposal().script_json);
+    let accepted = edited.accepted_result(&intent, accepted_revision());
+    assert_eq!(accepted.draft, proposal().script_json);
+    assert_eq!(accepted.baseline, "An: Mình đã sửa lời này.");
+    assert!(accepted.draft_changed);
+    assert!(!accepted.reviewed_findings);
+    assert_eq!(accepted.status, ReviewStatus::Accepted);
+    assert_eq!(accepted.accepted.as_deref(), Some(&accepted_revision()));
+    assert_eq!(accepted.select_run(SCRIPT.into()).run_id, RUN);
+    assert!(!accepted.can_accept());
+}
+
+#[test]
+fn refreshing_after_acceptance_loads_the_canonical_export_only_when_clean() {
+    let (sending, intent) = opened()
+        .edit_draft("An: Lời đã được kiểm duyệt.".into())
+        .review_findings(true)
+        .start_accept("accept-edits".into())
+        .unwrap();
+    let accepted = sending.accepted_result(&intent, accepted_revision());
+    let accepted_response = accepted.stored.as_deref().unwrap().clone();
+    let clean_read = accepted.start_read().unwrap();
+    let clean = clean_read.loaded(clean_read.ticket, "alice", accepted_response.clone());
+    assert_eq!(clean.draft, accepted_revision().script_json);
+    assert_eq!(clean.baseline, accepted_revision().script_json);
+    assert!(!clean.draft_changed);
+
+    let dirty_read = accepted
+        .edit_draft("An: Thay đổi tiếp sau khi chấp nhận.".into())
+        .start_read()
+        .unwrap();
+    let dirty = dirty_read.loaded(dirty_read.ticket, "alice", accepted_response);
+    assert_eq!(dirty.draft, "An: Thay đổi tiếp sau khi chấp nhận.");
+    assert_eq!(dirty.baseline, intent.request.script_json);
+    assert!(dirty.draft_changed);
+    assert_eq!(dirty.accepted, accepted.accepted);
+}
+
+#[test]
+fn a_proposal_read_preserves_clean_reducer_rows_until_native_text_is_committed() {
+    let original =
+        include_str!("../../../../contracts/fixtures/script-ir/0.1.0/accept/two-scenes.json");
+    let mut initial_response = caller();
+    let AdaptationReviewResponse::Caller { context } = &mut initial_response else {
+        unreachable!()
+    };
+    context.proposal.as_mut().unwrap().script_json = original.into();
+    let opened = open(initial_response).review_findings(true);
+    assert!(!opened.draft_changed);
+    for remove_active_row in [false, true] {
+        let mut document: serde_json::Value = serde_json::from_str(original).unwrap();
+        let dialogues = document["episode"]["acts"][0]["scenes"][0]["dialogues"]
+            .as_array_mut()
+            .unwrap();
+        if remove_active_row {
+            dialogues.remove(1);
+        } else {
+            dialogues[1]["text"] = "An: Mình sẽ diễn tiếp ở đây.".into();
+        }
+        let remote_json = serde_json::to_string(&document).unwrap();
+        let mut updated_response = caller();
+        let AdaptationReviewResponse::Caller { context } = &mut updated_response else {
+            unreachable!()
+        };
+        context.proposal.as_mut().unwrap().script_json = remote_json.clone();
+        let reading = opened.start_read().unwrap();
+        let preserved =
+            reading.loaded_with_buffer(reading.ticket, "alice", updated_response.clone(), true);
+        assert_eq!(preserved.draft, original);
+        assert_eq!(preserved.baseline, original);
+        assert_eq!(preserved.draft_actor, "alice");
+        assert_eq!(preserved.status, ReviewStatus::DraftChanged);
+        assert!(!preserved.draft_changed);
+        assert!(!preserved.reviewed_findings);
+        assert!(!preserved.busy);
+        assert_eq!(
+            response_proposal(preserved.stored.as_ref().unwrap())
+                .unwrap()
+                .script_json,
+            remote_json
+        );
+        assert_eq!(preserved.source, opened.source);
+        assert_eq!(preserved.input_revision, opened.input_revision);
+        // Native Escape clears the shell's activity without committing: no sticky byte-dirty flag.
+        assert_eq!(preserved.select_run(SCRIPT.into()).run_id, SCRIPT);
+        let committed = preserved.edit_draft("An: Chữ đang nhập trong ô vẫn còn.".into());
+        assert!(committed.draft_changed);
+        assert_eq!(committed.baseline, original);
+        let replaced = reading.loaded_with_buffer(reading.ticket, "alice", updated_response, false);
+        assert_eq!(replaced.draft, remote_json);
+        assert_eq!(replaced.baseline, remote_json);
+        assert!(!replaced.draft_changed);
+    }
+    let dirty = opened.edit_draft("An: Thay đổi đã được commit.".into());
+    let reading = dirty.start_read().unwrap();
+    let preserved = reading.loaded_with_buffer(reading.ticket, "alice", caller(), true);
+    assert_eq!(preserved.draft, dirty.draft);
+    assert_eq!(preserved.baseline, original);
+    assert!(preserved.draft_changed);
+    assert!(!preserved.reviewed_findings);
+}
+
+#[test]
+fn reopening_an_accepted_receipt_preserves_native_text_without_inventing_byte_changes() {
+    let (sending, intent) = opened()
+        .review_findings(true)
+        .start_accept("accept-edits".into())
+        .unwrap();
+    let accepted = sending.accepted_result(&intent, accepted_revision());
+    let reading = accepted.start_accepted_read().unwrap();
+    let preserved =
+        reading.accepted_loaded_with_buffer(reading.ticket, "alice", accepted_revision(), true);
+    assert_eq!(preserved.draft, accepted.draft);
+    assert_eq!(preserved.baseline, accepted.baseline);
+    assert_eq!(preserved.draft_actor, "alice");
+    assert!(!preserved.draft_changed);
+    assert!(!preserved.reviewed_findings);
+    assert_eq!(preserved.status, ReviewStatus::DraftChanged);
+    assert_eq!(preserved.accepted, accepted.accepted);
+    assert_eq!(preserved.stored, accepted.stored);
+    assert!(!preserved.busy);
+    assert_eq!(preserved.select_run(SCRIPT.into()).run_id, SCRIPT);
+    let completed = preserved.edit_draft(accepted.baseline.clone());
+    assert!(!completed.draft_changed);
+    let clean =
+        reading.accepted_loaded_with_buffer(reading.ticket, "alice", accepted_revision(), false);
+    assert_eq!(clean.status, ReviewStatus::AcceptedOpened);
+    assert!(!clean.draft_changed);
+    let dirty_read = accepted
+        .edit_draft("An: Thay đổi đã được commit.".into())
+        .start_accepted_read()
+        .unwrap();
+    let dirty = dirty_read.accepted_loaded_with_buffer(
+        dirty_read.ticket,
+        "alice",
+        accepted_revision(),
+        true,
+    );
+    assert_eq!(dirty.draft, "An: Thay đổi đã được commit.");
+    assert_eq!(dirty.baseline, accepted.baseline);
+    assert!(dirty.draft_changed);
 }
 
 #[test]

@@ -124,3 +124,16 @@ for existing save/read semantics but returns 404 here until explicitly preserved
 Source text is never embedded into a publication manifest or public route. Rights assertions,
 generation and selected asset references still require their existing registry ownership checks
 and downstream eligibility gates.
+
+## Nonpersistent validation preview
+
+`POST /api/v1/validation` accepts the closed `ValidateScriptRequest {script_json}` and returns
+`ScriptValidationResponse {issues: []}` for valid Script IR. Invalid IR returns the existing
+`422 invalid_script` error with the actual reader's ordered paths/rule codes. Authentication,
+exact Origin, no-store/nosniff, the 8 MiB request envelope, 2 MiB Script IR bound and HTTP
+deadline are shared with the revision routes. No script ID is accepted or looked up.
+
+The preview writes no records, resolves no registry evidence, proves no target permission and
+moves no revision head. Any authenticated actor can validate text they supply. Acceptance/save
+remain the authority for current access, provenance evidence, optimistic concurrency and immutable
+storage. Existing v1 DTOs, Script IR 0.1.0, c1/e1, old fixtures and migrations remain unchanged.

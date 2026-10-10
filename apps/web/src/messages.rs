@@ -3,6 +3,8 @@ use crate::editor::Status;
 
 mod adaptation;
 pub use adaptation::*;
+pub mod authoring;
+pub mod workspace;
 
 #[derive(Clone, Copy)]
 pub struct Copy {
@@ -41,7 +43,7 @@ pub fn copy(english: bool) -> Copy {
         save:"Save a new immutable revision", retry:"Retry the submitted snapshot",
         base:"Base revision", preview:"Stored export · read only", rebase:"Keep my text and use this head as base",
         help:"Paste a complete 0.1.0 export. Reading keeps any existing draft. Compare the stored export before choosing a new base. A save does not approve production or publication.",
-        busy:"Request in progress; editing remains available.", pending:"Reconcile the submitted snapshot with Retry before reading or making a new save. Sign in as the original submitting actor.",
+        busy:"Request in progress; the submitted text is retained.", pending:"Reconcile the submitted snapshot with Retry before reading or making a new save. Sign in as the original submitting actor.",
         actor:"Signed-in actor", validation:"Validation findings", sign_in_first:"Sign in before saving.",
     }
     } else {
@@ -53,7 +55,7 @@ pub fn copy(english: bool) -> Copy {
         save:"Lưu bản sửa đổi bất biến mới", retry:"Thử lại snapshot đã gửi",
         base:"Bản sửa đổi gốc", preview:"Export đã lưu · chỉ đọc", rebase:"Giữ văn bản và dùng head này làm gốc",
         help:"Dán export 0.1.0 đầy đủ. Khi đọc, bản nháp hiện có được giữ nguyên. So sánh export đã lưu trước khi chọn gốc mới. Lưu kịch bản chưa phải duyệt sản xuất hay xuất bản.",
-        busy:"Đang xử lý; bạn vẫn có thể sửa văn bản.", pending:"Dùng Thử lại để xác định kết quả snapshot đã gửi trước khi đọc hoặc lưu lần mới. Đăng nhập đúng actor đã gửi snapshot.",
+        busy:"Đang xử lý; văn bản đã gửi được giữ nguyên.", pending:"Dùng Thử lại để xác định kết quả snapshot đã gửi trước khi đọc hoặc lưu lần mới. Đăng nhập đúng actor đã gửi snapshot.",
         actor:"Actor đã đăng nhập", validation:"Các lỗi cần sửa", sign_in_first:"Đăng nhập trước khi lưu.",
     }
     }

@@ -26,6 +26,10 @@ fn studio_wire_fixtures_match_schema_and_independent_complete_export() {
             "Review",
             include_str!("../../../contracts/fixtures/studio/v1/review.json"),
         ),
+        (
+            "ScriptValidation",
+            include_str!("../../../contracts/fixtures/studio/v1/validation.json"),
+        ),
     ] {
         let schema = json!({"$ref":format!("#/$defs/{name}"),"$defs":schema["$defs"]});
         jsonschema::validator_for(&schema)
@@ -49,4 +53,24 @@ fn studio_wire_fixtures_match_schema_and_independent_complete_export() {
         format!("sir-e1:sha256:{:x}", hash.finalize()),
         revision.export_digest
     );
+}
+
+#[test]
+fn draft_validation_request_schema_refuses_extra_authority_fields_and_invalid_types() {
+    let document: Value = serde_json::from_str(include_str!(
+        "../../../contracts/schema/studio/v1.schema.json"
+    ))
+    .unwrap();
+    let schema = json!({"$ref":"#/$defs/ValidateScript","$defs":document["$defs"]});
+    let validator = jsonschema::validator_for(&schema).unwrap();
+    assert!(validator.is_valid(&json!({"script_json":"{}"})));
+    for invalid in [
+        json!({"script_json":"{}","actor_id":"owner"}),
+        json!({"script_json":"{}","reviewed_findings":true}),
+        json!({"script_json":{}}),
+        json!({"script_json":""}),
+        json!({}),
+    ] {
+        assert!(!validator.is_valid(&invalid), "{invalid}");
+    }
 }

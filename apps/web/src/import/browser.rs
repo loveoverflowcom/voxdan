@@ -262,7 +262,7 @@ fn SourcePreview(record: ImportResponse, english: RwSignal<bool>) -> impl IntoVi
 pub(crate) fn ExtractionPreview(
     extraction: Extraction,
     english: RwSignal<bool>,
-    #[prop(default = "import")] namespace: &'static str,
+    #[prop(into, default = "import".to_owned())] namespace: String,
 ) -> impl IntoView {
     let total = extraction.blocks.len();
     let page = RwSignal::new(0usize);

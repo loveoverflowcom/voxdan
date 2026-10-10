@@ -43,6 +43,34 @@ class PostgresRunnerTests(unittest.TestCase):
         host.kill.assert_called_once_with()
         host.wait.assert_called_once_with(timeout=5)
 
+    def test_editor_readiness_uses_the_latest_saved_revision_without_replacing_the_fixture(self):
+        fixture = {"script": "editor-script", "token": "synthetic-session",
+                   "first": {"revision": 1}, "second": {"revision": 2},
+                   "save_request": {"expected_revision": 1}}
+        original = json.loads(json.dumps(fixture))
+        probe = runner.editor_probe(fixture)
+        self.assertEqual(probe["script"], "editor-script")
+        self.assertEqual(probe["response"], {"revision": 2})
+        self.assertEqual(probe["request"], {"expected_revision": 1})
+        self.assertEqual(fixture, original)
+
+    def test_editor_row_oracle_uses_declared_local_database_and_fails_closed_on_psql_failure(self):
+        local_url = "postgresql://cantos_app@127.0.0.1:12345/cantos_test_studio_editor"
+        expected = {"revisions": 2, "acceptances": 1, "attempts": 0}
+        completed = subprocess.CompletedProcess([], 0, json.dumps(expected), "")
+        with patch.object(runner.subprocess, "run", return_value=completed) as execute:
+            self.assertEqual(runner.editor_snapshot({"PATH": "/synthetic"}, local_url), expected)
+        command = execute.call_args.args[0]
+        self.assertIn(local_url, command)
+        self.assertIn("ON_ERROR_STOP=1", command)
+        self.assertIn("count(*) FROM script_reviews", command[-1])
+        self.assertIn("count(*) FROM script_revisions", command[-1])
+        self.assertEqual(execute.call_args.kwargs["timeout"], 10)
+        failed = subprocess.CompletedProcess([], 1, "", "database unavailable")
+        with patch.object(runner.subprocess, "run", return_value=failed), \
+                self.assertRaisesRegex(RuntimeError, "editor row-count oracle failed"):
+            runner.editor_snapshot({}, local_url)
+
     def test_tool_session_is_only_in_child_environment_and_receipt_stays_structured(self):
         token = "a" * 64
         environment = {"PATH": "/synthetic/bin"}

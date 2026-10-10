@@ -2,9 +2,11 @@
 use super::{response_proposal, response_status, AdaptationIntent, AdaptationReview};
 use crate::{
     api::{StudioContext, StudioHttp},
+    authoring_view::StructuredEditor,
+    editor::ValidationPreview,
     import::ExtractionPreview,
     messages,
-    view::operation_id,
+    view::{confirm_discard, operation_id, ValidationControls},
 };
 use cantos_api::{
     AdaptationContextResponse, AdaptationCoverageDisposition, AdaptationFindingCode,
@@ -29,7 +31,7 @@ fn dispatch(state: RwSignal<AdaptationReview>, api: StudioHttp, intent: Adaptati
     });
 }
 
-fn read_run(state: RwSignal<AdaptationReview>, api: StudioHttp) {
+fn read_run(state: RwSignal<AdaptationReview>, api: StudioHttp, activity: RwSignal<bool>) {
     let Some(reading) = state.get_untracked().start_read() else {
         return;
     };
@@ -41,7 +43,7 @@ fn read_run(state: RwSignal<AdaptationReview>, api: StudioHttp) {
         let result = api.read_adaptation(&id).await;
         let _ = state.try_update(|review| {
             *review = match result {
-                Ok(run) => review.loaded(ticket, &actor, run),
+                Ok(run) => review.loaded_with_buffer(ticket, &actor, run, activity.get_untracked()),
                 Err(error) => review.read_failed(ticket, &actor, &error),
             };
         });
@@ -49,9 +51,15 @@ fn read_run(state: RwSignal<AdaptationReview>, api: StudioHttp) {
 }
 
 #[component]
-pub fn ScriptAdaptation(actor: Signal<String>, english: RwSignal<bool>) -> impl IntoView {
+pub fn ScriptAdaptation(
+    actor: Signal<String>,
+    english: RwSignal<bool>,
+    dirty: RwSignal<bool>,
+    activity: RwSignal<bool>,
+) -> impl IntoView {
     let state = RwSignal::new(AdaptationReview::default());
-    let composing = RwSignal::new(false);
+    let preview = RwSignal::new(ValidationPreview::default());
+    let issues = RwSignal::new(Vec::new());
     let api = expect_context::<StudioContext>().api;
     let copy = move || messages::adaptation_copy(english.get());
     let signed_actor = Memo::new(move |_| actor.get());
@@ -63,8 +71,34 @@ pub fn ScriptAdaptation(actor: Signal<String>, english: RwSignal<bool>) -> impl 
     let stored = Memo::new(move |_| state.with(|review| review.stored.clone()));
     let input_revision = Memo::new(move |_| state.with(|review| review.input_revision.clone()));
     let accepted = Memo::new(move |_| state.with(|review| review.accepted.clone()));
-    let blocked = move || state.with(AdaptationReview::blocked);
-    let accept_blocked = move || state.with(|review| !review.can_accept());
+    let blocked = move || state.with(AdaptationReview::blocked) || activity.get();
+    let draft = Signal::derive(move || {
+        state.with(|review| {
+            if review.draft_actor == review.actor {
+                review.draft.clone()
+            } else {
+                String::new()
+            }
+        })
+    });
+    let accept_blocked = move || {
+        activity.get()
+            || state.with(|review| !review.can_accept())
+            || !preview.with(|p| p.is_current(&actor.get(), &draft.get()))
+    };
+    Effect::new(move |_| {
+        dirty.set(
+            activity.get()
+                || state
+                    .with(|review| review.draft_changed || review.pending.is_some() || review.busy),
+        );
+        if activity.get() {
+            state.update(|review| *review = review.review_findings(false));
+        }
+    });
+    Effect::new(move |_| {
+        issues.set(state.with(|review| review.issues.clone()));
+    });
 
     view! {
         <section class="script-adaptation" aria-labelledby="adaptation-title">
@@ -73,62 +107,60 @@ pub fn ScriptAdaptation(actor: Signal<String>, english: RwSignal<bool>) -> impl 
             <p id="adaptation-reason" class="help">{move || state.with(|review| if review.pending.is_some() { copy().pending } else { "" })}</p>
             <Show when=move || state.with(|review| review.pending.is_some())>
                 <p class="identity">{move || copy().operation}<output>{move || state.with(|review| review.pending.as_ref().map(|intent| intent.operation_id().to_owned()).unwrap_or_default())}</output></p>
-                <button type="button" aria-describedby="adaptation-reason" aria-disabled=move || state.with(|review| !review.can_retry()) on:click=move |_| {
+                <button type="button" aria-describedby="adaptation-reason" aria-disabled=move || activity.get() || state.with(|review| !review.can_retry()) on:click=move |_| {
+                    if activity.get_untracked() { return; }
                     if let Some((sending, intent)) = state.get_untracked().retry() { state.set(sending); dispatch(state, api, intent); }
                 }>{move || copy().retry}</button>
             </Show>
-            <form class="adaptation-reopen" on:submit=move |event| { event.prevent_default(); read_run(state, api); }>
+            <form class="adaptation-reopen" on:submit=move |event| { event.prevent_default(); if !activity.get_untracked() { read_run(state, api, activity); } }>
                 <label for="adaptation-run-id">{move || copy().run_id}</label>
                 <div class="toolbar">
                     <input id="adaptation-run-id" maxlength="36" disabled=move || blocked() || state.with(|review| review.draft_changed) autocomplete="off" spellcheck="false"
                         prop:value=move || state.with(|review| review.run_id.clone())
                         on:input=move |event| state.update(|review| *review = review.select_run(event_target_value(&event))) />
-                    <button type="submit" aria-disabled=move || state.with(|review| !review.can_read()) aria-describedby="adaptation-new-help">{move || copy().open}</button>
+                    <button type="submit" aria-disabled=move || activity.get() || state.with(|review| !review.can_read()) aria-describedby="adaptation-new-help">{move || copy().open}</button>
                 </div>
             </form>
             <div class="toolbar">
-                <button type="button" aria-disabled=move || state.with(|review| !review.can_read()) on:click=move |_| read_run(state, api)>{move || copy().refresh}</button>
-                <button type="button" aria-disabled=blocked aria-describedby="adaptation-new-help" on:click=move |_| state.update(|review| *review = review.new_run())>{move || copy().new_run}</button>
+                <button type="button" aria-disabled=move || activity.get() || state.with(|review| !review.can_read()) on:click=move |_| { if !activity.get_untracked() { read_run(state, api, activity); } }>{move || copy().refresh}</button>
+                <button type="button" aria-disabled=blocked aria-describedby="adaptation-new-help" on:click=move |_| {
+                    if blocked() || (state.with_untracked(|review| review.draft_changed) && !confirm_discard(english.get_untracked())) { return; }
+                    state.update(|review| *review = review.new_run()); preview.set(ValidationPreview::default()); issues.set(vec![]);
+                }>{move || copy().new_run}</button>
             </div>
             <p id="adaptation-new-help" class="help">{move || copy().new_help}</p>
             <p id="adaptation-status" class="status" role="status" aria-live="polite">{move || state.with(|review| messages::adaptation_status(&review.status, english.get()))}</p>
             <Show when=move || state.with(|review| !review.issues.is_empty())>
                 <ul class="import-warnings">{move || state.with(|review| review.issues.clone()).into_iter().map(|issue| view! { <li><code>{issue.path}</code>" · "<code>{issue.rule}</code></li> }).collect_view()}</ul>
             </Show>
-            {move || stored.get().map(|response| view! { <ReviewDetails response=response english=english /> })}
-            <div class="adaptation-comparison">
-                <section aria-labelledby="adaptation-source-title">
-                    <h3 id="adaptation-source-title">{move || copy().original}</h3>
-                    <Show when=move || source.get().is_none()><p class="help">{move || copy().source_missing}</p></Show>
-                    {move || source.get().map(|source| view! { <SourceComparison source=source english=english /> })}
-                </section>
-                <section aria-labelledby="adaptation-proposal-title">
-                    <h3 id="adaptation-proposal-title">{move || copy().proposal}</h3>
-                    <p id="adaptation-proposal-help" class="help">{move || copy().proposal_help}</p>
-                    <Show when=move || stored.get().is_some_and(|response| response_proposal(&response).is_some())>
-                        <label for="adaptation-proposal-json">{move || copy().edit}</label>
-                        <textarea id="adaptation-proposal-json" lang="vi-VN" spellcheck="false" aria-describedby="adaptation-proposal-help adaptation-accept-reason"
-                            readonly=move || stored.get().is_none_or(|response| !matches!(response_status(&response), AdaptationStatus::Succeeded | AdaptationStatus::Accepted)) || state.with(|review| review.draft_actor != review.actor)
-                            prop:value=move || state.with(|review| if review.draft_actor == review.actor { review.draft.clone() } else { String::new() })
-                            on:compositionstart=move |_| { composing.set(true); state.update(|review| *review = review.begin_composition()); }
-                            on:compositionend=move |event| { composing.set(false); state.update(|review| *review = review.edit_draft(event_target_value(&event))); }
-                            on:input=move |event| if !composing.get_untracked() { state.update(|review| *review = review.edit_draft(event_target_value(&event))); } />
-                        <label class="adaptation-confirm" for="adaptation-reviewed">
-                            <input id="adaptation-reviewed" type="checkbox" disabled=blocked prop:checked=move || state.with(|review| review.reviewed_findings)
-                                on:change=move |event| state.update(|review| *review = review.review_findings(event_target_checked(&event))) />
-                            <span>{move || copy().review}</span>
-                        </label>
-                        <button class="primary" type="button" aria-disabled=accept_blocked aria-describedby="adaptation-accept-reason adaptation-accept-help" on:click=move |_| {
-                            if accept_blocked() { return; }
-                            match operation_id() {
-                                Ok(operation) => if let Some((sending, intent)) = state.get_untracked().start_accept(operation) { state.set(sending); dispatch(state, api, intent); },
-                                Err(error) => state.update(|review| *review = review.failed(&error)),
-                            }
-                        }>{move || copy().accept}</button>
-                    </Show>
-                    <p id="adaptation-accept-reason" class="help">{move || if accept_blocked() { copy().accept_required } else { "" }}</p>
-                    <p id="adaptation-accept-help" class="help">{move || copy().accept_help}</p>
-                </section>
+            <div hidden=move || stored.get().is_none_or(|response| response_proposal(&response).is_none())>
+                <StructuredEditor draft=draft english=english activity=activity namespace="proposal"
+                    readonly=Signal::derive(move || stored.get().is_none_or(|response| !matches!(response_status(&response), AdaptationStatus::Succeeded | AdaptationStatus::Accepted)) || state.with(|review| review.busy || review.draft_actor != review.actor))
+                    baseline=Signal::derive(move || stored.get().and_then(|response| response_proposal(&response).map(|proposal| proposal.script_json.clone())).unwrap_or_default())
+                    issues=Signal::derive(move || issues.get())
+                    on_change=Callback::new(move |text| { state.update(|review| *review = review.edit_draft(text)); issues.set(vec![]); })>
+                    <details open><summary>{move || copy().original}</summary>
+                        {move || source.get().map(|source| view! { <SourceComparison source=source english=english /> })}
+                    </details>
+                    <details><summary>{move || copy().provenance}</summary>
+                        {move || stored.get().map(|response| view! { <ReviewDetails response=response english=english /> })}
+                    </details>
+                </StructuredEditor>
+                <ValidationControls preview=preview issues=issues draft=draft actor=actor english=english disabled=Signal::derive(move || blocked() || activity.get()) />
+                <label class="adaptation-confirm" for="adaptation-reviewed">
+                    <input id="adaptation-reviewed" type="checkbox" disabled=move || blocked() || activity.get() || !preview.with(|p| p.is_current(&actor.get(), &draft.get())) prop:checked=move || state.with(|review| review.reviewed_findings)
+                        on:change=move |event| state.update(|review| *review = review.review_findings(event_target_checked(&event))) />
+                    <span>{move || copy().review}</span>
+                </label>
+                <button class="primary" type="button" aria-disabled=accept_blocked aria-describedby="adaptation-accept-reason adaptation-accept-help" on:click=move |_| {
+                    if accept_blocked() { return; }
+                    match operation_id() {
+                        Ok(operation) => if let Some((sending, intent)) = state.get_untracked().start_accept(operation) { state.set(sending); dispatch(state, api, intent); },
+                        Err(error) => state.update(|review| *review = review.failed(&error)),
+                    }
+                }>{move || copy().accept}</button>
+                <p id="adaptation-accept-reason" class="help">{move || if accept_blocked() { copy().accept_required } else { "" }}</p>
+                <p id="adaptation-accept-help" class="help">{move || copy().accept_help}</p>
             </div>
             {move || input_revision.get().map(|revision| view! {
                 <details><summary>{move || messages::adaptation_input_revision(english.get())}</summary>
@@ -143,8 +175,9 @@ pub fn ScriptAdaptation(actor: Signal<String>, english: RwSignal<bool>) -> impl 
                         <h3 id="adaptation-accepted-title">{move || copy().accepted}</h3>
                         <p class="identity">{revision.with_value(|revision| format!("{} / {} · {} · {}", revision.script_id, revision.revision, revision.accepted_by, revision.accepted_at))}</p>
                         <p class="identity"><code>{revision.with_value(|revision| revision.export_digest.clone())}</code></p>
-                        <pre tabindex="0" lang="vi-VN">{revision.with_value(|revision| revision.script_json.clone())}</pre>
+                        <details><summary>{move || crate::messages::workspace::text(crate::messages::workspace::Key::Stored, english.get())}</summary><pre tabindex="0" lang="vi-VN">{revision.with_value(|revision| revision.script_json.clone())}</pre></details>
                         <button type="button" aria-disabled=blocked on:click=move |_| {
+                            if activity.get_untracked() { return; }
                             let Some(reading) = state.get_untracked().start_accepted_read() else { return; };
                             let actor = reading.actor.clone(); let ticket = reading.ticket;
                             let (script_id, version) = revision.with_value(|revision| (revision.script_id.clone(), revision.revision));
@@ -152,7 +185,7 @@ pub fn ScriptAdaptation(actor: Signal<String>, english: RwSignal<bool>) -> impl 
                             spawn_local(async move {
                                 let result = api.read_revision(&script_id, version).await;
                                 let _ = state.try_update(|review| *review = match result {
-                                    Ok(revision) => review.accepted_loaded(ticket, &actor, revision),
+                                    Ok(revision) => review.accepted_loaded_with_buffer(ticket, &actor, revision, activity.get_untracked()),
                                     Err(error) => review.read_failed(ticket, &actor, &error),
                                 });
                             });

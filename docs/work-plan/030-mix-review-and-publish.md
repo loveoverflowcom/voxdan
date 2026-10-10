@@ -52,3 +52,8 @@ Defer elaborate effects editing, automatic music composition, automated perceptu
 ## GitHub execution
 
 [#9](https://github.com/loveoverflowcom/cantos/issues/9), [#10](https://github.com/loveoverflowcom/cantos/issues/10), [#11](https://github.com/loveoverflowcom/cantos/issues/11). See the [issue/dependency map](project-planning.md) and [Kanban](https://github.com/users/loveoverflowcom/projects/6/views/1) for the recommended sequence and live execution state.
+
+Groundwork for #9: [#21](https://github.com/loveoverflowcom/cantos/issues/21) adds a standalone
+WAV PCM inspection CLI ([evidence](../evidence/wav-pcm-inspection.md)) that reports structure,
+checksums and sample peak. It chooses no audio profile or target, records no QC result and does
+not satisfy any acceptance criterion above; #9 still decides whether to adopt it.

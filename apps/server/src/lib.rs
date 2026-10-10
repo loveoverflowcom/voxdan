@@ -8,3 +8,4 @@ pub mod operator;
 pub mod postgres;
 pub mod revisions;
 pub mod script_ir;
+pub mod wav_inspection;

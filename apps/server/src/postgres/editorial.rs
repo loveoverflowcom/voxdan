@@ -143,10 +143,21 @@ impl Store {
         let tx = client.transaction().await?;
         let actor = authenticate(&tx, token).await?;
         let (owner, _) = authorize(&tx, &actor, &script, Action::Read, false).await?;
-        let row = tx.query_opt("SELECT id,reference,original_text,sha256,to_char(recorded_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"') AS recorded_at FROM source_records s WHERE owner_id=$1 AND id=$2 AND EXISTS(SELECT 1 FROM revision_evidence e WHERE e.script_id=$3 AND e.owner_id=s.owner_id AND e.kind='source' AND e.evidence_id=s.id)", &[&owner,&id,&script]).await?.ok_or(StoreError::NotFound)?;
-        let original_text: String = row.get("original_text");
+        let row = tx.query_opt("SELECT id,reference,original_text,original_bytes,sha256,to_char(recorded_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"') AS recorded_at FROM source_records s WHERE owner_id=$1 AND id=$2 AND EXISTS(SELECT 1 FROM revision_evidence e WHERE e.script_id=$3 AND e.owner_id=s.owner_id AND e.kind='source' AND e.evidence_id=s.id)", &[&owner,&id,&script]).await?.ok_or(StoreError::NotFound)?;
+        // The legacy source contract is text-only; binary intake uses /imports/{id}/original.
+        let original_text: String = row
+            .get::<_, Option<String>>("original_text")
+            .ok_or(StoreError::InvalidRequest)?;
+        let bytes: Option<Vec<u8>> = row.get("original_bytes");
         let sha256: String = row.get("sha256");
-        if format!("{:x}", Sha256::digest(original_text.as_bytes())) != sha256 {
+        if bytes
+            .as_ref()
+            .is_some_and(|bytes| bytes.as_slice() != original_text.as_bytes())
+            || format!(
+                "{:x}",
+                Sha256::digest(bytes.as_deref().unwrap_or(original_text.as_bytes()))
+            ) != sha256
+        {
             return Err(StoreError::CorruptRevision);
         }
         let response = SourceResponse {

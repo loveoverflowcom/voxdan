@@ -5,6 +5,8 @@ Never reads DATABASE_URL or connects to an existing database. --keep retains thi
 test cluster for local Studio inspection; its explicit stop command is printed.
 """
 import argparse
+import hashlib
+import io
 import json
 import os
 from pathlib import Path
@@ -14,6 +16,8 @@ import subprocess
 import time
 import urllib.error
 import urllib.request
+import uuid
+import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 EVIDENCE = ROOT / "target" / "revision-evidence"
@@ -55,6 +59,38 @@ def http(port, fixture, method="GET"):
     with urllib.request.urlopen(request, timeout=3) as response:
         assert response.headers["Cache-Control"] == "no-store"
         return json.load(response)
+
+
+def import_http(port, token, source=None, request=None, original=False):
+    path = "/imports" if source is None else f"/imports/{source}"
+    if original:
+        path += "/original"
+    headers = {"Cookie": f"cantos_session={token}", "Origin": f"http://127.0.0.1:{port}",
+               "Content-Type": "application/json"}
+    call = urllib.request.Request(f"http://127.0.0.1:{port}/api/v1{path}",
+                                  data=None if request is None else json.dumps(request).encode(),
+                                  headers=headers, method="GET" if request is None else "POST")
+    with urllib.request.urlopen(call, timeout=5) as response:
+        assert response.headers["Cache-Control"] == "no-store"
+        assert response.headers["X-Content-Type-Options"] == "nosniff"
+        return response.read() if original else json.load(response)
+
+
+def import_restart_fixtures():
+    """Original synthetic bytes; DOCX expected text is independent of the Rust extractor."""
+    docx = io.BytesIO()
+    with zipfile.ZipFile(docx, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr("[Content_Types].xml", '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>')
+        archive.writestr("word/document.xml", '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>Mai: Ngày mai, mình có diễn tiếp không?</w:t></w:r></w:p><w:p><w:r><w:t>Nam: Có, ở Vọng Đài.</w:t></w:r></w:p></w:body></w:document>')
+    fixtures = []
+    for name, fmt, raw in [("vietnamese.txt", "txt", b"\xef\xbb\xbf" + "Mai: Nga\u0300y mai, mình có diễn tiếp không?\r\n\r\n— Chưa rõ người nói.\r\n".encode()),
+                           ("vietnamese.docx", "docx", docx.getvalue()),
+                           ("invalid.txt", "txt", b"\xff\x00")]:
+        fixtures.append({"metadata": {"operation_id": str(uuid.uuid4()), "file_name": name,
+                                      "format": fmt, "reference": "original synthetic recovery fixture",
+                                      "rights_holder": None, "permission_evidence": None, "usage_scope": None},
+                         "original_bytes": list(raw)})
+    return fixtures
 
 
 def start_host(env, port, log, fixture):
@@ -105,13 +141,27 @@ def main():
         started = True
         run(["psql", "-X", url, "-v", "ON_ERROR_STOP=1", "-c", "CREATE ROLE cantos_app LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE; SELECT version();"], env=env)
         run(["cargo", "test", "-p", "cantos-server", "--test", "revisions_postgres", "--locked", "--offline", "--", "--ignored", "--test-threads=1"], env=env, output=EVIDENCE / "postgres-tests.log")
+        run(["cargo", "test", "-p", "cantos-server", "--test", "imports_postgres", "--locked", "--offline", "--", "--ignored", "--test-threads=1"], env=env, output=EVIDENCE / "import-postgres-tests.log")
         fixture = json.loads((EVIDENCE / "restart.json").read_text())
+        migration_url = f"postgresql://cantos_test_admin@127.0.0.1:{port}/{fixture['database']}"
+        run(["psql", "-X", migration_url, "-v", "ON_ERROR_STOP=1", "-c",
+             "GRANT INSERT ON source_records,script_evidence TO cantos_app;"], env=env)
         app_url = f"postgresql://cantos_app@127.0.0.1:{port}/{fixture['database']}"
         env["DATABASE_URL"] = app_url
         with (EVIDENCE / "host.log").open("w") as log:
             http_port = free_port()
             host = start_host(env, http_port, log, fixture)
             assert http(http_port, fixture, "POST") == fixture["response"]
+            imports = import_restart_fixtures()
+            receipts = [import_http(http_port, fixture["token"], request=item) for item in imports]
+            for index, (item, receipt) in enumerate(zip(imports, receipts)):
+                raw = bytes(item["original_bytes"])
+                assert receipt["sha256"] == hashlib.sha256(raw).hexdigest()
+                assert receipt["outcome"]["status"] == ("failed" if index == 2 else "parsed")
+                assert import_http(http_port, fixture["token"], source=receipt["id"], original=True) == raw
+            assert receipts[0]["original_text"].encode() == bytes(imports[0]["original_bytes"])
+            assert [block["text"] for block in receipts[1]["outcome"]["extraction"]["blocks"]] == [
+                "Mai: Ngày mai, mình có diễn tiếp không?", "Nam: Có, ở Vọng Đài."]
             # Abrupt HTTP process death after a committed save (lost response replay).
             host.kill()
             host.wait(timeout=5)
@@ -122,6 +172,12 @@ def main():
             host = start_host(env, http_port, log, fixture)
             assert http(http_port, fixture) == fixture["response"]
             assert http(http_port, fixture, "POST") == fixture["response"]
+            for item, receipt in zip(imports, receipts):
+                assert import_http(http_port, fixture["token"], request=item) == receipt
+                assert import_http(http_port, fixture["token"], source=receipt["id"]) == receipt
+                assert import_http(http_port, fixture["token"], source=receipt["id"], original=True) == bytes(item["original_bytes"])
+            (EVIDENCE / "import-restart.json").write_text(json.dumps({"sources": receipts}, ensure_ascii=False, indent=2) + "\n")
+            print("PASS: original TXT/DOCX/failed-input bytes and SHA-256 + HTTP kill + PostgreSQL restart + immutable receipt replay")
             print("PASS: HTTP process kill + PostgreSQL restart + migration replay + exact export/actor/time + same-operation replay")
         (EVIDENCE / "run.json").write_text(json.dumps({"cluster": str(cluster), "port": port, "app_url": app_url, "script": fixture["script"]}, indent=2) + "\n")
     finally:

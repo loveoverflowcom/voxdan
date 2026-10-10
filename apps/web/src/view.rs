@@ -1,12 +1,13 @@
 use crate::{
     api::{StudioContext, StudioHttp},
     editor::{Editor, Intent, Status},
+    import::ManuscriptImport,
     messages,
 };
 use cantos_api::{ApiError, ErrorCode, FieldIssue};
 use leptos::{prelude::*, task::spawn_local};
 
-fn operation_id() -> Result<String, ApiError> {
+pub(crate) fn operation_id() -> Result<String, ApiError> {
     let error = || ApiError {
         code: ErrorCode::Unavailable,
         current_revision: None,
@@ -115,6 +116,7 @@ pub fn Studio() -> impl IntoView {
                 </div>
             </form>
             <p>{move || copy().actor}<output>{move || state.with(|editor| if editor.actor.is_empty() { copy().unknown.to_owned() } else { editor.actor.clone() })}</output></p>
+            <ManuscriptImport actor=Signal::derive(move || state.with(|editor| editor.actor.clone())) english=english />
             <section aria-labelledby="draft-label">
                 <label for="script-id">{move || copy().script}</label>
                 <input id="script-id" autocomplete="off" spellcheck="false" disabled=blocked

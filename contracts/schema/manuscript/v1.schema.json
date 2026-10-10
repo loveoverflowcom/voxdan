@@ -1,0 +1,346 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cantos.example/contracts/manuscript/v1",
+  "title": "Cantos private manuscript import API v1",
+  "$comment": "Shape is hand-authored. UTF-8 byte bounds, nonblank metadata, total decoded bounds, access, checksum integrity, block-index semantics and Script IR validation are backend rules. Nullable fields may be omitted during decoding; serializers emit them. No rights eligibility is implied.",
+  "$defs": {
+    "ImportMetadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "operation_id",
+        "file_name",
+        "format",
+        "reference"
+      ],
+      "properties": {
+        "operation_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "file_name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255,
+          "pattern": "^[^\\u0000-\\u001f\\u007f-\\u009f]*$"
+        },
+        "format": {
+          "enum": [
+            "txt",
+            "markdown",
+            "docx",
+            "script_ir"
+          ]
+        },
+        "reference": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048,
+          "pattern": "^[^\\u0000-\\u001f\\u007f-\\u009f]*$"
+        },
+        "rights_holder": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048,
+              "pattern": "^[^\\u0000-\\u001f\\u007f-\\u009f]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "permission_evidence": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048,
+              "pattern": "^[^\\u0000-\\u001f\\u007f-\\u009f]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "usage_scope": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048,
+              "pattern": "^[^\\u0000-\\u001f\\u007f-\\u009f]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "ImportRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "metadata",
+        "original_bytes"
+      ],
+      "properties": {
+        "metadata": {
+          "$ref": "#/$defs/ImportMetadata"
+        },
+        "original_bytes": {
+          "type": "array",
+          "maxItems": 1048576,
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255
+          }
+        }
+      }
+    },
+    "ImportBlock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "index",
+        "kind",
+        "text"
+      ],
+      "properties": {
+        "index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "kind": {
+          "enum": [
+            "paragraph",
+            "dialogue",
+            "narration",
+            "scene_cue",
+            "sound_cue"
+          ]
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 2097152
+        },
+        "speaker": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 2097152
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "scene": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 2097152
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cue_kind": {
+          "anyOf": [
+            {
+              "enum": [
+                "ambience",
+                "music",
+                "sfx"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "ImportWarning": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code"
+      ],
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "block": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 4294967295
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "ImportProblem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code"
+      ],
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "offset": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 18446744073709551615
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "Extraction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "extractor_version",
+        "blocks",
+        "warnings"
+      ],
+      "properties": {
+        "extractor_version": {
+          "type": "string"
+        },
+        "blocks": {
+          "type": "array",
+          "maxItems": 10000,
+          "items": {
+            "$ref": "#/$defs/ImportBlock"
+          }
+        },
+        "warnings": {
+          "type": "array",
+          "maxItems": 20100,
+          "items": {
+            "$ref": "#/$defs/ImportWarning"
+          }
+        },
+        "script_json": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 2097152
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "ImportOutcome": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "extraction"
+          ],
+          "properties": {
+            "status": {
+              "const": "parsed"
+            },
+            "extraction": {
+              "$ref": "#/$defs/Extraction"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "error"
+          ],
+          "properties": {
+            "status": {
+              "const": "failed"
+            },
+            "error": {
+              "$ref": "#/$defs/ImportProblem"
+            }
+          }
+        }
+      ]
+    },
+    "ImportResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "imported_by",
+        "recorded_at",
+        "sha256",
+        "byte_len",
+        "metadata",
+        "outcome"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^src_[a-f0-9]{32}$"
+        },
+        "imported_by": {
+          "type": "string",
+          "pattern": "^[a-z0-9_-]{1,64}$"
+        },
+        "recorded_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{6}Z$"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "byte_len": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1048576
+        },
+        "metadata": {
+          "$ref": "#/$defs/ImportMetadata"
+        },
+        "outcome": {
+          "$ref": "#/$defs/ImportOutcome"
+        },
+        "original_text": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 1048576
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

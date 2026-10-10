@@ -2,6 +2,9 @@
 //! These are raw DTOs, not permission or validation witnesses.
 use serde::{Deserialize, Serialize};
 
+mod imports;
+pub use imports::*;
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct SaveRevisionRequest {

@@ -53,6 +53,13 @@ operator provisioning. Continue 010's importer/source-preview/editor consumer on
 boundaries; expose the handoff operations through a reviewed UI when that journey needs them.
 Production identity, rights eligibility and full authoring acceptance remain separate gates.
 
+The [bounded manuscript import](../evidence/manuscript-import.md) extends that same source
+boundary with preserved original bytes, extraction outcomes and a minimal Studio comparison.
+Use [AI adaptation #3](https://github.com/loveoverflowcom/cantos/issues/3) as the next bounded
+consumer of immutable source IDs/checksums, ordered blocks, uncertainty and recorded rights
+claims, followed by the full editor in #4. Keep #1's production identity and complete authoring
+gates visible; import evidence does not accept the entire 010 capability.
+
 | Capability | Execution issues | Milestone |
 | --- | --- | --- |
 | [010](010-import-and-edit-script.md) | [#1](https://github.com/loveoverflowcom/cantos/issues/1), [#2](https://github.com/loveoverflowcom/cantos/issues/2), [#3](https://github.com/loveoverflowcom/cantos/issues/3), [#4](https://github.com/loveoverflowcom/cantos/issues/4) | [010 — Import and edit a versioned script](https://github.com/loveoverflowcom/cantos/milestone/1) |

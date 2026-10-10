@@ -29,6 +29,12 @@ source reads, bounded revision history, owner review records and local credentia
 tools. Build importer/source-preview/editor consumers on that shared backend; these extensions
 do not implement all input formats or the complete review journey.
 
+The [manuscript slice](../evidence/manuscript-import.md) preserves bounded original bytes and
+separate TXT/Markdown/DOCX/Script IR extraction outcomes on that shared source boundary.
+Adaptation should consume those immutable records and uncertainty rather than re-read or
+overwrite an accepted source. The complete adaptation/edit/revision journey remains the 010
+capability review boundary.
+
 ## Suggested sequence
 
 1. Add representative manuscript and structured-script fixtures, including multiple speakers and scenes.

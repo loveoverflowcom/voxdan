@@ -45,7 +45,7 @@ side in the same change when it is in scope.
 
 Cantos implements Script IR validation, authenticated PostgreSQL revisions and a minimal
 Leptos Studio; inspect [the server guide](../../apps/server/README.md) and current contracts/code.
-Mobile, import/adaptation and production execution remain planned. Story artifact skills
+Bounded local manuscript import is implemented. Mobile, AI adaptation and production execution remain planned. Story artifact skills
 operate files through available tools; they are not backend workers. Use the provisional score
 draft route when real source/rights bindings are unavailable. Report only checks actually run. The
 checks that exist today are:

@@ -109,7 +109,7 @@ main { max-width: 94rem; }
 
 /* Authoring controls stay compact while preserving native selection and touch targets. */
 .authoring-field input, .authoring-field select { width: 100%; min-height: 2.75rem; }
-.authoring-field select { height: 2.75rem; }
+.authoring-field select { height: 2.75rem; overflow: hidden; text-overflow: ellipsis; }
 .authoring-pronunciation { grid-template-columns: repeat(2, minmax(0, 1fr)) auto; align-items: start; }
 .authoring-pronunciation-field { min-width: 0; }
 .authoring-pronunciation > button { align-self: end; justify-self: start; width: auto; }
@@ -117,3 +117,13 @@ main { max-width: 94rem; }
 .authoring-row-heading { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--cantos-space-sm); }
 .authoring-row-heading h4 { margin: 0; }
 @media (max-width: 45rem) { .authoring-pronunciation { grid-template-columns: minmax(0, 1fr); } }
+
+/* Long localized actions and immutable identifiers must reflow at browser zoom. */
+.studio-shell button { min-width: 0; max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+.studio-header > *, .toolbar > *, .revision-strip > *, .authoring-heading > *, .authoring-row-heading > *, .authoring-actions > * { min-width: 0; max-width: 100%; }
+.authoring-remove-confirm { flex: 1 1 100%; overflow-wrap: anywhere; }
+.identity output { max-width: calc(100% - var(--cantos-space-sm)); overflow-wrap: anywhere; vertical-align: top; }
+
+/* Closed disclosure contents must not contribute native control intrinsic sizes. */
+.studio-shell details:not([open]) > :not(summary) { display: none; }
+.studio-shell, .studio-shell main { width: 100%; min-width: 0; }

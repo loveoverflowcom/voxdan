@@ -3,13 +3,19 @@
 Date: 2026-10-10. Review boundary: [issue #4](https://github.com/loveoverflowcom/cantos/issues/4)
 and [010 — Import and edit a versioned script](../work-plan/010-import-and-edit-script.md).
 Base: `297f6fdb42568819d48c507ec09713667b3a6659` on `develop`; branch
-`feat/studio-script-editor`. Final implementation/PR/merge SHAs are pending executor completion.
+`feat/studio-script-editor`. Implementation milestone: `8d1c858`. Upstream `develop` at
+`4b2f786` was integrated by `8deb25c`, preserving its WAV work. Final implementation/PR/merge
+SHAs and required exact-SHA CI belong to the GitHub execution record for issue #4; this document owns the local behavior and checks.
 
-This is a **draft execution record**. Native and real PostgreSQL evidence is available below.
-The context-owner, selected-option, field-buffer/read-race and transport-deadline corrections
-are implemented in the current tree. Final browser acceptance, reviewed screenshots, final-tree
-check counts and merge evidence remain executor-owned. A successful build is not browser
-evidence; the issue is not claimed complete by this draft.
+This is a local implementation and verification record. Native and real PostgreSQL evidence is available below.
+The corrected fixture journey has now run in native Safari: import, proposal editing/acceptance,
+validation focus, pending-input/navigation guards, real timeout/exact retry, stale-write recovery,
+history, owner review and reopening after host restart. The bounded UI gate is **PASS** for
+the recorded desktop, narrow and 200% narrow scenarios in light and dark schemes, with opened
+captures and native keyboard/focus observations below. Final integrated native, WASM, repository
+and fresh PostgreSQL checks passed. Independent code/visual review found no actionable findings.
+Task-owned host, retained/final disposable clusters and Safari window were cleaned up; no user
+process was stopped. This local record does not infer CI, a merge or issue closure from builds.
 
 ## Invariant, owner and boundary
 
@@ -64,8 +70,8 @@ completion. A response arriving before blur or composition commit can update com
 facts but cannot replace local text/baseline/base while those bytes are pending. Account/script
 read tickets and saved-head inspector contexts fence late responses; review/acceptance
 acknowledgement is cleared when text, buffered activity or the compared base changes. Native
-state regressions cover these transitions; the exact browser event order remains a separate
-walkthrough gate.
+state regressions cover these transitions; the recorded browser walkthrough separately drove
+invalid-buffer, cancellation, timeout and stale-head event sequences.
 
 The additive authenticated `POST /api/v1/validation` previews the existing bounded reader's
 shape and semantic findings. It requires the shared session/Origin checks, creates no database
@@ -93,31 +99,31 @@ not model quality.
 | --- | --- | --- |
 | Structured edits cannot discard unrelated fields or rewrite IDs | Pure document patches; exact complete-value comparison against committed Vietnamese fixtures | PASS, example-tested; unsupported unknown fields still fail backend admission |
 | Reordering and structural undo preserve entity identity and content | ID-based move comparison; delete/undo exact snapshot regression | PASS, example-tested; real focus/IME behavior still requires browser input |
-| A pending field cannot disappear when another field commits/cancels, or be overwritten by a completed read | Pure per-field activity registry and buffered revision/proposal read regressions; actual shell wiring inspected | PASS, example-tested for held field-registry result; read guards implemented, final-tree regression and browser event order results executor-owned |
-| Validation points to the same entity after reorder | Current contract `cases.json` semantic paths and current-position pointer assertions | PASS, example-tested; final DOM focus result pending |
+| A pending field cannot disappear when another field commits/cancels, or be overwritten by a completed read | Native registry/read regressions; blank intensity plus another edited field; Escape restoration; stale-head read preserving local draft | PASS for the driven cases, example-tested and interaction-tested; named OS IME behavior remains unrun |
+| Validation identifies the current entity and focuses its native field | Current contract semantic/pointer regressions; missing pronunciation target, activated summary, corrected exact field and revalidation | PASS, example-tested, interaction-tested and accessibility-checked for that field; reorder focus remains native-core evidence |
 | Preview validates without persistence or approval | Real authenticated HTTP, hostile/invalid input, Origin/session/bounds checks and unchanged database counts | PASS, integration-tested; preview conveys no target ownership |
-| Dirty text, stale responses and changed actors cannot replace the current draft | Editor/inspector/adaptation state transitions and immutable request snapshots | PASS, example-tested; live navigation/reload confirmation pending |
-| Stale writes and repeated acceptance/save/review preserve history | Fresh PostgreSQL HTTP journey, exact replay receipts, current-head conflict and row counts | PASS, integration-tested; no automatic merge is claimed |
-| Reader/editor/owner permissions remain backend decisions | Existing real authorization suites plus reader save/review rejection in editor journey | PASS, integration-tested; clear browser explanations pending |
-| Source, proposal and old accepted revisions remain immutable | Independent exact response/body/hash comparisons before/after acceptance, save and reopen | PASS, integration-tested; original synthetic fixture only |
-| Process loss and PostgreSQL restart preserve settled facts | HTTP process kill, new host, PG restart, migration replay and exact-intent replay | PASS, fault-injected and integration-tested; not backup restore/failover evidence |
-| The three-pane editor works on desktop/narrow/zoom with Vietnamese text and keyboard input | Actual Safari walkthrough, opened captures, focus/cancel/navigation observations | NOT_RUN as a completed gate; walkthrough in progress |
-| Multiple structured editors have isolated context ownership | Scoped `Provider` correction after observed collision; same-scenario live rerun | IMPLEMENTED correction; final interaction result pending executor record |
-| Native select state displays the current model without a silent edit | Explicit selected-option projection, including unresolved values; native projection regressions present | IMPLEMENTED correction; final regression/browser speaker/emotion/cue results executor-owned |
-| A hung or incomplete HTTP reply releases UI transport while preserving ambiguous write identity | Request deadline ownership through body decoding; existing immutable retry reducers | IMPLEMENTED 15-second deadline; live timeout/body-interruption result not claimed here |
+| Dirty text, stale responses and changed actors cannot replace the current draft | State regressions; native reload/close Stay cancellation; pending-input script-switch guard; stale-head read and host reauthentication | PASS, example-tested and interaction-tested for recorded cases; reload/close/script-switch captures opened and inspected |
+| Stale writes and repeated acceptance/save/review preserve history | Fresh PG replay cases; live external revision 3, rejected base-2 save, explicit rebase and fresh acknowledgement producing revision 4 | PASS, integration-tested and interaction-tested; no automatic merge is claimed |
+| Reader/editor/owner permissions remain backend decisions | Existing real authorization suites plus reader save/review rejection in editor journey | PASS, integration-tested; every permission role was not separately exercised in native Safari |
+| Source, proposal and old accepted revisions remain immutable | Exact HTTP/PG oracle: revisions 1/2/3 pinned, full source/proposal unchanged, final head/review 4 and history 1–4 | PASS, integration-tested; original synthetic fixture only |
+| Process loss and PostgreSQL restart preserve settled facts | Earlier PG restart/migration replay; live host PID 50386 replaced by 65410 on same cluster, relogin and exact head 4 reopen | PASS, fault-injected, integration-tested and interaction-tested; not backup restore/failover evidence |
+| The three-pane editor works on desktop/narrow/zoom with Vietnamese text and keyboard input | Opened final desktop/narrow captures at 100% and narrow captures at 200%; native keyboard/focus observations in light/dark schemes | PASS, screenshot-captured, screenshot-inspected and interaction-tested for recorded scenarios; no reference-fidelity, VoiceOver or named OS IME claim |
+| Multiple structured editors have isolated context ownership | Scoped `Provider` correction followed by the driven proposal/revision editing and reopen flow | PASS for recorded corrected flow, interaction-tested; original collision capture retained as history |
+| Native select state displays/edits the intended model | Explicit selected-option projection; actual corrected speaker/emotion/delivery editing retained in immutable export; long cue-anchor selection inspected after overflow correction | PASS for recorded fixture choices, interaction-tested; full text remains in the native option popup |
+| A stopped HTTP host releases pending transport while preserving write identity | Actual `SIGSTOP` on PID 50386, visible unavailable/pending draft, `SIGCONT`, explicit exact retry and revision/count oracle | PASS, fault-injected and interaction-tested; partial-body corruption and production timeout behavior unrun |
 
 ## Acceptance matrix
 
 | Acceptance step | Implemented route/behavior | Core / real backend | Final browser result |
 | --- | --- | --- | --- |
-| Import an authorized Vietnamese source | Existing immutable manuscript import and private original/source comparison | PASS: existing import suite and fresh editor HTTP journey | NOT_RUN; executor walkthrough pending |
-| Open a host-created proposal | Existing owner-scoped adaptation review; source, findings, uncertainty and caller declarations remain visible | PASS: fixture context/proposal read, no inference | NOT_RUN; fixture proposal walkthrough pending |
-| Edit scene, character and spoken lines | Structured act/scene/character navigation; narration, dialogue, emotion, pronunciation and cues; optional advanced JSON | PASS: lossless core tests and edited accepted JSON in real HTTP/PG journey; scoped context and selected-option corrections implemented | NOT_RUN as a completed gate; final corrected browser scenario pending |
-| Compare source and changes; inspect validation | Preserved source/warnings, complete-value keyed changes, nonpersisted backend preview and field-path mapping | PASS: raw source/hash, validator HTTP tests and diagnostic mapping | NOT_RUN; focus and validation-summary walkthrough pending |
-| Explicitly review and accept/save | Current-text proposal acknowledgement; existing explicit acceptance and exact saved-head owner review; CAS save | PASS: accepted revision 1, owner review, later revision 2, stale conflict and exact replays | NOT_RUN; browser permission/review/reset behavior pending |
-| Reopen exact accepted and historical versions | Existing exact-revision/current-head/history APIs; read-only comparison never automatically replaces local draft | PASS: exact old/head/source/proposal/history after reopening and restart | NOT_RUN; browser reopen/history/pagination pending |
-| Preserve unsaved/pending text during navigation and failure | Actor-bound draft, field buffer registry, native unload/discard guard, exact unresolved mutation retry | PASS: deterministic reducer regressions; backend stale/replay cases | NOT_RUN; back/close/cancel/focus and timeout interactions pending |
-| Desktop, narrow, zoom and accessibility | Existing Material 3 Expressive tokens, Vietnamese/English copy, native semantic fields and visible focus | Native/WASM compilation held; no visual claim from build | NOT_RUN; final listed viewports/themes/keyboard observations pending |
+| Import an authorized Vietnamese source | Existing immutable manuscript import and private original/source comparison | PASS: import suite, fresh HTTP journey and exact source oracle | PASS: live 118-byte import, three blocks, CRLF warning and raw source/hash read; rights remain fixture claims |
+| Open a host-created proposal | Existing owner-scoped adaptation review; source/findings/caller declarations visible | PASS: fixture context/proposal read, zero inference attempts | PASS: opened synthetic caller context and proposal; no real host model-quality result |
+| Edit scene, character and spoken lines | Structured navigation and native narration/dialogue/delivery/pronunciation/cue controls | PASS: lossless core and real accepted JSON; scoped context/selected-choice corrections | PASS for driven scene, Mai name/personality/dialogue, hopeful 525 delivery and pronunciation edits; long text/cue controls inspected in final layouts |
+| Compare source and changes; inspect validation | Preserved source/warnings, keyed changes, backend preview and field-path focus | PASS: exact source/hash, validator HTTP and diagnostic mapping | PASS: pronunciation-target error summary focused exact field; correction revalidated successfully; source read inspected |
+| Explicitly review and accept/save | Current-text acknowledgement; immutable acceptance, saved-head owner review and CAS save | PASS: backend replays/authorization/history plus actual head 4 oracle | PASS: proposal accepted as revision 1; exact timeout retry revision 2; stale recovery with reset review/fresh acknowledgement saved revision 4; owner review pinned to 4 |
+| Reopen exact accepted and historical versions | Exact revision/current head/history; read-only comparison preserves draft | PASS: pinned revisions 1–3, source/proposal and PG rows | PASS: history 1–4, revision 1 opened read-only; relogin after host restart reopened exact updated line/head 4 clean; multi-page history not separately driven |
+| Preserve unsaved/pending text during navigation and failure | Field buffers, unload/discard guard, exact unresolved retry and explicit stale rebase | PASS: reducers, stale/replay suites and live fault injection | PASS for recorded invalid-buffer/Escape, reload/close Stay, cancelled script switch, delete/cancel/focus, timeout/retry and stale-read/rebase; confirmed-close loss remains documented |
+| Desktop, narrow, zoom and accessibility | Existing tokens, Vietnamese/English copy, semantic fields and visible focus | Final native/WASM/assets checks passed; real captures/focus recorded separately | PASS for 1322×963 desktop at 100% light/dark, 720×863 narrow at 100% light, and 721×865 narrow at 200% light/dark capture sizes; no horizontal scrollbar in final native accessibility observations; CSS viewport unmeasured; no VoiceOver/OS IME claim |
 
 ## Executed checks and provenance
 
@@ -127,23 +133,24 @@ production database URL is never substituted. The runtime uses the restricted ap
 role and original synthetic Vietnamese source/proposal content. No real manuscript, model,
 external identity deployment, media store or generated audio is involved.
 
-| Result at draft time | Exact command / artifact | Scope and remaining limit |
+| Result | Exact command / artifact | Scope and remaining limit |
 | --- | --- | --- |
-| PASS milestone; final result pending | `cargo clippy --workspace --all-targets --locked -- -D warnings` | Native workspace pass held; executor to pin final-tree result |
-| PASS milestone; final counts pending | `cargo test --workspace --locked` | Native workspace pass held; executor to record final test counts; ordinary tests do not run ignored PG cases |
+| PASS | `cargo clippy --workspace --all-targets --locked -- -D warnings` | Final integrated native workspace; log `native-clippy.log` |
+| PASS | `cargo test --workspace --locked` | Final integrated workspace, including 100 Studio tests; ordinary tests do not run ignored PG cases; log `native-tests.log` |
 | PASS | `cargo test -p cantos-studio --locked authoring::tests` | 13 authoring tests + 2 matching localization tests; focused core agent run |
-| PASS | `rustfmt --edition 2021 --check apps/web/src/authoring.rs` | Focused core formatting; final workspace formatter remains executor-owned |
-| PASS | `PATH="/opt/homebrew/opt/postgresql@17/bin:$PATH" python3 scripts/test_postgres.py --keep` | 12 revision + 9 import + 21 adaptation/editor = 42 real PG cases; retained new local cluster supports walkthrough |
-| PASS milestone; final result pending | `cargo clippy -p cantos-studio --target wasm32-unknown-unknown --locked -- -D warnings` | WASM pass held in local evidence; executor to pin final-tree rerun |
-| PASS milestone; final result pending | `NO_COLOR=true trunk build --locked` from `apps/web` | CSR/assets build pass held in local evidence; executor to pin final-tree rerun; compilation only |
+| PASS | `rustfmt --edition 2021 --check apps/web/src/authoring.rs` | Focused core formatting, also covered by final workspace formatter |
+| PASS | `PATH="/opt/homebrew/opt/postgresql@17/bin:$PATH" python3 scripts/test_postgres.py` | Fresh post-integration cluster: 12 revision + 9 import + 21 adaptation/editor = 42 real PG cases; log `postgres-final.log` |
+| PASS | `cargo clippy -p cantos-studio --target wasm32-unknown-unknown --locked -- -D warnings` | Final integrated WASM check; log `wasm-clippy.log` |
+| PASS | `NO_COLOR=true trunk build --locked` from `apps/web` | Final CSR/assets build after the select/closed-details CSS correction; log `trunk.log`; compilation only |
 | PASS | Actual HTTP process kill and PostgreSQL restart with migration/intent replay | Inspected `target/studio-editor-evidence/server-restart.json`; settled counts and exact observations retained |
-| PENDING | `cargo fmt --all -- --check` | Executor to record final tree result |
-| PENDING | `python3 scripts/check_repository.py` | Executor to record final documents/contracts/links result |
-| PENDING | `TMPDIR=/private/tmp python3 -m unittest discover -s scripts -p 'test_*.py'` | Executor to record final repository-script result |
-| PENDING | `python3 scripts/reference_script_ir.py` | Executor to record unchanged independent golden result |
-| PENDING | `TMPDIR=/private/tmp python3 scripts/mutate_script_ir.py` | Executor to record bounded validator/encoder mutation result |
-| PENDING | `git diff --check` | Executor to record final patch result |
-| NOT_RUN as a completed gate | Completed Safari interaction/accessibility/capture matrix | Corrections implemented; same-scenario final inspection/results pending executor record |
+| PASS | `cargo fmt --all -- --check` | Final integrated workspace; log `fmt.log` |
+| PASS | `python3 scripts/check_repository.py` | Final integrated documents/contracts/links; log `repository-check.log` |
+| PASS | `TMPDIR=/private/tmp python3 -m unittest discover -s scripts -p 'test_*.py'` | 70 repository-script tests on the integrated tree; log `python-tests.log` |
+| PASS | `python3 scripts/reference_script_ir.py` | Unchanged independent Script IR golden oracle; log `reference.log` |
+| PASS, earlier bounded run | `TMPDIR=/private/tmp python3 scripts/mutate_script_ir.py` | 9 killed, 0 survivors for the unchanged Script IR core; log `mutations.log`; not rerun after the upstream WAV integration |
+| PASS | `cargo build --locked --bin inspect-wav`, then `python3 scripts/reference_wav_inspection.py` | Preserved upstream WAV regression: 5 PCM files agree with Python wave/hashlib without ffprobe; logs `wav-build.log` / `reference-wav.log`; no production audio-quality claim |
+| PASS | `git diff --check` and `git diff origin/develop --check` | Final integrated patch whitespace |
+| PASS for recorded interactions and layout scenarios | Native Safari fixture journey and opened captures below | Real timeout/CAS/validation/cancel/restart flows; final 100% desktop/narrow and 200% narrow light/dark inspection |
 | NOT_RUN | VoiceOver, named OS Telex/VNI composition, device/mobile, provider/audio/publication/deployment | No evidence claimed in this slice |
 
 Raw local logs/receipts are ignored under `target/studio-editor-evidence/` and
@@ -151,8 +158,7 @@ Raw local logs/receipts are ignored under `target/studio-editor-evidence/` and
 `postgres-tests.log`, `import-postgres-tests.log` and `adaptation-postgres-tests.log` in the
 latter directory. An earlier focused editor log expected HTTP 201 from an existing route that
 returns 200; that test-oracle assertion was corrected and is superseded by the successful
-21-case adaptation/editor suite. Earlier failure logs are retained for provenance, not reported
-as passing gates. Credentials and database files remain outside Git.
+21-case adaptation/editor suite. Earlier failures are superseded by these successful gates, not reported as passes. Credentials and database files remain outside Git.
 
 The real backend journey changed the unresolved character to “Minh — người gác cửa”, scene title
 to “Bên cánh cửa — đã đối chiếu”, and Mai's line to “Chúng mình sẽ chờ đến bình minh.” with hopeful
@@ -168,37 +174,109 @@ revision/review/history responses and committed-intent replay were compared. Thi
 HTTP/PostgreSQL integration journey with fixture content, not a Leptos interaction result or
 provider-generation result.
 
-## Browser observation and review follow-up
+## Browser observation and final local UI gate
 
-The executor is driving the built CSR app in native Safari 18.6 on the Mac mini against the
-task-owned loopback host and disposable PostgreSQL cluster. A context-owner collision between
-structured editors and incorrectly initialized native choices were observed during this
-walkthrough. Scoped `Provider` ownership and explicit `option.selected` initialization are now
-implemented. The initial local capture is
-`target/studio-editor-evidence/screenshots/context-collision-before.png`; it records the finding,
-not a final successful editor screenshot. The final corrected flow remains to be recorded here.
+The executor drove native Safari 18.6 against the task-owned loopback host at port 38081 and
+the fresh local PostgreSQL cluster. Observations below are executor-driven real input; the
+independent API/PostgreSQL oracle checked durable results separately. Original context-owner
+and choice-initialization findings were corrected before this journey; the initial local
+`screenshots/context-collision-before.jpg` remains historical finding evidence.
 
-Final runtime entries must name the actual source/proposal/revision journey, inspected browser
-viewport or window dimensions, theme, zoom, keyboard/focus/cancel behavior, Vietnamese text and
-capture paths. They must separately record DOM assertions, real interaction, accessibility checks,
-captured images and opened image inspection. No measurements or successful interactions are
-inferred from compilation or from the single failure capture.
+1. Imported the synthetic Vietnamese source as `src_d690d1bdcf07479bb53402afebae24be`. The
+   receipt showed 118 original bytes, three ordered extracted blocks and the CRLF normalization
+   warning. Raw source and SHA-256 read matched the original fixture. Opened synthetic caller
+   context `f4d87735-1d7b-44ca-9011-40c89b2c0ed5` targeting script
+   `79f8695e-ca7b-45fe-bd9d-e27a60090235`; no model was invoked.
+2. Used the structured controls to edit a long Vietnamese scene title, Mai's name/personality
+   and dialogue, hopeful delivery at 525 permille and pronunciation `Vọng Đài` → `vọng đài`.
+   Explicit acknowledgement/acceptance created revision 1 with export digest
+   `sir-e1:sha256:f0316cc2b214e00a9868d388c769762aed68f8b75eda14baa18e910dc1da754c`.
+3. Entered a pronunciation surface absent from the line. Backend preview reported
+   `pronunciation_target_missing`; activating the summary focused the exact native pronunciation
+   field. Corrected the surface and revalidated successfully. The focus capture was opened and
+   inspected. Blank intensity failed commit; editing a different text field kept the original
+   unfinished buffer visible and navigation blocked. Escape restored that intensity to 300
+   while retaining the other edit.
+4. Triggered native reload while dirty. The native Stay/Escape interaction retained the draft;
+   its capture was opened and inspected. Opened Mai's inline delete confirmation and cancelled
+   with Escape; native focus returned to the delete button. A later temporary scene title,
+   “Bản nháp giữ riêng khi đóng cửa sổ — không lưu”, survived Cmd-W followed by native
+   alert Escape/Stay, retaining script `79f8695e-ca7b-45fe-bd9d-e27a60090235` and base 4. Changing
+   the script-ID candidate to the other fixture and pressing Read opened the native discard
+   confirmation; Escape/Cancel retained the same script/base/title. Both guard captures were
+   opened and inspected. Restoring the original script-ID candidate and using structural Undo
+   restored the exact original title and clean state; these guard checks made no database write.
+5. Stopped task HTTP PID 50386 with `SIGSTOP`, then clicked Save. The nominal 15-second browser
+   deadline produced unavailable while retaining text and the exact pending intent. Its capture
+   was opened and inspected. Resumed the same host with `SIGCONT`; explicit exact-operation
+   Retry produced revision 2, with no extra retry revision in the independent oracle. This is a
+   real stalled-host fault injection, not partial-body corruption or provider-timeout evidence.
+6. An independent authenticated CAS write changed only `/episode/title`, producing revision 3.
+   The UI's Save from base 2 returned stale conflict and kept the local draft. Reading head 3
+   kept that draft and cleared review acknowledgement. Explicitly adopted head 3 as base,
+   acknowledged the freshly compared text and saved revision 4. Historical revisions 1 and 2,
+   source and full proposal context remained exact after the competing write.
+7. Opened history containing revisions 1–4 and revision 1 in read-only comparison. Recorded
+   owner review against head 4. Replaced HTTP PID 50386 with PID 65410 on the same disposable
+   database; after relogin, the UI reopened the exact updated Vietnamese line/head 4 clean.
+   The final oracle agrees between HTTP and PostgreSQL, pins owner review to 4 and reports zero
+   generation attempts.
+8. Opened and inspected final desktop captures at 1322×963 / 100% zoom in light and dark
+   schemes, a narrow 720×863 / 100% light capture, and narrow 721×865 / 200% light/dark
+   captures. These are JPEG capture dimensions verified from image metadata, superseding
+   earlier approximate window coordinates; they include browser chrome, and CSS viewport
+   dimensions were not measured. The initial 200% overflow was traced to the cue-dialogue native select: client
+   width 604 with scroll width 639 propagated to a canvas width 640 and body client/scroll
+   widths 654/664. The targeted structured-select overflow/ellipsis correction was rebuilt and
+   the same long fixture reobserved. Its native popup retained the complete selected Mai text;
+   final native accessibility observations exposed only a vertical scrollbar, with no horizontal
+   scrollbar. A desktop select measured approximately 44 screen pixels at 100% and 88 at 200%,
+   consistent with its 44 CSS-pixel control height.
+9. Pronunciation removal controls fit the desktop row and stacked in the narrow layout.
+   Alt-Tab from Mai's text moved to the disclosure summary; Return expanded it. The exact
+   pronunciation field's purple focus outline and contrast were observed in both schemes.
+   Native Escape from delete confirmation returned focus to Delete. The closed-details rule
+   explicitly preserves native closed semantics while retaining mounted draft state. These
+   observations close the recorded UI gate; they do not establish a screen-reader or OS IME gate.
 
-Review follow-up at this draft boundary:
+The select/body measurements were real runtime observations through a temporary app diagnostic,
+not automated DOM assertions. That diagnostic was fully removed from the final view before the
+final build. Native accessibility state, driven keyboard input and opened pixels provide the
+recorded evidence. All listed screenshot files are JPEGs with matching `.jpg` extensions.
+`target/studio-editor-evidence/screenshots-final.json` records each file's format, exact capture
+dimensions and SHA-256. An independent reviewer also opened the five final layout/theme
+captures and reported no actionable clipping or focus findings; this image review does not
+substitute for the executor's interactions.
 
-- Recheck per-field buffer/composition tracking, including one invalid intensity followed by a
-  different field commit, Escape restoration, navigation and source/actor changes.
-- Recheck reader/editor/owner explanations and guards while retaining backend authority; preview
-  success must not present an acceptance or owner-review permission claim.
-- Repeat the affected live proposal/revision scenario after the implemented scoped-provider and
-  selected-option corrections, then pin the final WASM/build/native checks to the same tree.
-- Exercise the request deadline and body-interruption outcome if included in the final runtime
-  scope; otherwise retain the unrun transport-chaos limitation rather than infer it from reducers.
-- Finish an independent code review, fix actionable findings, pin the final commit/PR and retain
-  required CI and postmerge evidence for the exact tested SHA.
+The independent records are `target/studio-editor-evidence/ui-baseline.json`,
+`ui-cas-verification.json` and `ui-final-verification.json`. The final quiescent local oracle
+holds exact pinned revisions 1/2/3, source and full proposal context; history `[1,2,3,4]`; owner
+review pinned to 4; HTTP/PG equality; reopened Vietnamese dialogue equality; and zero server
+generation attempts. Script-specific durable rows are four revisions with head 4. Final head
+export digest is `sir-e1:sha256:ad2373835bfb757ca5fcd7392e669c061478aa1fded8e6f6726ae97a9a910152`.
+This supplements the separate earlier two-revision PG journey; their fixture identities/counts
+are not conflated.
 
-The code corrections are implemented. This list preserves final runtime/evidence gaps until the
-executor supplies outcomes; it does not mark the original code findings as still unfixed.
+| Local capture under `target/studio-editor-evidence/screenshots/` | Evidence / limit |
+| --- | --- |
+| `desktop-editor-final.jpg` | screenshot-captured, screenshot-inspected, 1322×963 / 100%, light; final editor |
+| `desktop-dark-final.jpg` | screenshot-captured, screenshot-inspected, 1322×963 / 100%, dark; final editor |
+| `narrow-editor-final.jpg` | screenshot-captured, screenshot-inspected, 720×863 / 100%, light; final narrow editor |
+| `narrow-200-cue-final.jpg` | screenshot-captured, screenshot-inspected, 721×865 / 200%, light; corrected long cue-anchor select |
+| `narrow-200-dark-focus-final.jpg` | screenshot-captured, screenshot-inspected, 721×865 / 200%, dark; exact field focus and stacked controls |
+| `validation-pronunciation-focus.jpg` | screenshot-captured, screenshot-inspected, 1324×967; exact invalid pronunciation field focus |
+| `timeout-pending.jpg` | screenshot-captured, screenshot-inspected, 1324×967; unavailable status and retained pending text/intent |
+| `unsaved-reload-guard.jpg` | screenshot-captured, screenshot-inspected, 260×224 native alert; reload Stay/Escape retained draft |
+| `unsaved-close-guard.jpg` | screenshot-captured, screenshot-inspected, 260×224 native alert; close Escape/Stay retained title/script/base |
+| `unsaved-script-switch-guard.jpg` | screenshot-captured, screenshot-inspected, 720×863; discard Escape/Cancel retained title/script/base |
+| `desktop-reopened.jpg`, `narrow-reopened.jpg` | Earlier screenshot-captured, screenshot-inspected reopened views, 1324×967 / 722×867 at 100%; superseded for final layout by captures above |
+| `narrow-200-pronunciation.jpg` | Historical 722×867 initial 200% overflow finding; corrected and superseded by final cue/focus captures |
+| `context-collision-before.jpg` | Historical 1324×967 pre-correction finding, not final successful editor proof |
+
+Independent review completed with no actionable findings. Final feature/PR/merge identities,
+required exact-SHA CI and postmerge status are recorded by the GitHub delivery record.
+The recorded interactions establish only the stated scenarios, not VoiceOver, named OS IME,
+production identity/TLS or every viewport/accessibility policy scenario.
 
 ## Read inventory and DBSP decision
 
@@ -241,12 +319,28 @@ No supplied design-reference image is available for this request. The existing v
 tokens and [UI system](../design/ui-system.md) govern the compact Material 3 Expressive direction;
 no pixel-faithful reference match is claimed. Native labels, keyboard/focus observation and
 opened captures can establish bounded accessibility evidence, but no VoiceOver/screen-reader
-walkthrough or named OS Telex/VNI IME run has been supplied. Synthetic composition events and
-Vietnamese paste/fixture text, if observed, must not be reported as an OS input-method result.
+walkthrough or named OS Telex/VNI IME run has been supplied. Composition guard reducer tests and Vietnamese paste/fixture text are not OS input-method evidence.
 
 Production identity/TLS, legal adjudication of source/content rights, real Vietnamese AI quality,
 ChatGPT/Gemini web connector registration, casting, TTS, mixing, publication, Theatre, native CMP
 playback and mobile runtime remain outside this boundary. No CI expansion, package/toolchain
-upgrade, provider configuration, secrets setup or deployment is part of this task. Final browser
-acceptance, independent review, exact-SHA required checks, merge verification and task-process
-cleanup remain executor-owned until this draft is finalized.
+upgrade, provider configuration, secrets setup or deployment is part of this task. The recorded
+local browser gate and independent review are complete. GitHub owns the final PR/merge identity
+and exact-SHA CI execution; these are not inferred from local verification.
+
+## Independent review and cleanup
+
+The read-only review compared all 34 Studio paths against `develop`
+`4b2f78688048cf73e65d7b9fd11e9ae4fe42bdd4`, including the integrated snapshot and final CSS.
+Assessment: **no-actionable-findings**; coverage: **complete-for-declared-scope**. The reviewer
+independently opened all five final JPEG captures and read the executor logs; heavy gates were
+not repeated in the reviewer lane. WAV PR #22 was preserved and excluded from the Studio review.
+
+The final 27 non-Markdown source/contract/script files have the sorted path/content fingerprint
+`6685b8a82f4d40233006a236f16570cb55dfe5bba24e0a249f09b1343c53cd51`; CSS SHA-256 is
+`69457e314005d3b98e6cfa26547e25d7bcf3170f0b4b176c75bb88f6c4615942`. Administrative
+completion metadata in this evidence file is separate from that source fingerprint.
+
+`target/studio-editor-evidence/cleanup.json` records stopped task host PID 65410, the stopped
+retained walkthrough cluster, the automatically stopped final fresh cluster and closed task
+Safari window. The original user window and unrelated processes were left untouched.

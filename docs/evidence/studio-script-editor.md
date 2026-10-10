@@ -4,7 +4,10 @@ Date: 2026-10-10. Review boundary: [issue #4](https://github.com/loveoverflowcom
 and [010 — Import and edit a versioned script](../work-plan/010-import-and-edit-script.md).
 Base: `297f6fdb42568819d48c507ec09713667b3a6659` on `develop`; branch
 `feat/studio-script-editor`. Implementation milestone: `8d1c858`. Upstream `develop` at
-`4b2f786` was integrated by `8deb25c`, preserving its WAV work. Final implementation/PR/merge
+`4b2f786` was integrated by `8deb25c`, preserving its WAV work. The later upstream read-only
+Script IR diff CLI at `efa5ae1` was integrated by `30fff50`; it remains separate from this Studio
+delivery. The Studio source fingerprint and final Safari assets did not change in either merge.
+Final implementation/PR/merge
 SHAs and required exact-SHA CI belong to the GitHub execution record for issue #4; this document owns the local behavior and checks.
 
 This is a local implementation and verification record. Native and real PostgreSQL evidence is available below.
@@ -147,7 +150,7 @@ external identity deployment, media store or generated audio is involved.
 | PASS | `python3 scripts/check_repository.py` | Final integrated documents/contracts/links; log `repository-check.log` |
 | PASS | `TMPDIR=/private/tmp python3 -m unittest discover -s scripts -p 'test_*.py'` | 70 repository-script tests on the integrated tree; log `python-tests.log` |
 | PASS | `python3 scripts/reference_script_ir.py` | Unchanged independent Script IR golden oracle; log `reference.log` |
-| PASS, earlier bounded run | `TMPDIR=/private/tmp python3 scripts/mutate_script_ir.py` | 9 killed, 0 survivors for the unchanged Script IR core; log `mutations.log`; not rerun after the upstream WAV integration |
+| PASS, earlier bounded run | `TMPDIR=/private/tmp python3 scripts/mutate_script_ir.py` | 9 killed, 0 survivors for the unchanged validator/encoder core; log `mutations.log`; not rerun after the upstream WAV/diff integrations, which did not change that core |
 | PASS | `cargo build --locked --bin inspect-wav`, then `python3 scripts/reference_wav_inspection.py` | Preserved upstream WAV regression: 5 PCM files agree with Python wave/hashlib without ffprobe; logs `wav-build.log` / `reference-wav.log`; no production audio-quality claim |
 | PASS | `git diff --check` and `git diff origin/develop --check` | Final integrated patch whitespace |
 | PASS for recorded interactions and layout scenarios | Native Safari fixture journey and opened captures below | Real timeout/CAS/validation/cancel/restart flows; final 100% desktop/narrow and 200% narrow light/dark inspection |
@@ -335,6 +338,11 @@ The read-only review compared all 34 Studio paths against `develop`
 Assessment: **no-actionable-findings**; coverage: **complete-for-declared-scope**. The reviewer
 independently opened all five final JPEG captures and read the executor logs; heavy gates were
 not repeated in the reviewer lane. WAV PR #22 was preserved and excluded from the Studio review.
+After the later diff CLI integration, the reviewer pinned `30fff505ce6b5d9da2381fd0e48966cb213349bb`
+against `efa5ae1ca1fb8258e1167159d908bb405452c3de`: the same 34 Studio paths remained, all 27
+source paths were byte-for-byte unchanged, and README/work-plan entries retained both upstream
+features. The integration audit found no new actionable finding and excluded the upstream CLI
+from Studio ownership. Its local note is `target/studio-editor-evidence/review-integration.md`.
 
 The final 27 non-Markdown source/contract/script files have the sorted path/content fingerprint
 `6685b8a82f4d40233006a236f16570cb55dfe5bba24e0a249f09b1343c53cd51`; CSS SHA-256 is

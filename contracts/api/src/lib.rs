@@ -7,6 +7,19 @@ pub use imports::*;
 mod adaptations;
 pub use adaptations::*;
 
+/// Structural/semantic preview only. Acceptance independently checks access and evidence.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct ValidateScriptRequest {
+    pub script_json: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct ScriptValidationResponse {
+    pub issues: Vec<FieldIssue>,
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct SaveRevisionRequest {

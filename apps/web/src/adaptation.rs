@@ -40,6 +40,8 @@ pub struct AdaptationReview {
     pub source: Option<Arc<ImportResponse>>,
     pub input_revision: Option<Arc<RevisionResponse>>,
     pub draft: String,
+    /// Local acknowledged bytes; the stored accepted export may be normalized differently.
+    pub baseline: String,
     pub draft_actor: String,
     pub draft_changed: bool,
     pub reviewed_findings: bool,
@@ -61,6 +63,7 @@ impl Default for AdaptationReview {
             source: None,
             input_revision: None,
             draft: String::new(),
+            baseline: String::new(),
             draft_actor: String::new(),
             draft_changed: false,
             reviewed_findings: false,
@@ -229,11 +232,7 @@ impl AdaptationReview {
         }
         let mut next = self.clone();
         next.draft = draft;
-        next.draft_changed = self
-            .stored
-            .as_ref()
-            .and_then(|stored| response_proposal(stored))
-            .is_some_and(|proposal| proposal.script_json != next.draft);
+        next.draft_changed = next.draft != self.baseline;
         next.reviewed_findings = false;
         if !self.blocked() {
             next.status = ReviewStatus::DraftChanged;
@@ -357,6 +356,8 @@ impl AdaptationReview {
         }
         next.pending = None;
         next.ambiguous = false;
+        next.baseline = intent.request.script_json.clone();
+        next.draft_changed = next.draft != next.baseline;
         if let Some(stored) = &self.stored {
             let mut response = stored.as_ref().clone();
             match &mut response {
@@ -392,6 +393,17 @@ impl AdaptationReview {
     }
 
     pub fn loaded(&self, ticket: u64, actor: &str, response: AdaptationReviewResponse) -> Self {
+        self.loaded_with_buffer(ticket, actor, response, false)
+    }
+
+    /// A browser-owned native buffer must survive a read even while the reducer is clean.
+    pub fn loaded_with_buffer(
+        &self,
+        ticket: u64,
+        actor: &str,
+        response: AdaptationReviewResponse,
+        buffer_pending: bool,
+    ) -> Self {
         if ticket != self.ticket || actor != self.actor || response_id(&response) != self.run_id {
             return self.clone();
         }
@@ -440,17 +452,27 @@ impl AdaptationReview {
         }) {
             next.reviewed_findings = false;
         }
-        if !self.draft_changed || self.draft_actor != self.actor {
-            next.draft = response_proposal(&response)
-                .map(|proposal| proposal.script_json.clone())
+        if !buffer_pending && (!self.draft_changed || self.draft_actor != self.actor) {
+            next.draft = response_accepted(&response)
+                .map(|accepted| accepted.script_json.clone())
+                .or_else(|| {
+                    response_proposal(&response).map(|proposal| proposal.script_json.clone())
+                })
                 .unwrap_or_default();
+            next.baseline = next.draft.clone();
             next.draft_actor = self.actor.clone();
             next.draft_changed = false;
+        }
+        if buffer_pending {
+            // The shell owns this buffer until commit or Escape; do not invent byte changes.
+            next.reviewed_findings = false;
         }
         next.source = Some(Arc::new(response_source(&response).clone()));
         next.input_revision = response_input(&response).cloned().map(Arc::new);
         next.accepted = response_accepted(&response).cloned().map(Arc::new);
-        next.status = if response_status(&response) == AdaptationStatus::Accepted {
+        next.status = if buffer_pending {
+            ReviewStatus::DraftChanged
+        } else if response_status(&response) == AdaptationStatus::Accepted {
             ReviewStatus::Accepted
         } else {
             ReviewStatus::RunOpened
@@ -497,6 +519,16 @@ impl AdaptationReview {
         Some(next)
     }
     pub fn accepted_loaded(&self, ticket: u64, actor: &str, revision: RevisionResponse) -> Self {
+        self.accepted_loaded_with_buffer(ticket, actor, revision, false)
+    }
+
+    pub fn accepted_loaded_with_buffer(
+        &self,
+        ticket: u64,
+        actor: &str,
+        revision: RevisionResponse,
+        buffer_pending: bool,
+    ) -> Self {
         if ticket != self.ticket || actor != self.actor {
             return self.clone();
         }
@@ -516,7 +548,12 @@ impl AdaptationReview {
         }
         let mut next = self.clone();
         next.busy = false;
-        next.status = ReviewStatus::AcceptedOpened;
+        next.status = if buffer_pending {
+            next.reviewed_findings = false;
+            ReviewStatus::DraftChanged
+        } else {
+            ReviewStatus::AcceptedOpened
+        };
         next
     }
 }

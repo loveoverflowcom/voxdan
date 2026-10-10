@@ -61,3 +61,59 @@ summary { cursor: pointer; padding-block: var(--cantos-space-sm); }
 #adaptation-proposal-json { min-height: 35rem; }
 @media (max-width: 50rem) { .adaptation-comparison { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 36rem) { .adaptation-target { grid-template-columns: minmax(0, 1fr); gap: 0; } }
+/* Script authoring uses the established semantic roles; local geometry follows pane content. */
+main { max-width: 94rem; }
+.studio-header small { display: block; font-size: .875rem; font-weight: 400; color: var(--cantos-color-on-surface-variant); }
+.studio-header .toolbar { margin: 0; }
+.studio-header label { font-weight: 400; }
+.session-panel { margin-block: var(--cantos-space-md); }
+.workspace-nav { display: flex; flex-wrap: wrap; gap: var(--cantos-space-sm); padding-block: var(--cantos-space-md); border-block-end: 1px solid var(--cantos-color-outline); }
+.workspace-nav button[aria-pressed="true"], .authoring-nav button[aria-pressed="true"] { background: var(--cantos-color-primary); color: var(--cantos-color-on-primary); border-color: var(--cantos-color-primary); }
+.revision-strip { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--cantos-space-sm); }
+.authoring-workspace { display: grid; grid-template-columns: minmax(11rem, .75fr) minmax(0, 2.4fr) minmax(16rem, 1fr); gap: var(--cantos-space-lg); margin-block: var(--cantos-space-md); align-items: start; }
+.authoring-nav, .authoring-canvas, .authoring-inspector { min-width: 0; }
+.authoring-nav { background: var(--cantos-color-surface-container); padding: var(--cantos-space-sm); border-radius: var(--cantos-shape-field); }
+.authoring-nav button { display: block; width: 100%; text-align: start; overflow-wrap: anywhere; margin-block: var(--cantos-space-sm); }
+.authoring-nav ul { list-style: none; margin: 0; padding-inline-start: var(--cantos-space-sm); }
+.authoring-nav h3 { margin-block: var(--cantos-space-sm); }
+.authoring-canvas > h3, .authoring-inspector > h3 { margin-block-start: 0; }
+.authoring-inspector { border-inline-start: 1px solid var(--cantos-color-outline); padding-inline-start: var(--cantos-space-md); overflow-wrap: anywhere; }
+.authoring-inspector pre { max-height: 18rem; font-size: .875rem; }
+.authoring-inspector .source-identity { grid-template-columns: minmax(0, 1fr); gap: var(--cantos-space-sm); }
+.authoring-inspector .source-identity dd { margin-block-end: var(--cantos-space-sm); }
+.authoring-inspector button { max-width: 100%; overflow-wrap: anywhere; }
+.authoring-row { padding-block: var(--cantos-space-md); border-block-end: 1px solid var(--cantos-color-outline); }
+.authoring-row textarea { min-height: 7rem; font-family: inherit; }
+.authoring-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); gap: var(--cantos-space-sm); }
+.authoring-fields label, .authoring-fields input, .authoring-fields select { width: 100%; }
+.authoring-actions { display: flex; flex-wrap: wrap; gap: var(--cantos-space-sm); margin-block: var(--cantos-space-sm); }
+.authoring-actions button { padding-inline: var(--cantos-space-sm); }
+.authoring-advanced textarea { min-height: 24rem; }
+.authoring-inspector li, .authoring-inspector code { overflow-wrap: anywhere; }
+.validation-controls { margin-block: var(--cantos-space-md); }
+.validation-controls p { margin-block: var(--cantos-space-sm); }
+[hidden] { display: none !important; }
+@media (max-width: 75rem) { .authoring-workspace { grid-template-columns: minmax(10rem, .7fr) minmax(0, 2fr); } .authoring-inspector { grid-column: 1 / -1; border-inline-start: 0; border-block-start: 1px solid var(--cantos-color-outline); padding-inline-start: 0; padding-block-start: var(--cantos-space-md); } }
+@media (max-width: 45rem) { .authoring-workspace { grid-template-columns: minmax(0, 1fr); gap: var(--cantos-space-md); } .authoring-nav button { min-height: 2.75rem; } .authoring-inspector { grid-column: auto; } .workspace-nav button { flex: 1 1 10rem; } .authoring-fields { grid-template-columns: minmax(0, 1fr); } }
+
+.authoring-field textarea { min-height: 7rem; font-family: inherit; }
+.authoring-advanced textarea { min-height: 24rem; font-family: ui-monospace, monospace; }
+.authoring-field-error, .authoring-error { border-inline-start: 4px solid var(--cantos-color-primary); padding-inline-start: var(--cantos-space-sm); }
+
+.authoring-nav-kind { display: block; font-size: .875rem; opacity: .85; }
+.authoring-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--cantos-space-sm); }
+.authoring-heading h2, .authoring-heading .toolbar { margin-block: 0; }
+.authoring-canvas code { overflow-wrap: anywhere; }
+.script-adaptation { margin-block: var(--cantos-space-md); padding-block: var(--cantos-space-sm); }
+.session-panel { margin-block: var(--cantos-space-sm); }
+
+/* Authoring controls stay compact while preserving native selection and touch targets. */
+.authoring-field input, .authoring-field select { width: 100%; min-height: 2.75rem; }
+.authoring-field select { height: 2.75rem; }
+.authoring-pronunciation { grid-template-columns: repeat(2, minmax(0, 1fr)) auto; align-items: start; }
+.authoring-pronunciation-field { min-width: 0; }
+.authoring-pronunciation > button { align-self: end; justify-self: start; width: auto; }
+.authoring-id { display: block; color: var(--cantos-color-on-surface-variant); font-size: .75rem; line-height: 1.5; }
+.authoring-row-heading { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--cantos-space-sm); }
+.authoring-row-heading h4 { margin: 0; }
+@media (max-width: 45rem) { .authoring-pronunciation { grid-template-columns: minmax(0, 1fr); } }

@@ -57,8 +57,9 @@ The [bounded manuscript import](../evidence/manuscript-import.md) extends that s
 boundary with preserved original bytes, extraction outcomes and a minimal Studio comparison.
 The [AI adaptation #3](https://github.com/loveoverflowcom/cantos/issues/3) consumer preserves
 immutable source IDs/checksums, ordered blocks, uncertainty and recorded rights claims.
-Prioritize the full editor in #4 next. Keep #1's production identity and complete authoring
-gates visible; import/adaptation evidence does not accept the entire 010 capability.
+The structured #4 editor now consumes these records. Keep #1's production identity and actual
+host-generated quality gates visible; local import/adaptation/editor evidence does not accept
+the entire production 010 capability.
 
 The [bounded adaptation implementation](../evidence/ai-script-adaptation.md) uses that source
 and revision authority for immutable context, caller-submitted proposals, declared provenance,
@@ -66,9 +67,8 @@ receipts and explicit acceptance. The user-controlled Gemini/ChatGPT/Codex host 
 Cantos owns the authenticated tool pipeline and validation. #3 acceptance requires real tool
 transport and PostgreSQL journey evidence; actual model output quality is separately NOT_RUN.
 The former local-model gate is superseded, not passed. Its evidence now records the actual
-tool/storage journey. #4 should consume the same proposal/revision authority for full
-scene/speaker authoring, preserving provenance and concurrency rather than adding another
-draft store. GitHub issues/PRs retain delivery and execution status.
+tool/storage journey. #4 consumes the same proposal/revision authority for structured
+scene/speaker authoring, preserving provenance and concurrency without another draft store. GitHub issues/PRs retain delivery and execution status.
 
 | Capability | Execution issues | Milestone |
 | --- | --- | --- |
@@ -105,3 +105,11 @@ by deduplicated recovery issues (or local drafts while GitHub is unavailable).
 For every item, provide the user journey demonstrated, relevant contract/migration changes, targeted failure-case checks, and known limitations. A successful mock response alone does not demonstrate a real provider, storage, or native playback integration. Label mocked and live evidence separately.
 
 Keep Rust/Axum and PostgreSQL as a modular backend with Leptos Web and CMP native mobile clients. Avoid introducing independent services without a demonstrated operational need. Apply the shared Material 3 Expressive design requirements to each UI slice.
+
+The [structured Studio editor](../evidence/studio-script-editor.md) consumes that authority for
+text-first scene/dialogue/character editing, validation previews, source comparison, explicit
+review and immutable acceptance/save/reopen. Keep production identity/legal rights and actual
+host-generated quality separate from this local authoring evidence. The next recommended
+capability is 020 casting and durable dialogue generation once its own input/rights/provider
+gates are reviewed; no production work starts automatically after #4. DBSP remains deferred,
+and history/source reads continue through the existing bounded PostgreSQL paths.

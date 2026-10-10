@@ -11,8 +11,9 @@ use cantos_api::{
     AdaptationCost, AdaptationCostBasis, AdaptationCurrency, AdaptationProviderMetadata,
     AdaptationRunResponse, AdaptationStatus, AdaptationSubmissionReceipt,
     AdaptationSubmissionStatus, AdaptationUsage, CallerGenerationMetadata, CancelAdaptationRequest,
-    ImportFormat, ImportMetadata, ImportOutcome, ImportRequest, ImportResponse, RevisionResponse,
-    SaveRevisionRequest, StartAdaptationRequest, SubmitAdaptationProposalRequest,
+    HistoryResponse, ImportFormat, ImportMetadata, ImportOutcome, ImportRequest, ImportResponse,
+    ReviewRequest, ReviewResponse, RevisionResponse, SaveRevisionRequest, ScriptValidationResponse,
+    SourceResponse, StartAdaptationRequest, SubmitAdaptationProposalRequest, ValidateScriptRequest,
 };
 use cantos_server::{
     adaptation::{admit_output, TrustedBinding},
@@ -1833,4 +1834,416 @@ async fn connection_death_after_receipt_insert_before_commit_rolls_back_and_exac
     assert_eq!(h.submissions().await, 1);
     assert_eq!(h.counts().await, (1, 0, 1, 0, 0));
     h.originals_unchanged(&source).await;
+}
+
+#[tokio::test]
+#[ignore = "disposable PostgreSQL cluster required"]
+async fn draft_validation_checks_real_ir_with_auth_origin_and_bounds_without_writes_or_approval() {
+    let h = Harness::new(None).await;
+    let source = h.import(ALICE).await;
+    let context = h.proposed(&source, &operation(), 0).await;
+    let script_json = context.proposal.as_ref().unwrap().script_json.clone();
+    let request = ValidateScriptRequest { script_json };
+    let before = h.counts().await;
+    let submissions = h.submissions().await;
+    let evidence_before: i64 = h
+        .admin
+        .query_one("SELECT count(*) FROM script_evidence", &[])
+        .await
+        .unwrap()
+        .get(0);
+    for token in [None, Some("invalid-session")] {
+        let (status, error) = h
+            .http("POST", "/validation", token, Some(json!(request)))
+            .await;
+        assert_eq!(status, StatusCode::UNAUTHORIZED);
+        assert_eq!(error["code"], "unauthenticated");
+    }
+    let (status, error) = h
+        .raw_http(
+            "POST",
+            "/validation",
+            Some(ALICE),
+            serde_json::to_vec(&request).unwrap(),
+            "http://foreign.invalid",
+        )
+        .await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+    assert_eq!(error["code"], "forbidden");
+    for (bytes, expected_status) in [
+        (b"{bad".to_vec(), StatusCode::BAD_REQUEST),
+        (vec![b' '; 8 * 1024 * 1024 + 1], StatusCode::BAD_REQUEST),
+    ] {
+        let (status, error) = h
+            .raw_http("POST", "/validation", Some(ALICE), bytes, ORIGIN)
+            .await;
+        assert_eq!(status, expected_status);
+        assert_eq!(error["code"], "invalid_request");
+    }
+    for forged in [
+        json!({"script_json":request.script_json,"approved":true}),
+        json!({"script_json":{}}),
+        json!({}),
+    ] {
+        let (status, error) = h
+            .http("POST", "/validation", Some(ALICE), Some(forged))
+            .await;
+        assert_eq!(status, StatusCode::BAD_REQUEST);
+        assert_eq!(error["code"], "invalid_request");
+    }
+    let mut unsupported: Value = serde_json::from_str(&request.script_json).unwrap();
+    unsupported["schema_version"] = json!("99.0.0");
+    let mut unresolved: Value = serde_json::from_str(&request.script_json).unwrap();
+    unresolved["episode"]["acts"][0]["scenes"][0]["dialogues"][0]["speaker_id"] =
+        json!("speaker_missing");
+    let act = &unresolved["episode"]["acts"][0];
+    let scene = &act["scenes"][0];
+    let line = &scene["dialogues"][0];
+    let speaker_path = format!(
+        "episode/act:{}/scene:{}/dialogue:{}/speaker_id",
+        act["id"].as_str().unwrap(),
+        scene["id"].as_str().unwrap(),
+        line["id"].as_str().unwrap()
+    );
+    let mut unknown: Value = serde_json::from_str(&request.script_json).unwrap();
+    unknown["creator_extension"] = json!({"must_not_be_discarded":true});
+    for (script_json, issue) in [
+        (
+            unsupported.to_string(),
+            json!({"path":"$","rule":"UnsupportedSchemaVersion"}),
+        ),
+        (
+            unresolved.to_string(),
+            json!({"path":speaker_path,"rule":"unknown_speaker"}),
+        ),
+        (
+            unknown.to_string(),
+            json!({"path":"$","rule":"InvalidDocument"}),
+        ),
+        (
+            " ".repeat(2 * 1024 * 1024 + 1),
+            json!({"path":"$","rule":"DocumentTooLarge"}),
+        ),
+    ] {
+        let (status, error) = h
+            .http(
+                "POST",
+                "/validation",
+                Some(ALICE),
+                Some(json!({"script_json":script_json})),
+            )
+            .await;
+        assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+        assert_eq!(error["code"], "invalid_script");
+        assert_eq!(error["issues"], json!([issue]));
+    }
+    // Bob has no source/script access. Validation previews his supplied document only and
+    // returns no evidence permission, review approval, revision or target existence facts.
+    for token in [ALICE, BOB] {
+        let (status, value) = h
+            .http("POST", "/validation", Some(token), Some(json!(request)))
+            .await;
+        assert_eq!(status, StatusCode::OK);
+        let response: ScriptValidationResponse = serde_json::from_value(value.clone()).unwrap();
+        assert_eq!(response.issues, vec![]);
+        assert_eq!(value, json!({"issues":[]}));
+    }
+    let (status, error) = h
+        .http(
+            "POST",
+            &format!("/scripts/{}/revisions", operation()),
+            Some(BOB),
+            Some(json!(SaveRevisionRequest {
+                expected_revision: 0,
+                operation_id: operation(),
+                script_json: request.script_json,
+            })),
+        )
+        .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(error["code"], "evidence_unavailable");
+    assert_eq!(h.counts().await, before);
+    assert_eq!(h.submissions().await, submissions);
+    assert_eq!(
+        h.admin
+            .query_one("SELECT count(*) FROM script_evidence", &[])
+            .await
+            .unwrap()
+            .get::<_, i64>(0),
+        evidence_before
+    );
+    assert_eq!(
+        h.admin
+            .query_one("SELECT count(*) FROM script_reviews", &[])
+            .await
+            .unwrap()
+            .get::<_, i64>(0),
+        0
+    );
+    h.originals_unchanged(&source).await;
+}
+
+#[tokio::test]
+#[ignore = "disposable PostgreSQL cluster required"]
+async fn studio_editor_import_proposal_edit_accept_review_save_and_reopen_preserve_history() {
+    let h = Harness::new(Some("cantos_test_studio_editor")).await;
+    h.admin
+        .batch_execute("GRANT INSERT ON script_reviews,script_review_operations TO cantos_app")
+        .await
+        .unwrap();
+    let import_request = ImportRequest {
+        metadata: ImportMetadata {
+            operation_id: operation(),
+            file_name: "Vọng Đài — editor journey.txt".into(),
+            format: ImportFormat::Txt,
+            reference: "Original repository-authored Studio editor journey fixture".into(),
+            rights_holder: Some("Synthetic fixture author".into()),
+            permission_evidence: Some(
+                "Local integration tests only; publication rights unknown".into(),
+            ),
+            usage_scope: Some("Private test adaptation/editor review".into()),
+        },
+        original_bytes: ORIGINAL.as_bytes().to_vec(),
+    };
+    let (status, value) = h
+        .http("POST", "/imports", Some(ALICE), Some(json!(import_request)))
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    let source: ImportResponse = serde_json::from_value(value).unwrap();
+    assert_eq!(source.sha256, sha(ORIGINAL.as_bytes()));
+    let script = operation();
+    let context_intent = context_request(&source, &script, 0);
+    let (status, value) = h
+        .http(
+            "POST",
+            "/adaptations/contexts",
+            Some(ALICE),
+            Some(json!(context_intent)),
+        )
+        .await;
+    assert_eq!(status, StatusCode::CREATED);
+    let context: AdaptationContextResponse = serde_json::from_value(value).unwrap();
+    let proposal_intent = submission(&context, document());
+    let (status, _) = h
+        .http(
+            "POST",
+            &format!("/adaptations/{}/proposals", context.id),
+            Some(ALICE),
+            Some(json!(proposal_intent)),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    let (status, comparison) = h
+        .http(
+            "GET",
+            &format!("/adaptations/{}/review", context.id),
+            Some(ALICE),
+            None,
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(comparison["workflow"], "caller");
+    assert_eq!(comparison["context"]["source"], json!(source));
+    let proposed: AdaptationContextResponse =
+        serde_json::from_value(comparison["context"].clone()).unwrap();
+    let original_proposal: Value =
+        serde_json::from_str(&proposed.proposal.as_ref().unwrap().script_json).unwrap();
+    let mut draft = original_proposal.clone();
+    let missing_speaker =
+        draft["episode"]["acts"][0]["scenes"][0]["dialogues"][2]["speaker_id"].clone();
+    for character in draft["characters"].as_array_mut().unwrap() {
+        if character["id"] == missing_speaker {
+            character["name"] = json!("Minh — người gác cửa");
+            character["personality"] = json!("Tác giả đã xác nhận danh tính; vẫn dè dặt.");
+        }
+    }
+    draft["episode"]["acts"][0]["scenes"][0]["title"] = json!("Bên cánh cửa — đã đối chiếu");
+    draft["episode"]["acts"][0]["scenes"][0]["dialogues"][1]["text"] =
+        json!("Chúng mình sẽ chờ đến bình minh.");
+    draft["episode"]["acts"][0]["scenes"][0]["dialogues"][1]["delivery"] =
+        json!({"emotion":"hopeful","intensity_permille":525});
+    let validation = ValidateScriptRequest {
+        script_json: draft.to_string(),
+    };
+    let (status, validation_receipt) = h
+        .http("POST", "/validation", Some(ALICE), Some(json!(validation)))
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(validation_receipt, json!({"issues":[]}));
+    assert_eq!(h.counts().await, (1, 0, 1, 0, 0));
+    let acceptance = AcceptAdaptationRequest {
+        operation_id: operation(),
+        expected_revision: 0,
+        script_json: validation.script_json,
+        reviewed_findings: true,
+    };
+    let accept_path = format!("/adaptations/{}/accept", context.id);
+    let (status, value) = h
+        .http("POST", &accept_path, Some(ALICE), Some(json!(acceptance)))
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    let first: RevisionResponse = serde_json::from_value(value).unwrap();
+    assert_eq!(first.revision, 1);
+    let first_value: Value = serde_json::from_str(&first.script_json).unwrap();
+    assert_eq!(first_value, draft);
+    assert_eq!(first_value["provenance"], original_proposal["provenance"]);
+    assert_eq!(first_value["work"], original_proposal["work"]);
+    assert_eq!(first_value["adaptation"], original_proposal["adaptation"]);
+    assert_eq!(
+        first_value["episode"]["acts"][0]["scenes"][0]["sound_cues"],
+        original_proposal["episode"]["acts"][0]["scenes"][0]["sound_cues"]
+    );
+    for (edited, original) in first_value["characters"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .zip(original_proposal["characters"].as_array().unwrap())
+    {
+        assert_eq!(edited["id"], original["id"]);
+        assert_eq!(edited["role"], original["role"]);
+    }
+    let review_intent = ReviewRequest {
+        operation_id: operation(),
+        revision: 1,
+    };
+    let review_path = format!("/scripts/{script}/reviews");
+    let (status, value) = h
+        .http(
+            "POST",
+            &review_path,
+            Some(ALICE),
+            Some(json!(review_intent)),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    let review: ReviewResponse = serde_json::from_value(value).unwrap();
+    assert_eq!(review.content_digest, first.content_digest);
+    assert_eq!(review.export_digest, first.export_digest);
+    let source_path = format!("/scripts/{script}/sources/{}", source.id);
+    let (status, value) = h.http("GET", &source_path, Some(ALICE), None).await;
+    assert_eq!(status, StatusCode::OK);
+    let linked_source: SourceResponse = serde_json::from_value(value).unwrap();
+    assert_eq!(linked_source.original_text.as_bytes(), ORIGINAL.as_bytes());
+    assert_eq!(linked_source.sha256, source.sha256);
+
+    let save_intent = edit(&first, 1);
+    let save_path = format!("/scripts/{script}/revisions");
+    h.admin
+        .execute(
+            "INSERT INTO script_members(script_id,actor_id,role) VALUES($1,'bob','reader')",
+            &[&script],
+        )
+        .await
+        .unwrap();
+    for (path, request) in [
+        (&save_path, json!(save_intent)),
+        (&review_path, json!(review_intent)),
+    ] {
+        let (status, error) = h.http("POST", path, Some(BOB), Some(request)).await;
+        assert_eq!(status, StatusCode::FORBIDDEN);
+        assert_eq!(error["code"], "forbidden");
+    }
+    assert_eq!(h.counts().await, (1, 0, 1, 1, 1));
+    let (status, value) = h
+        .http("POST", &save_path, Some(ALICE), Some(json!(save_intent)))
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    let second: RevisionResponse = serde_json::from_value(value).unwrap();
+    assert_eq!(second.revision, 2);
+    let second_value: Value = serde_json::from_str(&second.script_json).unwrap();
+    assert_eq!(second_value["provenance"], first_value["provenance"]);
+    assert_eq!(second_value["characters"], first_value["characters"]);
+    assert_eq!(
+        second_value["episode"]["acts"][0]["scenes"][0]["dialogues"][1]["id"],
+        first_value["episode"]["acts"][0]["scenes"][0]["dialogues"][1]["id"]
+    );
+    assert_eq!(
+        second_value["episode"]["acts"][0]["scenes"][0]["dialogues"][1]["text"],
+        "Chúng mình sẽ chờ đến sáng."
+    );
+    let stale_draft = edit(&first, 1);
+    let (status, error) = h
+        .http("POST", &save_path, Some(ALICE), Some(json!(stale_draft)))
+        .await;
+    assert_eq!(status, StatusCode::CONFLICT);
+    assert_eq!(
+        error,
+        json!({"code":"stale_revision","current_revision":2,"issues":[]})
+    );
+    assert_eq!(h.counts().await, (1, 0, 1, 1, 2));
+    // Exact repeated actions produce their original receipt even after the head moved.
+    assert_eq!(
+        h.http("POST", &accept_path, Some(ALICE), Some(json!(acceptance)))
+            .await,
+        (StatusCode::OK, json!(first))
+    );
+    assert_eq!(
+        h.http("POST", &save_path, Some(ALICE), Some(json!(save_intent)))
+            .await,
+        (StatusCode::OK, json!(second))
+    );
+    assert_eq!(
+        h.http(
+            "POST",
+            &review_path,
+            Some(ALICE),
+            Some(json!(review_intent))
+        )
+        .await,
+        (StatusCode::OK, json!(review))
+    );
+    let history_path = format!("/scripts/{script}/history?after_revision=0&limit=1");
+    let (status, value) = h.http("GET", &history_path, Some(BOB), None).await;
+    assert_eq!(status, StatusCode::OK);
+    let history: HistoryResponse = serde_json::from_value(value).unwrap();
+    assert_eq!(history.revisions.len(), 1);
+    assert_eq!(history.revisions[0].revision, 1);
+    assert_eq!(history.reviews, vec![review.clone()]);
+    assert_eq!(history.next_after, Some(1));
+    let (status, value) = h
+        .http(
+            "GET",
+            &format!("/scripts/{script}/history?after_revision=1&limit=1"),
+            Some(ALICE),
+            None,
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    let last: HistoryResponse = serde_json::from_value(value).unwrap();
+    assert_eq!(last.revisions.len(), 1);
+    assert_eq!(last.revisions[0].revision, 2);
+    assert_eq!(last.reviews, vec![]);
+    assert_eq!(last.next_after, None);
+    let reopened = h.reopened();
+    assert_eq!(reopened.load(ALICE, &script, None).await.unwrap(), second);
+    assert_eq!(reopened.load(ALICE, &script, Some(1)).await.unwrap(), first);
+    assert_eq!(
+        reopened.source(BOB, &script, &source.id).await.unwrap(),
+        linked_source
+    );
+    let accepted = reopened
+        .load_adaptation_context(ALICE, &context.id)
+        .await
+        .unwrap();
+    assert_eq!(accepted.proposal, proposed.proposal);
+    assert_eq!(accepted.accepted_revision, Some(first.clone()));
+    assert_eq!(h.counts().await, (1, 0, 1, 1, 2));
+    h.originals_unchanged(&source).await;
+    let reviews: i64 = h
+        .admin
+        .query_one("SELECT count(*) FROM script_reviews", &[])
+        .await
+        .unwrap()
+        .get(0);
+    assert_eq!(reviews, 1);
+    fs::create_dir_all("../../target/studio-editor-evidence").unwrap();
+    fs::write("../../target/studio-editor-evidence/editor-api-journey.json", serde_json::to_string_pretty(&json!({
+        "database":h.database,"token":ALICE,"script":script,"original":ORIGINAL,"source":source,
+        "import_request":import_request,"context_request":context_intent,"context":accepted,
+        "proposal_request":proposal_intent,"acceptance":acceptance,"first":first,
+        "save_request":save_intent,"second":second,"review_request":review_intent,"review":review,
+        "linked_source":linked_source,"history_first":history,"history_last":last,
+        "counts":{"runs":1,"attempts":0,"submissions":1,"proposals":1,"acceptances":1,"revisions":2,"reviews":1,"review_operations":1,"sources":1,"evidence":3,"scripts":1},
+        "provenance":"repository-authored synthetic Vietnamese source/proposal; no inference"
+    })).unwrap()).unwrap();
 }

@@ -8,7 +8,8 @@ use axum::{
     Json, Router,
 };
 use cantos_api::{
-    ApiError, ErrorCode, ReviewRequest, SaveRevisionRequest, SessionRequest, SessionResponse,
+    ApiError, ErrorCode, ReviewRequest, SaveRevisionRequest, ScriptValidationResponse,
+    SessionRequest, SessionResponse, ValidateScriptRequest,
 };
 use tower_http::services::ServeDir;
 
@@ -32,6 +33,7 @@ pub fn router(state: AppState, dist: &str) -> Router {
         .route("/scripts/{script}/history", get(history))
         .route("/scripts/{script}/reviews", post(review))
         .route("/scripts/{script}/sources/{source}", get(source))
+        .route("/validation", post(validate_script))
         .merge(imports::routes())
         .merge(adaptations::routes())
         .route_layer(middleware::from_fn_with_state(state.clone(), authenticated));
@@ -202,6 +204,22 @@ async fn save(
     match state.store.save(&token, &script, request).await {
         Ok(saved) => Json(saved).into_response(),
         Err(error) => error_response(error),
+    }
+}
+
+/// Draft preview uses the same bounded reader as storage, without creating a revision.
+/// Authentication and Origin are checked by the shared middleware; this route reveals no
+/// target/evidence facts and does not establish permission to accept, produce or publish.
+async fn validate_script(
+    body: Result<Json<ValidateScriptRequest>, axum::extract::rejection::JsonRejection>,
+) -> Response {
+    let request = match body {
+        Ok(Json(request)) => request,
+        Err(_) => return error_response(StoreError::InvalidRequest),
+    };
+    match crate::script_ir::read_script(request.script_json.as_bytes()) {
+        Ok(_) => Json(ScriptValidationResponse { issues: vec![] }).into_response(),
+        Err(error) => error_response(StoreError::InvalidScript(error)),
     }
 }
 

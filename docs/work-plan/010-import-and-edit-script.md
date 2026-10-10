@@ -37,10 +37,12 @@ capability review boundary.
 
 The [bounded adaptation consumer](../evidence/ai-script-adaptation.md) adds authenticated
 context/read/submit/review tools, durable declared provenance/receipts and explicit Studio
-compare/edit-JSON/accept flow. The user-controlled Gemini/ChatGPT/Codex host generates content;
+compare/edit/accept flow. The user-controlled Gemini/ChatGPT/Codex host generates content;
 Cantos performs no inference. The #3 gate is the actual tool/storage/validation journey,
 separate from unrun model quality. The former local-model prerequisite is superseded, not passed.
-Full scene and character editing is #4; this slice does not complete the whole capability review.
+The [#4 editor](../evidence/studio-script-editor.md) supplies structured scene/character/dialogue
+editing and the local import/proposal/edit/accept/save/restart/reopen journey. Production identity,
+legal rights clearance and actual AI quality remain independent capability gates.
 
 ## Suggested sequence
 

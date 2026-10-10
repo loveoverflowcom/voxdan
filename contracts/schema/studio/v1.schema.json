@@ -3,6 +3,33 @@
   "$id": "https://cantos.example/contracts/studio/v1",
   "title": "Cantos Studio revision API v1",
   "$defs": {
+    "ValidateScript": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "script_json"
+      ],
+      "properties": {
+        "script_json": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2097152
+        }
+      }
+    },
+    "ScriptValidation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "issues"
+      ],
+      "properties": {
+        "issues": {
+          "type": "array",
+          "maxItems": 0
+        }
+      }
+    },
     "SaveRevision": {
       "type": "object",
       "additionalProperties": false,

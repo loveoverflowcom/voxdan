@@ -19,7 +19,8 @@ The bounded adaptation implementation exports immutable source/revision context 
 [authenticated HTTP/CLI tools](contracts/adaptation-v1.md), validates host-created proposals,
 and supports explicit Studio review/acceptance. Gemini / ChatGPT / Codex generation belongs to
 the user-controlled host; Cantos performs no inference. [Adaptation evidence](docs/evidence/ai-script-adaptation.md)
-separates actual tool/storage tests from synthetic content and unrun model quality. Full authoring, production,
+separates actual tool/storage tests from synthetic content and unrun model quality. The [structured Studio editor](docs/evidence/studio-script-editor.md) adds scene/dialogue/character authoring,
+validation previews, source comparison and revision history on that same authority. Production,
 Theatre and native mobile playback remain planned. No runnable Gradle project or production
 identity deployment is claimed.
 
@@ -50,7 +51,7 @@ Start with one modular backend. Worker execution can run separately for resource
 | Path | Responsibility at bootstrap |
 | --- | --- |
 | `apps/server/` | Pure Script IR/revision rules, local Axum host, PostgreSQL store and migration CLI |
-| `apps/web/` | Minimal Leptos Studio CSR consumer; Theatre remains planned |
+| `apps/web/` | Structured Leptos Studio CSR editor; Theatre remains planned |
 | `apps/mobile/` | Guide for the native CMP listening app |
 | `contracts/` | Script IR and Studio v1 schemas/fixtures, shared Rust wire DTOs and design tokens |
 | `docs/` | Product, architecture, design, decisions and the work queue |

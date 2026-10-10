@@ -29,3 +29,34 @@ fn editorial_extensions_round_trip_without_changing_the_revision_contract() {
     let request = serde_json::json!({"operation_id":"00000000-0000-4000-8000-000000000003", "revision":1, "reviewed_by":"forged"});
     assert!(serde_json::from_value::<cantos_api::ReviewRequest>(request).is_err());
 }
+
+#[test]
+fn validation_preview_is_a_closed_contract_without_revision_or_permission_claims() {
+    let bytes = include_str!("../../fixtures/studio/v1/validation.json");
+    let validation: cantos_api::ScriptValidationResponse = serde_json::from_str(bytes).unwrap();
+    assert!(validation.issues.is_empty());
+    assert_eq!(
+        serde_json::to_value(validation).unwrap(),
+        serde_json::from_str::<serde_json::Value>(bytes).unwrap()
+    );
+    let request = cantos_api::ValidateScriptRequest {
+        script_json: "{}".into(),
+    };
+    assert_eq!(
+        serde_json::to_value(request).unwrap(),
+        serde_json::json!({"script_json":"{}"})
+    );
+    for forged in [
+        serde_json::json!({"script_json":"{}","actor_id":"owner"}),
+        serde_json::json!({"script_json":"{}","reviewed_findings":true}),
+        serde_json::json!({"script_json":"{}","script_id":"target"}),
+    ] {
+        assert!(serde_json::from_value::<cantos_api::ValidateScriptRequest>(forged).is_err());
+    }
+    assert!(
+        serde_json::from_value::<cantos_api::ScriptValidationResponse>(
+            serde_json::json!({"issues":[],"approved":true})
+        )
+        .is_err()
+    );
+}

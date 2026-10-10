@@ -23,6 +23,7 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 EVIDENCE = ROOT / "target" / "revision-evidence"
 ADAPTATION_EVIDENCE = ROOT / "target" / "adaptation-evidence"
+EDITOR_EVIDENCE = ROOT / "target" / "studio-editor-evidence"
 ADAPTATION_TOOL = ROOT / "scripts" / "cantos_adaptation_tool.py"
 
 
@@ -322,6 +323,79 @@ def adaptation_after_restart(env, port, token, app_url, fixture):
     print("PASS: actual subprocess CLI + loopback HTTP + app-role PostgreSQL context/invalid+valid proposal/review/accept + host kill + PostgreSQL restart + exact replay + immutable source/revision + zero generation attempts")
 
 
+def studio_http(port, token, path, method="GET", payload=None):
+    """Exact private Studio responses through the actual loopback socket, without proxies."""
+    call = urllib.request.Request(
+        f"http://127.0.0.1:{port}/api/v1{path}",
+        data=None if payload is None else json.dumps(payload).encode(), method=method,
+        headers={"Cookie": f"cantos_session={token}", "Origin": f"http://127.0.0.1:{port}",
+                 "Content-Type": "application/json"})
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    with opener.open(call, timeout=10) as response:
+        assert response.status == 200
+        assert response.headers["Cache-Control"] == "no-store"
+        assert response.headers["X-Content-Type-Options"] == "nosniff"
+        return json.load(response)
+
+
+def editor_snapshot(env, app_url):
+    """Independent SQL row counts detect any duplicate or partial editor acceptance."""
+    query = """SELECT json_build_object(
+        'runs',(SELECT count(*) FROM adaptation_runs),
+        'attempts',(SELECT count(*) FROM adaptation_attempts),
+        'submissions',(SELECT count(*) FROM adaptation_submissions),
+        'proposals',(SELECT count(*) FROM adaptation_proposals),
+        'acceptances',(SELECT count(*) FROM adaptation_acceptances),
+        'revisions',(SELECT count(*) FROM script_revisions),
+        'reviews',(SELECT count(*) FROM script_reviews),
+        'review_operations',(SELECT count(*) FROM script_review_operations),
+        'sources',(SELECT count(*) FROM source_records),
+        'evidence',(SELECT count(*) FROM script_evidence),
+        'scripts',(SELECT count(*) FROM scripts))::text;"""
+    result = subprocess.run(["psql", "-X", "-A", "-t", app_url, "-v", "ON_ERROR_STOP=1",
+                             "-c", query], cwd=ROOT, env=env, text=True,
+                            capture_output=True, timeout=10)
+    if result.returncode:
+        raise RuntimeError("editor row-count oracle failed")
+    return json.loads(result.stdout)
+
+
+def editor_probe(fixture):
+    """Readiness checks the saved head in the editor database, never the other test DB."""
+    return {"script": fixture["script"], "token": fixture["token"],
+            "response": fixture["second"], "request": fixture["save_request"]}
+
+
+def editor_recovery(env, port, app_url, fixture):
+    """Compare exact source/proposal/export/review/history facts and replay committed intents."""
+    token, script = fixture["token"], fixture["script"]
+    assert studio_http(port, token, f"/scripts/{script}/head") == fixture["second"]
+    for name in ("first", "second"):
+        saved = fixture[name]
+        assert studio_http(port, token, f"/scripts/{script}/revisions/{saved['revision']}") == saved
+    assert import_http(port, token, request=fixture["import_request"]) == fixture["source"]
+    source = fixture["source"]
+    assert import_http(port, token, source=source["id"]) == source
+    original = import_http(port, token, source=source["id"], original=True)
+    assert original == fixture["original"].encode()
+    assert hashlib.sha256(original).hexdigest() == source["sha256"]
+    assert studio_http(port, token, f"/scripts/{script}/sources/{source['id']}") == fixture["linked_source"]
+    context = fixture["context"]
+    assert studio_http(port, token, f"/adaptations/{context['id']}/context") == context
+    assert studio_http(port, token, f"/adaptations/{context['id']}/review") == {"workflow": "caller", "context": context}
+    assert adaptation_http(port, token, "/contexts", fixture["context_request"], 201) == context
+    assert adaptation_http(port, token, f"/{context['id']}/proposals", fixture["proposal_request"]) == context["latest_submission"]
+    assert adaptation_http(port, token, f"/{context['id']}/accept", fixture["acceptance"]) == fixture["first"]
+    assert studio_http(port, token, f"/scripts/{script}/revisions", "POST", fixture["save_request"]) == fixture["second"]
+    assert studio_http(port, token, f"/scripts/{script}/reviews", "POST", fixture["review_request"]) == fixture["review"]
+    assert studio_http(port, token, f"/scripts/{script}/history?after_revision=0&limit=1") == fixture["history_first"]
+    assert studio_http(port, token, f"/scripts/{script}/history?after_revision=1&limit=1") == fixture["history_last"]
+    assert studio_http(port, token, "/validation", "POST", {"script_json": fixture["second"]["script_json"]}) == {"issues": []}
+    snapshot = editor_snapshot(env, app_url)
+    assert snapshot == fixture["counts"], (snapshot, fixture["counts"])
+    return snapshot
+
+
 def start_host(env, port, log, fixture):
     host_env = dict(env, CANTOS_ENV="development", CANTOS_BIND_ADDRESS=f"127.0.0.1:{port}",
                     CANTOS_WEB_ORIGIN=f"http://127.0.0.1:{port}",
@@ -364,6 +438,7 @@ def main():
     env["CANTOS_TEST_CLUSTER_URL"] = url
     started = False
     host = None
+    editor_host = None
     try:
         run(["initdb", "-D", str(data), "--username=cantos_test_admin", "--auth=trust", "--no-locale", "--encoding=UTF8"], env=env, output=cluster / "initdb.log")
         run(["pg_ctl", "-D", str(data), "-l", str(cluster / "postgres.log"), "-o", f"-h 127.0.0.1 -p {port} -k /tmp", "-w", "start"], env=env)
@@ -372,7 +447,9 @@ def main():
         run(["cargo", "test", "-p", "cantos-server", "--test", "revisions_postgres", "--locked", "--offline", "--", "--ignored", "--test-threads=1"], env=env, output=EVIDENCE / "postgres-tests.log")
         run(["cargo", "test", "-p", "cantos-server", "--test", "imports_postgres", "--locked", "--offline", "--", "--ignored", "--test-threads=1"], env=env, output=EVIDENCE / "import-postgres-tests.log")
         run(["cargo", "test", "-p", "cantos-server", "--test", "adaptations_postgres", "--locked", "--offline", "--", "--ignored", "--test-threads=1"], env=env, output=EVIDENCE / "adaptation-postgres-tests.log")
+        run(["cargo", "build", "-p", "cantos-server", "--bins", "--locked", "--offline"], env=env, output=EVIDENCE / "host-build.log")
         fixture = json.loads((EVIDENCE / "restart.json").read_text())
+        editor = json.loads((EDITOR_EVIDENCE / "editor-api-journey.json").read_text())
         migration_url = f"postgresql://cantos_test_admin@127.0.0.1:{port}/{fixture['database']}"
         run(["psql", "-X", migration_url, "-v", "ON_ERROR_STOP=1", "-c",
              "GRANT INSERT ON source_records,script_evidence TO cantos_app; "
@@ -381,9 +458,14 @@ def main():
              "GRANT UPDATE(status,problem,dispatch_deadline,updated_at) ON adaptation_runs TO cantos_app;"], env=env)
         app_url = f"postgresql://cantos_app@127.0.0.1:{port}/{fixture['database']}"
         env["DATABASE_URL"] = app_url
-        with (EVIDENCE / "host.log").open("w") as log:
+        editor_app_url = f"postgresql://cantos_app@127.0.0.1:{port}/{editor['database']}"
+        editor_env = dict(env, DATABASE_URL=editor_app_url)
+        with (EVIDENCE / "host.log").open("w") as log, (EDITOR_EVIDENCE / "host.log").open("w") as editor_log:
             http_port = free_port()
             host = start_host(env, http_port, log, fixture)
+            editor_http_port = free_port()
+            editor_host = start_host(editor_env, editor_http_port, editor_log, editor_probe(editor))
+            editor_before = editor_recovery(editor_env, editor_http_port, editor_app_url, editor)
             assert http(http_port, fixture, "POST") == fixture["response"]
             imports = import_restart_fixtures()
             receipts = [import_http(http_port, fixture["token"], request=item) for item in imports]
@@ -400,10 +482,16 @@ def main():
             host.kill()
             host.wait(timeout=5)
             host = None
+            editor_host.kill()
+            editor_host.wait(timeout=5)
+            editor_host = None
             run(["pg_ctl", "-D", str(data), "-l", str(cluster / "postgres.log"), "-m", "fast", "-w", "restart"], env=env)
             migration_env = dict(env, DATABASE_URL=f"postgresql://cantos_test_admin@127.0.0.1:{port}/{fixture['database']}")
             run([str(ROOT / "target/debug/cantos-migrate")], env=migration_env)
+            editor_migration_env = dict(env, DATABASE_URL=f"postgresql://cantos_test_admin@127.0.0.1:{port}/{editor['database']}")
+            run([str(ROOT / "target/debug/cantos-migrate")], env=editor_migration_env)
             host = start_host(env, http_port, log, fixture)
+            editor_host = start_host(editor_env, editor_http_port, editor_log, editor_probe(editor))
             assert http(http_port, fixture) == fixture["response"]
             assert http(http_port, fixture, "POST") == fixture["response"]
             for item, receipt in zip(imports, receipts):
@@ -411,14 +499,30 @@ def main():
                 assert import_http(http_port, fixture["token"], source=receipt["id"]) == receipt
                 assert import_http(http_port, fixture["token"], source=receipt["id"], original=True) == bytes(item["original_bytes"])
             adaptation_after_restart(env, http_port, fixture["token"], app_url, adaptation)
+            editor_after = editor_recovery(editor_env, editor_http_port, editor_app_url, editor)
+            assert editor_after == editor_before
+            (EDITOR_EVIDENCE / "server-restart.json").write_text(json.dumps({
+                "provenance": editor["provenance"], "checks": "exact source/proposal/accepted revisions/reviews/history; committed-intent replay; HTTP process kill; PostgreSQL restart; migration replay",
+                "before": editor_before, "after": editor_after,
+                "script": editor["script"], "run_id": editor["context"]["id"],
+                "source_sha256": editor["source"]["sha256"]}, ensure_ascii=False, indent=2) + "\n")
+            print("PASS: Studio editor HTTP journey + host kill + PostgreSQL restart + exact source/proposal/accepted revisions/review/history + idempotent replay + independent row counts")
             (EVIDENCE / "import-restart.json").write_text(json.dumps({"sources": receipts}, ensure_ascii=False, indent=2) + "\n")
             print("PASS: original TXT/DOCX/failed-input bytes and SHA-256 + HTTP kill + PostgreSQL restart + immutable receipt replay")
             print("PASS: HTTP process kill + PostgreSQL restart + migration replay + exact export/actor/time + same-operation replay")
         (EVIDENCE / "run.json").write_text(json.dumps({"cluster": str(cluster), "port": port, "app_url": app_url, "script": fixture["script"]}, indent=2) + "\n")
+        (EDITOR_EVIDENCE / "run.json").write_text(json.dumps({
+            "cluster": str(cluster), "data": str(data), "port": port,
+            "app_url": editor_app_url, "script": editor["script"],
+            "run_id": editor["context"]["id"], "source_id": editor["source"]["id"],
+            "token": editor["token"], "retained": args.keep}, indent=2) + "\n")
     finally:
         if host is not None:
             host.kill()
             host.wait(timeout=5)
+        if editor_host is not None:
+            editor_host.kill()
+            editor_host.wait(timeout=5)
         if started and not args.keep:
             run(["pg_ctl", "-D", str(data), "-m", "fast", "-w", "stop"], env=env)
         if args.keep and started:

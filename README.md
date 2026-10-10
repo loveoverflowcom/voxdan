@@ -22,7 +22,9 @@ the user-controlled host; Cantos performs no inference. [Adaptation evidence](do
 separates actual tool/storage tests from synthetic content and unrun model quality. The [structured Studio editor](docs/evidence/studio-script-editor.md) adds scene/dialogue/character authoring,
 validation previews, source comparison and revision history on that same authority. Production,
 Theatre and native mobile playback remain planned. No runnable Gradle project or production
-identity deployment is claimed.
+identity deployment is claimed. A standalone, read-only [WAV PCM inspection CLI](docs/evidence/wav-pcm-inspection.md)
+reports structure, checksums and sample peak as JSON; it is groundwork for audio QC, not mixing,
+loudness measurement or QC approval.
 
 `develop` is the first and default branch. Create short-lived feature branches from it and target pull requests to `develop`.
 
@@ -59,7 +61,7 @@ Start with one modular backend. Worker execution can run separately for resource
 | `.agents/skills/` | Canonical agent skills shared by Codex, Claude Code and other agents |
 | `.claude/skills/` | Per-skill symlinks so Claude Code discovers `.agents/skills/` |
 | `.github/` | Issue forms, PR template and repository checks |
-| `scripts/` | Repository checks, story initializer, digest oracle, mutation checks, isolated PostgreSQL runner and token generator |
+| `scripts/` | Repository checks, story initializer, digest and WAV inspection oracles, mutation checks, isolated PostgreSQL runner and token generator |
 
 ## Validate the bootstrap
 
@@ -77,6 +79,8 @@ cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo test --workspace --locked
 python3 scripts/reference_script_ir.py
 cargo run --locked --bin validate-script -- contracts/fixtures/script-ir/0.1.0/accept/two-scenes.json
+cargo build --locked --bin inspect-wav
+python3 scripts/reference_wav_inspection.py
 ```
 
 [Contract evidence](docs/evidence/script-ir-contract.md) names the actual verification boundary.
